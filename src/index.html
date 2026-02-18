@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reckon Bolt</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="header">
+      <h1 class="header-title">Reckon Bolt</h1>
+      <div class="header-right">
+        <!-- Reckon API connection -->
+        <button id="reckon-connect-btn" class="btn-connect" title="Connect to Reckon Bolt">
+          <span class="connect-dot disconnected"></span>
+          <span id="reckon-connect-text">Connect</span>
+        </button>
+
+        <span id="status-indicator" class="status offline">
+          <span class="status-dot"></span>
+          <span id="status-text">Checking...</span>
+        </span>
+        <button id="refresh-btn" class="btn-refresh" title="Refresh">&#x21bb;</button>
+      </div>
+    </header>
+
+    <!-- Login modal -->
+    <div id="login-overlay" class="login-overlay hidden">
+      <div class="login-modal">
+        <div class="login-header">
+          <h2 class="login-title">Connect to Reckon Bolt</h2>
+          <button id="login-close-btn" class="login-close">&times;</button>
+        </div>
+        <form id="login-form" class="login-form">
+          <div class="form-group">
+            <label for="login-username">Username</label>
+            <input type="text" id="login-username" autocomplete="username" placeholder="Enter your username" required />
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <input type="password" id="login-password" autocomplete="current-password" placeholder="Enter your password" required />
+          </div>
+          <p id="login-error" class="login-error hidden"></p>
+          <button type="submit" id="login-submit-btn" class="btn-login">
+            <span id="login-submit-text">Sign In</span>
+            <div id="login-spinner" class="spinner-small hidden"></div>
+          </button>
+        </form>
+        <p class="login-footer">Sign in with your Reckon Bolt account</p>
+      </div>
+    </div>
+
+    <!-- Main content -->
+    <main class="main">
+      <!-- State: loading -->
+      <div id="state-loading" class="state">
+        <div class="spinner"></div>
+        <p class="state-msg">Loading match history...</p>
+      </div>
+
+      <!-- State: Valorant not running -->
+      <div id="state-offline" class="state hidden">
+        <p class="state-icon">&#9888;</p>
+        <p class="state-msg">Valorant is not running</p>
+        <p class="state-sub">Launch Valorant, then click refresh.</p>
+      </div>
+
+      <!-- State: error -->
+      <div id="state-error" class="state hidden">
+        <p class="state-icon">&#10060;</p>
+        <p class="state-msg" id="error-msg">Something went wrong</p>
+        <p class="state-sub">Check that Valorant is running and try again.</p>
+      </div>
+
+      <!-- State: match list -->
+      <div id="state-matches" class="hidden">
+        <div id="match-list" class="match-list"></div>
+      </div>
+    </main>
+
+    <script src="main.js"></script>
+  </body>
+</html>

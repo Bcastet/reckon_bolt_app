@@ -1,0 +1,8 @@
+openApiGeneratorName: rust
+
+additionalProperties:
+  packageName: reckon_api
+  supportAsync: true
+  library: reqwest
+  disallowAdditionalPropertiesIfNotPresent: false
+  hideGenerationTimestamp: true
