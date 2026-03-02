@@ -1,12 +1,12 @@
-# SoloQAccountsAggregate
+# PatchedSoloQAccounts
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**id** | **i32** |  | [readonly]
-**puuid** | **String** |  | 
-**account_name** | **String** |  | 
+**id** | Option<**i32**> |  | [optional][readonly]
+**puuid** | Option<**String**> |  | [optional]
+**account_name** | Option<**String**> |  | [optional]
 **rank_tier** | Option<**i32**> |  | [optional]
 **player_id** | Option<**String**> |  | [optional]
 **server** | Option<**String**> |  | [optional]

@@ -46,6 +46,33 @@ function showState(state) {
   state.classList.remove("hidden");
 }
 
+// ─── Toasts ───
+function showToast(message, options = {}) {
+  const container = document.getElementById("toast-container");
+  if (!container) return;
+  const { apiResponse, status, title = "Error" } = options;
+  const el = document.createElement("div");
+  el.className = "toast";
+  el.setAttribute("role", "alert");
+  let html = `<span class="toast-title">${escapeHtml(title)}</span><p class="toast-message">${escapeHtml(message)}</p>`;
+  if (status != null) {
+    html += `<p class="toast-message">Status: ${escapeHtml(String(status))}</p>`;
+  }
+  if (apiResponse != null && apiResponse !== "") {
+    html += `<pre class="toast-api-response">${escapeHtml(apiResponse)}</pre>`;
+  }
+  html += '<button type="button" class="toast-close" aria-label="Close">&times;</button>';
+  el.innerHTML = html;
+  const closeBtn = el.querySelector(".toast-close");
+  const dismiss = () => {
+    el.style.animation = "toast-in 0.15s ease-out reverse";
+    setTimeout(() => el.remove(), 150);
+  };
+  closeBtn.addEventListener("click", dismiss);
+  container.appendChild(el);
+  setTimeout(dismiss, 12000);
+}
+
 function setOnline(online) {
   statusDot.className = online ? "status online" : "status offline";
   statusText.textContent = online ? "Valorant Running" : "Offline";
@@ -187,7 +214,48 @@ async function toggleDetail(wrapper, matchId) {
     const detail = await invoke("get_match_detail", { matchId });
     // Check if user clicked away while loading
     if (openDetailId !== matchId) return;
-    renderDetailPanel(panel, detail);
+
+    // Query SoloQAccount entries for all players in the game (when logged in).
+    // Missing accounts are created using server and player names from the match.
+    let accounts = [];
+    if (reckonUser) {
+      const allPlayers = [
+        ...(detail.teamBlue || []),
+        ...(detail.teamRed || []),
+      ];
+      const puuids = allPlayers.map((p) => p.puuid).filter(Boolean);
+      const players = allPlayers.map((p) => ({
+        puuid: p.puuid,
+        accountName: p.name,
+      }));
+      try {
+        accounts = await invoke("reckon_get_soloq_accounts", {
+          puuids,
+          server: detail.server || null,
+          players: detail.server ? players : null,
+        });
+      } catch (e) {
+        console.warn("Failed to fetch SoloQ accounts for match:", e);
+        const msg = typeof e === "string" ? e : (e?.message || String(e));
+        try {
+          const data = JSON.parse(msg);
+          if (data.soloqCreateError) {
+            showToast(data.message, {
+              title: "SoloQ account create failed",
+              status: data.status,
+              apiResponse: data.apiResponse,
+            });
+          } else {
+            showToast(msg, { title: "Error" });
+          }
+        } catch (_) {
+          showToast(msg, { title: "Error" });
+        }
+      }
+    }
+
+    if (openDetailId !== matchId) return;
+    renderDetailPanel(panel, detail, accounts);
   } catch (err) {
     console.error(err);
     if (openDetailId !== matchId) return;
@@ -196,9 +264,15 @@ async function toggleDetail(wrapper, matchId) {
 }
 
 // ─── Render the expanded scoreboard ───
-function renderDetailPanel(panel, detail) {
+function renderDetailPanel(panel, detail, accounts = []) {
   const blueWon = detail.blueRoundsWon > detail.redRoundsWon;
   const redWon  = detail.redRoundsWon > detail.blueRoundsWon;
+
+  // Map puuid -> account so we can show player_id below name when set
+  const accountByPuuid = new Map();
+  for (const a of accounts) {
+    if (a.puuid) accountByPuuid.set(a.puuid, a);
+  }
 
   // Check if this match is eligible for upload (competitive or custom game)
   const canUpload = reckonUser && (detail.isCustomGame || detail.isRanked);
@@ -220,7 +294,7 @@ function renderDetailPanel(panel, detail) {
             <span class="col-a">A</span>
             <span class="col-score">Score</span>
           </div>
-          ${detail.teamBlue.map(p => playerRow(p)).join("")}
+          ${detail.teamBlue.map(p => playerRow(p, accountByPuuid)).join("")}
         </div>
       </div>
       <div class="scoreboard-divider"></div>
@@ -239,7 +313,7 @@ function renderDetailPanel(panel, detail) {
             <span class="col-a">A</span>
             <span class="col-score">Score</span>
           </div>
-          ${detail.teamRed.map(p => playerRow(p)).join("")}
+          ${detail.teamRed.map(p => playerRow(p, accountByPuuid)).join("")}
         </div>
       </div>
     </div>
@@ -456,8 +530,8 @@ async function handleLinkAndRetry(selectorMap, server, linkBtn, linkError, conta
     try {
       await invoke("reckon_link_account", {
         playerId: player.id,
-        accountName: account.accountName,
-        server: server || "",
+        puuid: account.puuid,
+        accountName: account.accountName || null,
       });
     } catch (err) {
       console.error(`Failed to link ${account.accountName}:`, err);
@@ -477,11 +551,15 @@ async function handleLinkAndRetry(selectorMap, server, linkBtn, linkError, conta
   handleUploadMatch(uploadContext);
 }
 
-function playerRow(p) {
+function playerRow(p, accountByPuuid = new Map()) {
   const highlight = p.isCurrentPlayer ? " player-self" : "";
+  const account = accountByPuuid.get(p.puuid);
+  const playerId = account?.playerId;
+  const playerIdText = (playerId != null && playerId !== "") ? escapeHtml(String(playerId)) : "";
+  const nameContent = `${escapeHtml(p.name)}<span class="player-id-label">${playerIdText}</span>`;
   return `
     <div class="player-row${highlight}">
-      <span class="col-name">${escapeHtml(p.name)}</span>
+      <span class="col-name">${nameContent}</span>
       <span class="col-agent">${escapeHtml(p.agent)}</span>
       <span class="col-k">${p.kills}</span>
       <span class="col-d">${p.deaths}</span>

@@ -77,6 +77,80 @@ Get-ChildItem -Path $apiDir -Filter "*.rs" | ForEach-Object {
     }
 }
 
+# ── 4b. additional_filters: use bracket notation (additional_filters[key]=value, arrays comma-separated) ─
+Write-Host "Patching additional_filters query serialization (bracket notation)..." -ForegroundColor Cyan
+$modPath = Join-Path $apiDir "mod.rs"
+$modContent = Get-Content $modPath -Raw
+$helperInsert = @'
+
+/// Serialize additional_filters as query params: additional_filters[key]=value (arrays as comma-separated).
+pub fn additional_filters_query_pairs(value: &serde_json::Value) -> Vec<(String, String)> {
+    let mut pairs = Vec::new();
+    if let serde_json::Value::Object(map) = value {
+        for (key, val) in map {
+            let param_name = format!("additional_filters[{}]", key);
+            let param_value = match val {
+                serde_json::Value::Array(arr) => arr.iter()
+                    .map(|v| match v {
+                        serde_json::Value::String(s) => s.clone(),
+                        _ => v.to_string(),
+                    })
+                    .collect::<Vec<_>>()
+                    .join(","),
+                serde_json::Value::String(s) => s.clone(),
+                _ => val.to_string(),
+            };
+            pairs.push((param_name, param_value));
+        }
+    }
+    pairs
+}
+
+'@
+# Insert helper after parse_deep_object (before "/// Internal use only")
+$modContent = $modContent -replace "(\}\r?\n\r?\n)(/// Internal use only)", "`$1$helperInsert`n`$2"
+Set-Content -Path $modPath -Value $modContent -NoNewline
+
+$oldQueryLine = '        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);'
+$newQueryBlock = @'
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
+'@
+Get-ChildItem -Path $apiDir -Filter "*.rs" | ForEach-Object {
+    $content = Get-Content $_.FullName -Raw
+    if ($content -match [regex]::Escape($oldQueryLine)) {
+        $content = $content.Replace($oldQueryLine, $newQueryBlock)
+        Set-Content -Path $_.FullName -Value $content -NoNewline
+        Write-Host "  Patched additional_filters in $($_.Name)" -ForegroundColor Gray
+    }
+}
+
+# ── 4c. upload_scrim_game: send multipart/form-data (team1, team2, agnostic_match_history file) ─
+Write-Host "Patching upload_scrim_game to use multipart/form-data..." -ForegroundColor Cyan
+$uploadJsonLine = '    req_builder = req_builder.json(&p_body_upload_scrim_game_request);'
+$uploadMultipartBlock = @'
+    let json_part = reqwest::multipart::Part::bytes(p_body_upload_scrim_game_request.agnostic_match_history.into_bytes())
+        .file_name("agnostic_match_history.json")
+        .mime_str("application/json")?;
+    let form = reqwest::multipart::Form::new()
+        .text("team1", p_body_upload_scrim_game_request.team1.clone())
+        .text("team2", p_body_upload_scrim_game_request.team2.clone())
+        .part("agnostic_match_history", json_part);
+    req_builder = req_builder.multipart(form);
+'@
+foreach ($apiFile in @("scrims_data_api.rs", "upload_api.rs")) {
+    $path = Join-Path $apiDir $apiFile
+    if (Test-Path $path) {
+        $content = Get-Content $path -Raw
+        if ($content -match [regex]::Escape($uploadJsonLine)) {
+            $content = $content.Replace($uploadJsonLine, $uploadMultipartBlock)
+            Set-Content -Path $path -Value $content -NoNewline
+            Write-Host "  Patched upload_scrim_game in $apiFile" -ForegroundColor Gray
+        }
+    }
+}
+
 # ── 5. Patch Configuration to support dev/prod base URLs ─────────────────────
 $configFile = Join-Path (Join-Path (Join-Path $outputDir "src") "apis") "configuration.rs"
 Write-Host "Patching Configuration with dev/prod base URLs..." -ForegroundColor Cyan

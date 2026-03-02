@@ -12,13 +12,13 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct SoloQAccounts {
-    #[serde(rename = "id")]
-    pub id: i32,
-    #[serde(rename = "puuid")]
-    pub puuid: String,
-    #[serde(rename = "account_name")]
-    pub account_name: String,
+pub struct PatchedSoloQAccounts {
+    #[serde(rename = "id", skip_serializing_if = "Option::is_none")]
+    pub id: Option<i32>,
+    #[serde(rename = "puuid", skip_serializing_if = "Option::is_none")]
+    pub puuid: Option<String>,
+    #[serde(rename = "account_name", skip_serializing_if = "Option::is_none")]
+    pub account_name: Option<String>,
     #[serde(rename = "rank_tier", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub rank_tier: Option<Option<i32>>,
     #[serde(rename = "player_id", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
@@ -27,12 +27,12 @@ pub struct SoloQAccounts {
     pub server: Option<Option<String>>,
 }
 
-impl SoloQAccounts {
-    pub fn new(id: i32, puuid: String, account_name: String) -> SoloQAccounts {
-        SoloQAccounts {
-            id,
-            puuid,
-            account_name,
+impl PatchedSoloQAccounts {
+    pub fn new() -> PatchedSoloQAccounts {
+        PatchedSoloQAccounts {
+            id: None,
+            puuid: None,
+            account_name: None,
             rank_tier: None,
             player_id: None,
             server: None,

@@ -6122,6 +6122,69 @@ paths:
               schema:
                 $ref: '#/components/schemas/SoloQAccounts'
           description: ''
+    post:
+      operationId: SoloQAccounts_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - SoloQAccounts
+      - create
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SoloQAccounts'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SoloQAccounts'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SoloQAccounts'
+        required: true
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SoloQAccounts'
+          description: ''
+    patch:
+      operationId: SoloQAccounts_patch
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - SoloQAccounts
+      - patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSoloQAccounts'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSoloQAccounts'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSoloQAccounts'
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SoloQAccounts'
+          description: ''
   /SoloQAccounts/list:
     get:
       operationId: SoloQAccounts_list
@@ -7233,21 +7296,16 @@ components:
     AddAccount:
       type: object
       properties:
+        puuid:
+          type: string
+          description: Account puuid
+          maxLength: 255
         account_name:
           type: string
-          description: Account name in {riot_id}-{tagline} form
-          maxLength: 255
-        server:
-          type: string
-          description: Server of the account
-          maxLength: 255
-        source:
-          type: string
-          description: Source of the information
+          description: Account name, in the form of riotId#riotTagline
           maxLength: 255
       required:
-      - account_name
-      - server
+      - puuid
     AuthToken:
       type: object
       properties:
@@ -10980,6 +11038,31 @@ components:
         last_team:
           type: string
           nullable: true
+    PatchedSoloQAccounts:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        puuid:
+          type: string
+          maxLength: 80
+        account_name:
+          type: string
+          maxLength: 50
+        rank_tier:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+          nullable: true
+        player_id:
+          type: string
+          nullable: true
+          maxLength: 50
+        server:
+          type: string
+          nullable: true
+          maxLength: 5
     PatchedTeam:
       type: object
       properties:
@@ -14233,19 +14316,19 @@ components:
           type: integer
           maximum: 2147483647
           minimum: -2147483648
+          nullable: true
         player_id:
           type: string
           nullable: true
           maxLength: 50
         server:
           type: string
+          nullable: true
           maxLength: 5
       required:
       - account_name
       - id
       - puuid
-      - rank_tier
-      - server
     SoloQAccountsAggregate:
       type: object
       properties:
@@ -14262,19 +14345,19 @@ components:
           type: integer
           maximum: 2147483647
           minimum: -2147483648
+          nullable: true
         player_id:
           type: string
           nullable: true
           maxLength: 50
         server:
           type: string
+          nullable: true
           maxLength: 5
       required:
       - account_name
       - id
       - puuid
-      - rank_tier
-      - server
     Team:
       type: object
       properties:

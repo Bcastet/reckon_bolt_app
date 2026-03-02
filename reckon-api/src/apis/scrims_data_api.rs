@@ -44,7 +44,14 @@ pub async fn upload_scrim_game(configuration: &configuration::Configuration, id:
         };
         req_builder = req_builder.header("Authorization", value);
     };
-    req_builder = req_builder.json(&p_body_upload_scrim_game_request);
+    let json_part = reqwest::multipart::Part::bytes(p_body_upload_scrim_game_request.agnostic_match_history.into_bytes())
+        .file_name("agnostic_match_history.json")
+        .mime_str("application/json")?;
+    let form = reqwest::multipart::Form::new()
+        .text("team1", p_body_upload_scrim_game_request.team1.clone())
+        .text("team2", p_body_upload_scrim_game_request.team2.clone())
+        .part("agnostic_match_history", json_part);
+    req_builder = req_builder.multipart(form);
 
     let req = req_builder.build()?;
     let resp = configuration.client.execute(req).await?;

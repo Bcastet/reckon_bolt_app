@@ -5,9 +5,11 @@ All URIs are relative to *http://localhost*
 Method | HTTP request | Description
 ------------- | ------------- | -------------
 [**solo_q_accounts_aggregate**](SoloQAccountsApi.md#solo_q_accounts_aggregate) | **GET** /SoloQAccounts/operations/aggregate | 
+[**solo_q_accounts_create**](SoloQAccountsApi.md#solo_q_accounts_create) | **POST** /SoloQAccounts/item/{id} | 
 [**solo_q_accounts_field_values**](SoloQAccountsApi.md#solo_q_accounts_field_values) | **GET** /SoloQAccounts/operations/field-values | 
 [**solo_q_accounts_get**](SoloQAccountsApi.md#solo_q_accounts_get) | **GET** /SoloQAccounts/item/{id} | 
 [**solo_q_accounts_list**](SoloQAccountsApi.md#solo_q_accounts_list) | **GET** /SoloQAccounts/list | 
+[**solo_q_accounts_patch**](SoloQAccountsApi.md#solo_q_accounts_patch) | **PATCH** /SoloQAccounts/item/{id} | 
 [**solo_q_accounts_variable_distribution**](SoloQAccountsApi.md#solo_q_accounts_variable_distribution) | **GET** /SoloQAccounts/operations/variable-distribution | 
 
 
@@ -42,6 +44,35 @@ Name | Type | Description  | Required | Notes
 ### HTTP request headers
 
 - **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## solo_q_accounts_create
+
+> models::SoloQAccounts solo_q_accounts_create(id, solo_q_accounts)
+
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**id** | **String** |  | [required] |
+**solo_q_accounts** | [**SoloQAccounts**](SoloQAccounts.md) |  | [required] |
+
+### Return type
+
+[**models::SoloQAccounts**](SoloQAccounts.md)
+
+### Authorization
+
+[tokenAuth](../README.md#tokenAuth)
+
+### HTTP request headers
+
+- **Content-Type**: application/json, application/x-www-form-urlencoded, multipart/form-data
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
@@ -133,6 +164,35 @@ Name | Type | Description  | Required | Notes
 ### HTTP request headers
 
 - **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## solo_q_accounts_patch
+
+> models::SoloQAccounts solo_q_accounts_patch(id, patched_solo_q_accounts)
+
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**id** | **String** |  | [required] |
+**patched_solo_q_accounts** | Option<[**PatchedSoloQAccounts**](PatchedSoloQAccounts.md)> |  |  |
+
+### Return type
+
+[**models::SoloQAccounts**](SoloQAccounts.md)
+
+### Authorization
+
+[tokenAuth](../README.md#tokenAuth)
+
+### HTTP request headers
+
+- **Content-Type**: application/json, application/x-www-form-urlencoded, multipart/form-data
 - **Accept**: application/json
 
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)

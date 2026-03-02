@@ -144,7 +144,9 @@ pub async fn player_aggregate(configuration: &configuration::Configuration, grou
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     if let Some(ref param_value) = p_query_aggregates {
         req_builder = match "multi" {
@@ -313,7 +315,9 @@ pub async fn player_field_values(configuration: &configuration::Configuration, f
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     if let Some(ref param_value) = p_query_birthdate {
         req_builder = req_builder.query(&[("birthdate", &param_value.to_string())]);
@@ -460,7 +464,9 @@ pub async fn player_list(configuration: &configuration::Configuration, additiona
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     if let Some(ref param_value) = p_query_annotations {
         req_builder = match "multi" {
@@ -623,7 +629,9 @@ pub async fn player_variable_distribution(configuration: &configuration::Configu
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     if let Some(ref param_value) = p_query_birthdate {
         req_builder = req_builder.query(&[("birthdate", &param_value.to_string())]);

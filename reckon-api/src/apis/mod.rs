@@ -90,6 +90,30 @@ pub fn parse_deep_object(prefix: &str, value: &serde_json::Value) -> Vec<(String
     unimplemented!("Only objects are supported with style=deepObject")
 }
 
+
+/// Serialize additional_filters as query params: additional_filters[key]=value (arrays as comma-separated).
+pub fn additional_filters_query_pairs(value: &serde_json::Value) -> Vec<(String, String)> {
+    let mut pairs = Vec::new();
+    if let serde_json::Value::Object(map) = value {
+        for (key, val) in map {
+            let param_name = format!("additional_filters[{}]", key);
+            let param_value = match val {
+                serde_json::Value::Array(arr) => arr.iter()
+                    .map(|v| match v {
+                        serde_json::Value::String(s) => s.clone(),
+                        _ => v.to_string(),
+                    })
+                    .collect::<Vec<_>>()
+                    .join(","),
+                serde_json::Value::String(s) => s.clone(),
+                _ => val.to_string(),
+            };
+            pairs.push((param_name, param_value));
+        }
+    }
+    pairs
+}
+
 /// Internal use only
 /// A content type supported by this client.
 #[allow(dead_code)]

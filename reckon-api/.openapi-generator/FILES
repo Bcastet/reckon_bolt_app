@@ -66,6 +66,7 @@ docs/NewUser.md
 docs/PatchApi.md
 docs/PatchedClientOrganization.md
 docs/PatchedPlayer.md
+docs/PatchedSoloQAccounts.md
 docs/PatchedTeam.md
 docs/PatchedUser.md
 docs/Player.md
@@ -183,6 +184,7 @@ src/models/mod.rs
 src/models/new_user.rs
 src/models/patched_client_organization.rs
 src/models/patched_player.rs
+src/models/patched_solo_q_accounts.rs
 src/models/patched_team.rs
 src/models/patched_user.rs
 src/models/player.rs

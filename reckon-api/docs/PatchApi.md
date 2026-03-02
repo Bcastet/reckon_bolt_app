@@ -7,6 +7,7 @@ Method | HTTP request | Description
 [**client_organization_patch**](PatchApi.md#client_organization_patch) | **PATCH** /ClientOrganization/item/{id} | 
 [**link_riot_account_create**](PatchApi.md#link_riot_account_create) | **POST** /LinkRiotAccount | 
 [**player_patch**](PatchApi.md#player_patch) | **PATCH** /Player/item/{id} | 
+[**solo_q_accounts_patch**](PatchApi.md#solo_q_accounts_patch) | **PATCH** /SoloQAccounts/item/{id} | 
 [**team_patch**](PatchApi.md#team_patch) | **PATCH** /Team/item/{id} | 
 [**user_patch**](PatchApi.md#user_patch) | **PATCH** /User/item/{id} | 
 
@@ -87,6 +88,35 @@ Name | Type | Description  | Required | Notes
 ### Return type
 
 [**models::Player**](Player.md)
+
+### Authorization
+
+[tokenAuth](../README.md#tokenAuth)
+
+### HTTP request headers
+
+- **Content-Type**: application/json, application/x-www-form-urlencoded, multipart/form-data
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## solo_q_accounts_patch
+
+> models::SoloQAccounts solo_q_accounts_patch(id, patched_solo_q_accounts)
+
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**id** | **String** |  | [required] |
+**patched_solo_q_accounts** | Option<[**PatchedSoloQAccounts**](PatchedSoloQAccounts.md)> |  |  |
+
+### Return type
+
+[**models::SoloQAccounts**](SoloQAccounts.md)
 
 ### Authorization
 

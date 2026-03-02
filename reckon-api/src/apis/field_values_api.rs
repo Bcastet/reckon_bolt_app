@@ -145,7 +145,9 @@ pub async fn client_organization_field_values(configuration: &configuration::Con
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     req_builder = req_builder.query(&[("field", &p_query_field.to_string())]);
     req_builder = match "multi" {
@@ -209,7 +211,9 @@ pub async fn competitive_draft_slots_field_values(configuration: &configuration:
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     if let Some(ref param_value) = p_query_draft_action_id {
         req_builder = req_builder.query(&[("draft_action_id", &param_value.to_string())]);
@@ -303,7 +307,9 @@ pub async fn competitive_game_summaries_field_values(configuration: &configurati
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     if let Some(ref param_value) = p_query_agent {
         req_builder = req_builder.query(&[("agent", &param_value.to_string())]);
@@ -400,7 +406,9 @@ pub async fn competitive_games_field_values(configuration: &configuration::Confi
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     req_builder = req_builder.query(&[("field", &p_query_field.to_string())]);
     if let Some(ref param_value) = p_query_game_id {
@@ -519,7 +527,9 @@ pub async fn competitive_round_summaries_field_values(configuration: &configurat
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     if let Some(ref param_value) = p_query_agent {
         req_builder = req_builder.query(&[("agent", &param_value.to_string())]);
@@ -678,7 +688,9 @@ pub async fn competitive_team_round_summaries_field_values(configuration: &confi
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     if let Some(ref param_value) = p_query_assists {
         req_builder = req_builder.query(&[("assists", &param_value.to_string())]);
@@ -814,7 +826,9 @@ pub async fn game_metrics_field_values(configuration: &configuration::Configurat
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     req_builder = req_builder.query(&[("field", &p_query_field.to_string())]);
     if let Some(ref param_value) = p_query_label {
@@ -873,7 +887,9 @@ pub async fn league_field_values(configuration: &configuration::Configuration, f
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     req_builder = req_builder.query(&[("field", &p_query_field.to_string())]);
     if let Some(ref param_value) = p_query_id {
@@ -935,7 +951,9 @@ pub async fn maps_field_values(configuration: &configuration::Configuration, fie
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     req_builder = req_builder.query(&[("field", &p_query_field.to_string())]);
     if let Some(ref param_value) = p_query_id {
@@ -1007,7 +1025,9 @@ pub async fn player_field_values(configuration: &configuration::Configuration, f
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     if let Some(ref param_value) = p_query_birthdate {
         req_builder = req_builder.query(&[("birthdate", &param_value.to_string())]);
@@ -1106,7 +1126,9 @@ pub async fn scrim_game_summaries_field_values(configuration: &configuration::Co
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     if let Some(ref param_value) = p_query_agent {
         req_builder = req_builder.query(&[("agent", &param_value.to_string())]);
@@ -1192,7 +1214,9 @@ pub async fn scrim_games_field_values(configuration: &configuration::Configurati
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     req_builder = req_builder.query(&[("field", &p_query_field.to_string())]);
     if let Some(ref param_value) = p_query_id {
@@ -1286,7 +1310,9 @@ pub async fn scrim_round_summaries_field_values(configuration: &configuration::C
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     if let Some(ref param_value) = p_query_agent {
         req_builder = req_builder.query(&[("agent", &param_value.to_string())]);
@@ -1441,7 +1467,9 @@ pub async fn scrim_team_round_summaries_field_values(configuration: &configurati
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     if let Some(ref param_value) = p_query_assists {
         req_builder = req_builder.query(&[("assists", &param_value.to_string())]);
@@ -1574,7 +1602,9 @@ pub async fn solo_q_accounts_field_values(configuration: &configuration::Configu
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     req_builder = req_builder.query(&[("field", &p_query_field.to_string())]);
     req_builder = match "multi" {
@@ -1641,7 +1671,9 @@ pub async fn team_field_values(configuration: &configuration::Configuration, fie
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     if let Some(ref param_value) = p_query_coaching_staff {
         req_builder = req_builder.query(&[("coaching_staff", &param_value.to_string())]);
@@ -1727,7 +1759,9 @@ pub async fn user_field_values(configuration: &configuration::Configuration, fie
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     req_builder = req_builder.query(&[("field", &p_query_field.to_string())]);
     req_builder = match "multi" {

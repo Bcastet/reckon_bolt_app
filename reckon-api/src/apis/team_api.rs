@@ -82,7 +82,9 @@ pub async fn team_aggregate(configuration: &configuration::Configuration, groupb
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     if let Some(ref param_value) = p_query_aggregates {
         req_builder = match "multi" {
@@ -197,7 +199,9 @@ pub async fn team_field_values(configuration: &configuration::Configuration, fie
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     if let Some(ref param_value) = p_query_coaching_staff {
         req_builder = req_builder.query(&[("coaching_staff", &param_value.to_string())]);
@@ -336,7 +340,9 @@ pub async fn team_list(configuration: &configuration::Configuration, additional_
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     if let Some(ref param_value) = p_query_annotations {
         req_builder = match "multi" {
@@ -491,7 +497,9 @@ pub async fn team_variable_distribution(configuration: &configuration::Configura
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     req_builder = req_builder.query(&[("bucket_size", &p_query_bucket_size.to_string())]);
     if let Some(ref param_value) = p_query_coaching_staff {

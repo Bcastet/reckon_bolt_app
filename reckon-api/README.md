@@ -77,6 +77,7 @@ Class | Method | HTTP request | Description
 *CompetitiveTeamRoundSummariesApi* | [**competitive_team_round_summaries_list**](docs/CompetitiveTeamRoundSummariesApi.md#competitive_team_round_summaries_list) | **GET** /CompetitiveTeamRoundSummaries/list | 
 *CompetitiveTeamRoundSummariesApi* | [**competitive_team_round_summaries_variable_distribution**](docs/CompetitiveTeamRoundSummariesApi.md#competitive_team_round_summaries_variable_distribution) | **GET** /CompetitiveTeamRoundSummaries/operations/variable-distribution | 
 *CreateApi* | [**player_create**](docs/CreateApi.md#player_create) | **POST** /Player/item/{id} | 
+*CreateApi* | [**solo_q_accounts_create**](docs/CreateApi.md#solo_q_accounts_create) | **POST** /SoloQAccounts/item/{id} | 
 *CreateApi* | [**user_create**](docs/CreateApi.md#user_create) | **POST** /User/item/{id} | 
 *DeleteApi* | [**user_delete**](docs/DeleteApi.md#user_delete) | **DELETE** /User/item/{id} | 
 *FieldValuesApi* | [**client_organization_field_values**](docs/FieldValuesApi.md#client_organization_field_values) | **GET** /ClientOrganization/operations/field-values | 
@@ -150,6 +151,7 @@ Class | Method | HTTP request | Description
 *PatchApi* | [**client_organization_patch**](docs/PatchApi.md#client_organization_patch) | **PATCH** /ClientOrganization/item/{id} | 
 *PatchApi* | [**link_riot_account_create**](docs/PatchApi.md#link_riot_account_create) | **POST** /LinkRiotAccount | 
 *PatchApi* | [**player_patch**](docs/PatchApi.md#player_patch) | **PATCH** /Player/item/{id} | 
+*PatchApi* | [**solo_q_accounts_patch**](docs/PatchApi.md#solo_q_accounts_patch) | **PATCH** /SoloQAccounts/item/{id} | 
 *PatchApi* | [**team_patch**](docs/PatchApi.md#team_patch) | **PATCH** /Team/item/{id} | 
 *PatchApi* | [**user_patch**](docs/PatchApi.md#user_patch) | **PATCH** /User/item/{id} | 
 *PlayerApi* | [**add_player_account**](docs/PlayerApi.md#add_player_account) | **POST** /Player/item/{id}/add_account | 
@@ -185,9 +187,11 @@ Class | Method | HTTP request | Description
 *ScrimTeamRoundSummariesApi* | [**scrim_team_round_summaries_variable_distribution**](docs/ScrimTeamRoundSummariesApi.md#scrim_team_round_summaries_variable_distribution) | **GET** /ScrimTeamRoundSummaries/operations/variable-distribution | 
 *ScrimsDataApi* | [**upload_scrim_game**](docs/ScrimsDataApi.md#upload_scrim_game) | **POST** /ScrimsData/item/{id}/upload | Manually upload a scrim game
 *SoloQAccountsApi* | [**solo_q_accounts_aggregate**](docs/SoloQAccountsApi.md#solo_q_accounts_aggregate) | **GET** /SoloQAccounts/operations/aggregate | 
+*SoloQAccountsApi* | [**solo_q_accounts_create**](docs/SoloQAccountsApi.md#solo_q_accounts_create) | **POST** /SoloQAccounts/item/{id} | 
 *SoloQAccountsApi* | [**solo_q_accounts_field_values**](docs/SoloQAccountsApi.md#solo_q_accounts_field_values) | **GET** /SoloQAccounts/operations/field-values | 
 *SoloQAccountsApi* | [**solo_q_accounts_get**](docs/SoloQAccountsApi.md#solo_q_accounts_get) | **GET** /SoloQAccounts/item/{id} | 
 *SoloQAccountsApi* | [**solo_q_accounts_list**](docs/SoloQAccountsApi.md#solo_q_accounts_list) | **GET** /SoloQAccounts/list | 
+*SoloQAccountsApi* | [**solo_q_accounts_patch**](docs/SoloQAccountsApi.md#solo_q_accounts_patch) | **PATCH** /SoloQAccounts/item/{id} | 
 *SoloQAccountsApi* | [**solo_q_accounts_variable_distribution**](docs/SoloQAccountsApi.md#solo_q_accounts_variable_distribution) | **GET** /SoloQAccounts/operations/variable-distribution | 
 *TeamApi* | [**team_aggregate**](docs/TeamApi.md#team_aggregate) | **GET** /Team/operations/aggregate | 
 *TeamApi* | [**team_field_values**](docs/TeamApi.md#team_field_values) | **GET** /Team/operations/field-values | 
@@ -269,6 +273,7 @@ Class | Method | HTTP request | Description
  - [NewUser](docs/NewUser.md)
  - [PatchedClientOrganization](docs/PatchedClientOrganization.md)
  - [PatchedPlayer](docs/PatchedPlayer.md)
+ - [PatchedSoloQAccounts](docs/PatchedSoloQAccounts.md)
  - [PatchedTeam](docs/PatchedTeam.md)
  - [PatchedUser](docs/PatchedUser.md)
  - [Player](docs/Player.md)

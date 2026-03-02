@@ -170,6 +170,8 @@ pub struct MatchDetailView {
     pub queue_display_name: String,
     pub is_custom_game: bool,
     pub is_ranked: bool,
+    /// Shard/server for the match (e.g. "na", "eu"), used when creating SoloQ accounts.
+    pub server: String,
     pub team_blue: Vec<PlayerSummary>,
     pub team_red: Vec<PlayerSummary>,
     pub blue_rounds_won: u32,
@@ -179,6 +181,7 @@ pub struct MatchDetailView {
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PlayerSummary {
+    pub puuid: String,
     pub name: String,
     pub agent: String,
     pub kills: u32,

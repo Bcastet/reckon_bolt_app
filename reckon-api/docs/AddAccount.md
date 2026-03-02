@@ -4,9 +4,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**account_name** | **String** | Account name in {riot_id}-{tagline} form | 
-**server** | **String** | Server of the account | 
-**source** | Option<**String**> | Source of the information | [optional]
+**puuid** | **String** | Account puuid | 
+**account_name** | Option<**String**> | Account name, in the form of riotId#riotTagline | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

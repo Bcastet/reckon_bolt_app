@@ -148,6 +148,44 @@ pub async fn fetch_match_details(
         .map_err(|e| format!("Failed to parse match details: {}", e))
 }
 
+/// Fetch the full match-details response as raw JSON (same endpoint as `fetch_match_details`).
+/// Use this for uploads so the full payload (roundResults, kills, etc.) is preserved instead of
+/// the subset we deserialize into `MatchDetailsResponse`.
+pub async fn fetch_match_details_raw(
+    client: &Client,
+    shard: &str,
+    match_id: &str,
+    auth_token: &str,
+    entitlement_token: &str,
+    client_version: &str,
+) -> Result<String, String> {
+    let url = format!(
+        "https://pd.{}.a.pvp.net/match-details/v1/matches/{}",
+        shard, match_id
+    );
+
+    let resp = client
+        .get(&url)
+        .header("Authorization", format!("Bearer {}", auth_token))
+        .header("X-Riot-Entitlements-JWT", entitlement_token)
+        .header("X-Riot-ClientVersion", client_version)
+        .header("X-Riot-ClientPlatform", CLIENT_PLATFORM)
+        .send()
+        .await
+        .map_err(|e| format!("Failed to fetch match details: {}", e))?;
+
+    if !resp.status().is_success() {
+        return Err(format!(
+            "Match details request failed with status {}",
+            resp.status()
+        ));
+    }
+
+    resp.text()
+        .await
+        .map_err(|e| format!("Failed to read match details: {}", e))
+}
+
 // ─── Static data (maps & agents from valorant-api.com) ───
 
 pub async fn fetch_maps(client: &Client) -> Result<HashMap<String, String>, String> {
@@ -272,6 +310,7 @@ pub fn build_match_summary(
 pub fn build_match_detail_view(
     details: &MatchDetailsResponse,
     puuid: &str,
+    shard: &str,
     maps: &HashMap<String, String>,
     agents: &HashMap<String, String>,
 ) -> MatchDetailView {
@@ -295,6 +334,7 @@ pub fn build_match_detail_view(
             .unwrap_or_else(|| "Unknown".to_string());
 
         let summary = PlayerSummary {
+            puuid: p.subject.clone(),
             name: format!("{}#{}", p.game_name, p.tag_line),
             agent: agent_name,
             kills: stats.map_or(0, |s| s.kills),
@@ -334,6 +374,7 @@ pub fn build_match_detail_view(
         queue_display_name: queue_display_name(&info.queue_id, is_custom),
         is_custom_game: is_custom,
         is_ranked: info.is_ranked,
+        server: shard.to_string(),
         team_blue,
         team_red,
         blue_rounds_won: blue_rounds,

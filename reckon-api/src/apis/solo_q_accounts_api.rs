@@ -22,6 +22,13 @@ pub enum SoloQAccountsAggregateError {
     UnknownValue(serde_json::Value),
 }
 
+/// struct for typed errors of method [`solo_q_accounts_create`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SoloQAccountsCreateError {
+    UnknownValue(serde_json::Value),
+}
+
 /// struct for typed errors of method [`solo_q_accounts_field_values`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -40,6 +47,13 @@ pub enum SoloQAccountsGetError {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum SoloQAccountsListError {
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`solo_q_accounts_patch`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SoloQAccountsPatchError {
     UnknownValue(serde_json::Value),
 }
 
@@ -66,7 +80,9 @@ pub async fn solo_q_accounts_aggregate(configuration: &configuration::Configurat
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     if let Some(ref param_value) = p_query_aggregates {
         req_builder = match "multi" {
@@ -134,6 +150,52 @@ pub async fn solo_q_accounts_aggregate(configuration: &configuration::Configurat
     }
 }
 
+pub async fn solo_q_accounts_create(configuration: &configuration::Configuration, id: &str, solo_q_accounts: models::SoloQAccounts) -> Result<models::SoloQAccounts, Error<SoloQAccountsCreateError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_path_id = id;
+    let p_body_solo_q_accounts = solo_q_accounts;
+
+    let uri_str = format!("{}/SoloQAccounts/item/{id}", configuration.base_path, id=crate::apis::urlencode(p_path_id));
+    let mut req_builder = configuration.client.request(reqwest::Method::POST, &uri_str);
+
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+    req_builder = req_builder.json(&p_body_solo_q_accounts);
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::SoloQAccounts`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::SoloQAccounts`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<SoloQAccountsCreateError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
 pub async fn solo_q_accounts_field_values(configuration: &configuration::Configuration, field: &str, ordering: Vec<String>, additional_filters: Option<serde_json::Value>, puuid: Option<&str>) -> Result<Vec<String>, Error<SoloQAccountsFieldValuesError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_field = field;
@@ -145,7 +207,9 @@ pub async fn solo_q_accounts_field_values(configuration: &configuration::Configu
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     req_builder = req_builder.query(&[("field", &p_query_field.to_string())]);
     req_builder = match "multi" {
@@ -248,7 +312,9 @@ pub async fn solo_q_accounts_list(configuration: &configuration::Configuration, 
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     if let Some(ref param_value) = p_query_annotations {
         req_builder = match "multi" {
@@ -308,6 +374,52 @@ pub async fn solo_q_accounts_list(configuration: &configuration::Configuration, 
     }
 }
 
+pub async fn solo_q_accounts_patch(configuration: &configuration::Configuration, id: &str, patched_solo_q_accounts: Option<models::PatchedSoloQAccounts>) -> Result<models::SoloQAccounts, Error<SoloQAccountsPatchError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_path_id = id;
+    let p_body_patched_solo_q_accounts = patched_solo_q_accounts;
+
+    let uri_str = format!("{}/SoloQAccounts/item/{id}", configuration.base_path, id=crate::apis::urlencode(p_path_id));
+    let mut req_builder = configuration.client.request(reqwest::Method::PATCH, &uri_str);
+
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+    req_builder = req_builder.json(&p_body_patched_solo_q_accounts);
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::SoloQAccounts`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::SoloQAccounts`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<SoloQAccountsPatchError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
 pub async fn solo_q_accounts_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, puuid: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<SoloQAccountsVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
@@ -321,7 +433,9 @@ pub async fn solo_q_accounts_variable_distribution(configuration: &configuration
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
 
     if let Some(ref param_value) = p_query_additional_filters {
-        req_builder = req_builder.query(&[("additional_filters", &serde_json::to_string(param_value)?)]);
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
     }
     req_builder = req_builder.query(&[("bucket_size", &p_query_bucket_size.to_string())]);
     req_builder = req_builder.query(&[("max", &p_query_max.to_string())]);

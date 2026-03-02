@@ -86,6 +86,8 @@ pub mod patched_client_organization;
 pub use self::patched_client_organization::PatchedClientOrganization;
 pub mod patched_player;
 pub use self::patched_player::PatchedPlayer;
+pub mod patched_solo_q_accounts;
+pub use self::patched_solo_q_accounts::PatchedSoloQAccounts;
 pub mod patched_team;
 pub use self::patched_team::PatchedTeam;
 pub mod patched_user;

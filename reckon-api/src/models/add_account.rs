@@ -13,23 +13,19 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AddAccount {
-    /// Account name in {riot_id}-{tagline} form
-    #[serde(rename = "account_name")]
-    pub account_name: String,
-    /// Server of the account
-    #[serde(rename = "server")]
-    pub server: String,
-    /// Source of the information
-    #[serde(rename = "source", skip_serializing_if = "Option::is_none")]
-    pub source: Option<String>,
+    /// Account puuid
+    #[serde(rename = "puuid")]
+    pub puuid: String,
+    /// Account name, in the form of riotId#riotTagline
+    #[serde(rename = "account_name", skip_serializing_if = "Option::is_none")]
+    pub account_name: Option<String>,
 }
 
 impl AddAccount {
-    pub fn new(account_name: String, server: String) -> AddAccount {
+    pub fn new(puuid: String) -> AddAccount {
         AddAccount {
-            account_name,
-            server,
-            source: None,
+            puuid,
+            account_name: None,
         }
     }
 }
