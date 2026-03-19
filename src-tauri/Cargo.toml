@@ -1,6 +1,6 @@
 [package]
 name = "reckon-bolt-app"
-version = "1.0.1"
+version = "1.0.2"
 description = "Valorant scrims retrieval desktop app"
 authors = ["you"]
 edition = "2021"

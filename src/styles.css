@@ -99,6 +99,48 @@ body {
   cursor: not-allowed;
 }
 
+/* ─── Update button ─── */
+.btn-update {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(76, 175, 80, 0.15);
+  border: 1px solid rgba(76, 175, 80, 0.5);
+  color: #4caf50;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  letter-spacing: 0.03em;
+  animation: update-pulse 2s ease-in-out infinite;
+}
+
+.btn-update:hover {
+  background: rgba(76, 175, 80, 0.25);
+  border-color: rgba(76, 175, 80, 0.7);
+  transform: scale(1.03);
+  animation: none;
+}
+
+.btn-update:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  animation: none;
+  transform: none;
+}
+
+.btn-update .update-arrow {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+@keyframes update-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.3); }
+  50%      { box-shadow: 0 0 8px 2px rgba(76, 175, 80, 0.2); }
+}
+
 /* ─── Connect button ─── */
 .btn-connect {
   display: flex;

@@ -462,6 +462,107 @@ async fn reckon_get_soloq_accounts(
     Ok(json)
 }
 
+// ─── App update commands ────────────────────────────────────────────────────
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+struct UpdateInfo {
+    update_available: bool,
+    latest_version: String,
+    current_version: String,
+    installer: Option<String>,
+    date: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct ReleasesResponse {
+    latest: String,
+    versions: Vec<ReleaseVersion>,
+}
+
+#[derive(Deserialize)]
+struct ReleaseVersion {
+    version: String,
+    date: String,
+    installer: String,
+}
+
+fn parse_semver(v: &str) -> Option<(u32, u32, u32)> {
+    let parts: Vec<&str> = v.split('.').collect();
+    if parts.len() != 3 { return None; }
+    Some((
+        parts[0].parse().ok()?,
+        parts[1].parse().ok()?,
+        parts[2].parse().ok()?,
+    ))
+}
+
+#[tauri::command]
+async fn check_for_update(app: tauri::AppHandle) -> Result<UpdateInfo, String> {
+    let current_version = app.config().version.clone().unwrap_or_default();
+
+    let client = reqwest::Client::new();
+    let resp = client
+        .get(format!("{}/App/releases", BASE_URL_PROD))
+        .send()
+        .await
+        .map_err(|e| format!("Failed to check for updates: {}", e))?;
+
+    if !resp.status().is_success() {
+        return Err(format!("Failed to check for updates ({})", resp.status()));
+    }
+
+    let releases: ReleasesResponse = resp
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse releases: {}", e))?;
+
+    let update_available = match (parse_semver(&releases.latest), parse_semver(&current_version)) {
+        (Some(latest), Some(current)) => latest > current,
+        _ => releases.latest != current_version,
+    };
+
+    let latest_info = releases.versions.iter()
+        .find(|v| v.version == releases.latest);
+
+    Ok(UpdateInfo {
+        update_available,
+        latest_version: releases.latest,
+        current_version,
+        installer: latest_info.map(|v| v.installer.clone()),
+        date: latest_info.map(|v| v.date.clone()),
+    })
+}
+
+#[tauri::command]
+async fn download_and_install_update(version: String) -> Result<String, String> {
+    let client = reqwest::Client::new();
+    let resp = client
+        .get(format!("{}/App/download/{}", BASE_URL_PROD, version))
+        .send()
+        .await
+        .map_err(|e| format!("Failed to download update: {}", e))?;
+
+    if !resp.status().is_success() {
+        return Err(format!("Download failed ({})", resp.status()));
+    }
+
+    let bytes = resp.bytes().await
+        .map_err(|e| format!("Failed to read download: {}", e))?;
+
+    let temp_dir = std::env::temp_dir();
+    let installer_path = temp_dir.join(format!("Reckon_Bolt_{}_setup.exe", version));
+
+    std::fs::write(&installer_path, &bytes)
+        .map_err(|e| format!("Failed to save installer: {}", e))?;
+
+    std::process::Command::new(&installer_path)
+        .spawn()
+        .map_err(|e| format!("Failed to launch installer: {}", e))?;
+
+    Ok(installer_path.to_string_lossy().into_owned())
+}
+
 // ─── Valorant commands ──────────────────────────────────────────────────────
 
 /// Quick check: can we read the lockfile? (= is Valorant running?)
@@ -823,6 +924,8 @@ pub fn run() {
             }
         })
         .invoke_handler(tauri::generate_handler![
+            check_for_update,
+            download_and_install_update,
             check_valorant_running,
             get_match_history,
             get_match_detail,

@@ -11,6 +11,12 @@
     <header class="header">
       <h1 class="header-title">Reckon Bolt</h1>
       <div class="header-right">
+        <button id="update-btn" class="btn-update hidden" title="Update available">
+          <span class="update-arrow">&#x2B06;</span>
+          <span id="update-btn-text">Update</span>
+          <div id="update-spinner" class="spinner-small hidden"></div>
+        </button>
+
         <!-- Reckon API connection -->
         <button id="reckon-connect-btn" class="btn-connect" title="Connect to Reckon Bolt">
           <span class="connect-dot disconnected"></span>

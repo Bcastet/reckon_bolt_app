@@ -24,6 +24,11 @@ const loginSubmitBtn    = document.getElementById("login-submit-btn");
 const loginSubmitText   = document.getElementById("login-submit-text");
 const loginSpinner      = document.getElementById("login-spinner");
 
+// Update button DOM refs
+const updateBtn      = document.getElementById("update-btn");
+const updateBtnText  = document.getElementById("update-btn-text");
+const updateSpinner  = document.getElementById("update-spinner");
+
 // Track which match detail panel is currently open
 let openDetailId = null;
 
@@ -2483,6 +2488,48 @@ function initInjectionListeners() {
   });
 }
 
+// ─── App Update ───
+
+let pendingUpdate = null;
+
+async function checkForUpdate() {
+  try {
+    const info = await invoke("check_for_update");
+    if (info.updateAvailable) {
+      pendingUpdate = info;
+      updateBtnText.textContent = `Update v${info.latestVersion}`;
+      updateBtn.title = `Update available: v${info.currentVersion} → v${info.latestVersion}`;
+      updateBtn.classList.remove("hidden");
+    }
+  } catch (err) {
+    console.warn("Update check failed:", err);
+  }
+}
+
+async function handleDownloadUpdate() {
+  if (!pendingUpdate) return;
+
+  updateBtn.disabled = true;
+  updateBtnText.classList.add("hidden");
+  updateSpinner.classList.remove("hidden");
+
+  try {
+    await invoke("download_and_install_update", { version: pendingUpdate.latestVersion });
+    updateBtnText.textContent = "Installing...";
+    updateBtnText.classList.remove("hidden");
+    updateSpinner.classList.add("hidden");
+  } catch (err) {
+    console.error("Update download failed:", err);
+    showToast(typeof err === "string" ? err : "Failed to download update", { title: "Update Error" });
+    updateBtnText.textContent = `Update v${pendingUpdate.latestVersion}`;
+    updateBtnText.classList.remove("hidden");
+    updateSpinner.classList.add("hidden");
+    updateBtn.disabled = false;
+  }
+}
+
+updateBtn.addEventListener("click", handleDownloadUpdate);
+
 // ─── Init ───
 refreshBtn.addEventListener("click", loadMatches);
 reckonConnectBtn.addEventListener("click", onConnectBtnClick);
@@ -2491,6 +2538,7 @@ loginForm.addEventListener("submit", handleLogin);
 
 checkReckonStatus();
 fetchReckonData();
+checkForUpdate();
 loadMatches();
 initLiveListeners();
 loadSavedMatches();
