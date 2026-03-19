@@ -614,7 +614,7 @@ Name | Type | Description  | Required | Notes
 
 ## solo_q_accounts_field_values
 
-> Vec<String> solo_q_accounts_field_values(field, ordering, additional_filters, puuid)
+> Vec<String> solo_q_accounts_field_values(field, ordering, additional_filters, player, puuid)
 
 
 ### Parameters
@@ -625,6 +625,7 @@ Name | Type | Description  | Required | Notes
 **field** | **String** | Field to retrieve the unique values from | [required] |
 **ordering** | [**Vec<String>**](String.md) | Order by | [required] |
 **additional_filters** | Option<[**serde_json::Value**](SerdeJson__Value.md)> | Other filters using lookups |  |
+**player** | Option<**String**> |  |  |
 **puuid** | Option<**String**> |  |  |
 
 ### Return type

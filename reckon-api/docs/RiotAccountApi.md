@@ -13,7 +13,7 @@ Method | HTTP request | Description
 > models::LinkRiotAccountResponse link_riot_account_create(link_riot_account_request)
 
 
-Link the authenticated user's account to their Riot Games identity.  The frontend is responsible for performing the full RSO OAuth2 authorization flow and obtaining the tokens.  It then sends the token payload here so the backend can:  1. Validate the access token against the Riot Account API. 2. Retrieve the player's PUUID, game name and tagline. 3. Persist everything on the ``AuthUser`` model for later use (e.g. fetching    match history, including private games).
+Link the authenticated user's account to their Riot Games identity.  The frontend redirects the user to Riot's authorization page. After the user authorizes, the frontend receives an authorization code and sends it here. The backend then:  1. Exchanges the authorization code for access / refresh tokens via the    Riot RSO token endpoint. 2. Uses the access token to retrieve the player's PUUID, game name and    tagline from the Riot Account API. 3. Persists everything on the ``AuthUser`` model for later use (e.g. fetching    match history, including private games).
 
 ### Parameters
 

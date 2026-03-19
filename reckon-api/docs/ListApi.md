@@ -628,7 +628,7 @@ Name | Type | Description  | Required | Notes
 
 ## solo_q_accounts_list
 
-> Vec<models::SoloQAccounts> solo_q_accounts_list(additional_filters, annotations, only_values, ordering, puuid)
+> Vec<models::SoloQAccounts> solo_q_accounts_list(additional_filters, annotations, only_values, ordering, player, puuid)
 
 
 ### Parameters
@@ -640,6 +640,7 @@ Name | Type | Description  | Required | Notes
 **annotations** | Option<[**Vec<String>**](String.md)> | Additional fiedls (joins,...) |  |
 **only_values** | Option<[**Vec<String>**](String.md)> | Only get the specified fields |  |
 **ordering** | Option<[**Vec<String>**](String.md)> | Order by |  |
+**player** | Option<**String**> |  |  |
 **puuid** | Option<**String**> |  |  |
 
 ### Return type

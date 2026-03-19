@@ -61,7 +61,7 @@ pub async fn get_session_info(
     Ok((region, shard, client_version))
 }
 
-fn region_to_shard(region: &str) -> String {
+pub fn region_to_shard(region: &str) -> String {
     match region {
         "na" | "br" | "latam" => "na".to_string(),
         "pbe" => "pbe".to_string(),
@@ -70,6 +70,28 @@ fn region_to_shard(region: &str) -> String {
         "kr" => "kr".to_string(),
         other => other.to_string(),
     }
+}
+
+pub fn glz_base_url(region: &str, shard: &str) -> String {
+    format!("https://glz-{}-1.{}.a.pvp.net", region, shard)
+}
+
+pub fn build_riot_headers(
+    auth_token: &str,
+    entitlement_token: &str,
+    client_version: &str,
+) -> Vec<(&'static str, String)> {
+    vec![
+        ("Authorization", format!("Bearer {}", auth_token)),
+        ("X-Riot-Entitlements-JWT", entitlement_token.to_string()),
+        ("X-Riot-ClientVersion", client_version.to_string()),
+        ("X-Riot-ClientPlatform", CLIENT_PLATFORM.to_string()),
+    ]
+}
+
+pub fn local_auth_header(lockfile: &LockfileData) -> String {
+    let credentials = STANDARD.encode(format!("riot:{}", lockfile.password));
+    format!("Basic {}", credentials)
 }
 
 // ─── Match History ───

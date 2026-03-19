@@ -137,6 +137,7 @@ impl From<&str> for ContentType {
 
 pub mod add_account_api;
 pub mod aggregate_api;
+pub mod app_api;
 pub mod change_password_api;
 pub mod client_organization_api;
 pub mod competitive_draft_slots_api;
@@ -146,6 +147,7 @@ pub mod competitive_round_summaries_api;
 pub mod competitive_team_round_summaries_api;
 pub mod create_api;
 pub mod delete_api;
+pub mod download_api;
 pub mod field_values_api;
 pub mod game_metrics_api;
 pub mod get_api;
@@ -156,6 +158,7 @@ pub mod maps_api;
 pub mod patch_api;
 pub mod player_api;
 pub mod post_api;
+pub mod releases_api;
 pub mod riot_account_api;
 pub mod schema_api;
 pub mod scrim_game_summaries_api;

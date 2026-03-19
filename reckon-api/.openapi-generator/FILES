@@ -6,6 +6,7 @@ README.md
 docs/AddAccount.md
 docs/AddAccountApi.md
 docs/AggregateApi.md
+docs/AppApi.md
 docs/AuthToken.md
 docs/ChangePassword.md
 docs/ChangePasswordApi.md
@@ -46,6 +47,7 @@ docs/CompetitiveTeamRoundSummariesAggregate.md
 docs/CompetitiveTeamRoundSummariesApi.md
 docs/CreateApi.md
 docs/DeleteApi.md
+docs/DownloadApi.md
 docs/FieldValuesApi.md
 docs/GameMetrics.md
 docs/GameMetricsAggregate.md
@@ -73,6 +75,7 @@ docs/Player.md
 docs/PlayerAggregate.md
 docs/PlayerApi.md
 docs/PostApi.md
+docs/ReleasesApi.md
 docs/RiotAccountApi.md
 docs/SchemaApi.md
 docs/ScrimGameSummaries.md
@@ -105,6 +108,7 @@ docs/VariableDistributionApi.md
 git_push.sh
 src/apis/add_account_api.rs
 src/apis/aggregate_api.rs
+src/apis/app_api.rs
 src/apis/change_password_api.rs
 src/apis/client_organization_api.rs
 src/apis/competitive_draft_slots_api.rs
@@ -115,6 +119,7 @@ src/apis/competitive_team_round_summaries_api.rs
 src/apis/configuration.rs
 src/apis/create_api.rs
 src/apis/delete_api.rs
+src/apis/download_api.rs
 src/apis/field_values_api.rs
 src/apis/game_metrics_api.rs
 src/apis/get_api.rs
@@ -126,6 +131,7 @@ src/apis/mod.rs
 src/apis/patch_api.rs
 src/apis/player_api.rs
 src/apis/post_api.rs
+src/apis/releases_api.rs
 src/apis/riot_account_api.rs
 src/apis/schema_api.rs
 src/apis/scrim_game_summaries_api.rs

@@ -1605,13 +1605,14 @@ pub async fn scrim_team_round_summaries_variable_distribution(configuration: &co
     }
 }
 
-pub async fn solo_q_accounts_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, puuid: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<SoloQAccountsVariableDistributionError>> {
+pub async fn solo_q_accounts_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, player: Option<&str>, puuid: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<SoloQAccountsVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
     let p_query_metric = metric;
     let p_query_min = min;
     let p_query_additional_filters = additional_filters;
+    let p_query_player = player;
     let p_query_puuid = puuid;
 
     let uri_str = format!("{}/SoloQAccounts/operations/variable-distribution", configuration.base_path);
@@ -1626,6 +1627,9 @@ pub async fn solo_q_accounts_variable_distribution(configuration: &configuration
     req_builder = req_builder.query(&[("max", &p_query_max.to_string())]);
     req_builder = req_builder.query(&[("metric", &p_query_metric.to_string())]);
     req_builder = req_builder.query(&[("min", &p_query_min.to_string())]);
+    if let Some(ref param_value) = p_query_player {
+        req_builder = req_builder.query(&[("player", &param_value.to_string())]);
+    }
     if let Some(ref param_value) = p_query_puuid {
         req_builder = req_builder.query(&[("puuid", &param_value.to_string())]);
     }

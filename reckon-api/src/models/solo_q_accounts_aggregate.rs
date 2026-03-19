@@ -21,10 +21,10 @@ pub struct SoloQAccountsAggregate {
     pub account_name: String,
     #[serde(rename = "rank_tier", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub rank_tier: Option<Option<i32>>,
-    #[serde(rename = "player_id", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
-    pub player_id: Option<Option<String>>,
     #[serde(rename = "server", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub server: Option<Option<String>>,
+    #[serde(rename = "player", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
+    pub player: Option<Option<String>>,
 }
 
 impl SoloQAccountsAggregate {
@@ -34,8 +34,8 @@ impl SoloQAccountsAggregate {
             puuid,
             account_name,
             rank_tier: None,
-            player_id: None,
             server: None,
+            player: None,
         }
     }
 }

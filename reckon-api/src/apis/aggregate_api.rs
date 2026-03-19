@@ -1941,7 +1941,7 @@ pub async fn scrim_team_round_summaries_aggregate(configuration: &configuration:
     }
 }
 
-pub async fn solo_q_accounts_aggregate(configuration: &configuration::Configuration, groupby: Vec<String>, ordering: Vec<String>, additional_filters: Option<serde_json::Value>, aggregates: Option<Vec<String>>, having: Option<serde_json::Value>, index_on: Option<&str>, metrics: Option<Vec<String>>, puuid: Option<&str>) -> Result<Vec<models::SoloQAccountsAggregate>, Error<SoloQAccountsAggregateError>> {
+pub async fn solo_q_accounts_aggregate(configuration: &configuration::Configuration, groupby: Vec<String>, ordering: Vec<String>, additional_filters: Option<serde_json::Value>, aggregates: Option<Vec<String>>, having: Option<serde_json::Value>, index_on: Option<&str>, metrics: Option<Vec<String>>, player: Option<&str>, puuid: Option<&str>) -> Result<Vec<models::SoloQAccountsAggregate>, Error<SoloQAccountsAggregateError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_groupby = groupby;
     let p_query_ordering = ordering;
@@ -1950,6 +1950,7 @@ pub async fn solo_q_accounts_aggregate(configuration: &configuration::Configurat
     let p_query_having = having;
     let p_query_index_on = index_on;
     let p_query_metrics = metrics;
+    let p_query_player = player;
     let p_query_puuid = puuid;
 
     let uri_str = format!("{}/SoloQAccounts/operations/aggregate", configuration.base_path);
@@ -1986,6 +1987,9 @@ pub async fn solo_q_accounts_aggregate(configuration: &configuration::Configurat
         "multi" => req_builder.query(&p_query_ordering.into_iter().map(|p| ("ordering".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
         _ => req_builder.query(&[("ordering", &p_query_ordering.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
     };
+    if let Some(ref param_value) = p_query_player {
+        req_builder = req_builder.query(&[("player", &param_value.to_string())]);
+    }
     if let Some(ref param_value) = p_query_puuid {
         req_builder = req_builder.query(&[("puuid", &param_value.to_string())]);
     }

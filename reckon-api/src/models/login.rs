@@ -37,10 +37,14 @@ pub struct Login {
     pub date_joined: String,
     #[serde(rename = "draft_model_displayed")]
     pub draft_model_displayed: String,
+    #[serde(rename = "riot_gamename", deserialize_with = "Option::deserialize")]
+    pub riot_gamename: Option<String>,
+    #[serde(rename = "riot_tagline", deserialize_with = "Option::deserialize")]
+    pub riot_tagline: Option<String>,
 }
 
 impl Login {
-    pub fn new(username: String, password: String, token: String, user_id: i32, email: String, team: String, organization: String, is_staff: bool, is_org_owner: bool, is_active: bool, date_joined: String, draft_model_displayed: String) -> Login {
+    pub fn new(username: String, password: String, token: String, user_id: i32, email: String, team: String, organization: String, is_staff: bool, is_org_owner: bool, is_active: bool, date_joined: String, draft_model_displayed: String, riot_gamename: Option<String>, riot_tagline: Option<String>) -> Login {
         Login {
             username,
             password,
@@ -54,6 +58,8 @@ impl Login {
             is_active,
             date_joined,
             draft_model_displayed,
+            riot_gamename,
+            riot_tagline,
         }
     }
 }

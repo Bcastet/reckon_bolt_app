@@ -642,7 +642,7 @@ Name | Type | Description  | Required | Notes
 
 ## solo_q_accounts_variable_distribution
 
-> Vec<models::ClientOrganizationVariableDistribution200ResponseInner> solo_q_accounts_variable_distribution(bucket_size, max, metric, min, additional_filters, puuid)
+> Vec<models::ClientOrganizationVariableDistribution200ResponseInner> solo_q_accounts_variable_distribution(bucket_size, max, metric, min, additional_filters, player, puuid)
 
 
 ### Parameters
@@ -655,6 +655,7 @@ Name | Type | Description  | Required | Notes
 **metric** | **String** | Metric to get distribution from | [required] |
 **min** | **i32** | Min threshold | [required] |
 **additional_filters** | Option<[**serde_json::Value**](SerdeJson__Value.md)> | Other filters using lookups |  |
+**player** | Option<**String**> |  |  |
 **puuid** | Option<**String**> |  |  |
 
 ### Return type

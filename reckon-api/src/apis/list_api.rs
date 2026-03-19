@@ -1787,12 +1787,13 @@ pub async fn scrim_team_round_summaries_list(configuration: &configuration::Conf
     }
 }
 
-pub async fn solo_q_accounts_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, puuid: Option<&str>) -> Result<Vec<models::SoloQAccounts>, Error<SoloQAccountsListError>> {
+pub async fn solo_q_accounts_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, player: Option<&str>, puuid: Option<&str>) -> Result<Vec<models::SoloQAccounts>, Error<SoloQAccountsListError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_additional_filters = additional_filters;
     let p_query_annotations = annotations;
     let p_query_only_values = only_values;
     let p_query_ordering = ordering;
+    let p_query_player = player;
     let p_query_puuid = puuid;
 
     let uri_str = format!("{}/SoloQAccounts/list", configuration.base_path);
@@ -1820,6 +1821,9 @@ pub async fn solo_q_accounts_list(configuration: &configuration::Configuration, 
             "multi" => req_builder.query(&param_value.into_iter().map(|p| ("ordering".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
             _ => req_builder.query(&[("ordering", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
         };
+    }
+    if let Some(ref param_value) = p_query_player {
+        req_builder = req_builder.query(&[("player", &param_value.to_string())]);
     }
     if let Some(ref param_value) = p_query_puuid {
         req_builder = req_builder.query(&[("puuid", &param_value.to_string())]);

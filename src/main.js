@@ -54,6 +54,14 @@ function showToast(message, options = {}) {
   const el = document.createElement("div");
   el.className = "toast";
   el.setAttribute("role", "alert");
+
+  // Build the log text for clipboard
+  const logParts = [`[${title}]`, message];
+  if (status != null) logParts.push(`Status: ${status}`);
+  if (apiResponse) logParts.push(`API Response: ${apiResponse}`);
+  logParts.push(`Time: ${new Date().toISOString()}`);
+  const logText = logParts.join("\n");
+
   let html = `<span class="toast-title">${escapeHtml(title)}</span><p class="toast-message">${escapeHtml(message)}</p>`;
   if (status != null) {
     html += `<p class="toast-message">Status: ${escapeHtml(String(status))}</p>`;
@@ -61,16 +69,27 @@ function showToast(message, options = {}) {
   if (apiResponse != null && apiResponse !== "") {
     html += `<pre class="toast-api-response">${escapeHtml(apiResponse)}</pre>`;
   }
+  html += '<div class="toast-actions">';
+  html += '<button type="button" class="toast-copy" title="Copy error log to clipboard">Copy log</button>';
   html += '<button type="button" class="toast-close" aria-label="Close">&times;</button>';
+  html += '</div>';
   el.innerHTML = html;
-  const closeBtn = el.querySelector(".toast-close");
+
+  el.querySelector(".toast-copy").addEventListener("click", () => {
+    navigator.clipboard.writeText(logText).then(() => {
+      const btn = el.querySelector(".toast-copy");
+      btn.textContent = "Copied!";
+      setTimeout(() => { btn.textContent = "Copy log"; }, 1500);
+    });
+  });
+
   const dismiss = () => {
     el.style.animation = "toast-in 0.15s ease-out reverse";
     setTimeout(() => el.remove(), 150);
   };
-  closeBtn.addEventListener("click", dismiss);
+  el.querySelector(".toast-close").addEventListener("click", dismiss);
   container.appendChild(el);
-  setTimeout(dismiss, 12000);
+  setTimeout(dismiss, 20000);
 }
 
 function setOnline(online) {
@@ -120,6 +139,7 @@ async function loadMatches() {
 // ─── Render match cards ───
 function renderMatches(matches) {
   matchList.innerHTML = "";
+  document.getElementById("history-count").textContent = String(matches.length);
 
   for (const m of matches) {
     // Wrapper: holds the card + the detail panel
@@ -317,8 +337,16 @@ function renderDetailPanel(panel, detail, accounts = []) {
         </div>
       </div>
     </div>
-    ${canUpload ? renderUploadSection() : ''}
+    ${canUpload ? renderUploadSection() : renderDownloadOnlySection()}
   `;
+
+  // Wire up the download replay button (always present)
+  const downloadBtn = panel.querySelector(".download-replay-btn");
+  if (downloadBtn) {
+    downloadBtn.addEventListener("click", () => {
+      handleDownloadReplay(detail.matchId, downloadBtn);
+    });
+  }
 
   // Mount team selectors into the slots if upload is available
   if (canUpload) {
@@ -362,12 +390,53 @@ function renderUploadSection() {
           <span class="upload-btn-text">Upload to Reckon Bolt</span>
           <div class="spinner-small upload-spinner hidden"></div>
         </button>
+        <button class="download-replay-btn" type="button">
+          <span class="download-replay-text">Download Replay</span>
+          <div class="spinner-small download-replay-spinner hidden"></div>
+        </button>
       </div>
       <p class="upload-error hidden"></p>
       <p class="upload-success hidden"></p>
       <div class="unlinked-accounts hidden"></div>
     </div>
   `;
+}
+
+// ─── Download-only section (shown when not logged into Reckon) ───
+function renderDownloadOnlySection() {
+  return `
+    <div class="upload-section">
+      <div class="upload-body">
+        <button class="download-replay-btn" type="button">
+          <span class="download-replay-text">Download Replay</span>
+          <div class="spinner-small download-replay-spinner hidden"></div>
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+// ─── Download replay handler ───
+async function handleDownloadReplay(matchId, btn) {
+  const textEl = btn.querySelector(".download-replay-text");
+  const spinnerEl = btn.querySelector(".download-replay-spinner");
+
+  btn.disabled = true;
+  textEl.classList.add("hidden");
+  spinnerEl.classList.remove("hidden");
+
+  try {
+    const savedPath = await invoke("download_match_replay", { matchId });
+    textEl.textContent = "Downloaded!";
+    setTimeout(() => { textEl.textContent = "Download Replay"; }, 2000);
+  } catch (err) {
+    console.error("Download replay failed:", err);
+    showToast(typeof err === "string" ? err : "Failed to download replay", { title: "Download Error" });
+  }
+
+  btn.disabled = false;
+  textEl.classList.remove("hidden");
+  spinnerEl.classList.add("hidden");
 }
 
 // ─── Upload match handler ───
@@ -1437,6 +1506,796 @@ function createPlayerSelector(container, opts = {}) {
   return { getValue, setValue, clear: clearSelection, refresh };
 }
 
+// ─── Lobby Panel ───
+
+const lobbyPanel       = document.getElementById("lobby-panel");
+const lobbyPanelBody   = document.getElementById("lobby-panel-body");
+const lobbyPanelToggle = document.getElementById("lobby-panel-toggle");
+const lobbyChevron     = document.getElementById("lobby-chevron");
+const lobbyDot         = document.getElementById("lobby-dot");
+const lobbyTitleText   = document.getElementById("lobby-title-text");
+const lobbyStateBadge  = document.getElementById("lobby-state-badge");
+const lobbyPartySize   = document.getElementById("lobby-party-size");
+const lobbyAccessibility = document.getElementById("lobby-accessibility");
+const lobbyMapGroup    = document.getElementById("lobby-map-group");
+const lobbyMap         = document.getElementById("lobby-map");
+const lobbyQueueGroup  = document.getElementById("lobby-queue-group");
+const lobbyQueue       = document.getElementById("lobby-queue");
+const lobbyTimerGroup  = document.getElementById("lobby-timer-group");
+const lobbyTimer       = document.getElementById("lobby-timer");
+const lobbyMembers     = document.getElementById("lobby-members");
+const lobbyActions     = document.getElementById("lobby-actions");
+const lobbyBtnAccess   = document.getElementById("lobby-btn-access");
+const lobbyBtnCheats   = document.getElementById("lobby-btn-cheats");
+const lobbyBtnRec      = document.getElementById("lobby-btn-rec");
+const recDot           = document.getElementById("rec-dot");
+
+let lobbyTimerInterval = null;
+let lobbyQueueStartTime = null;
+let currentLobbyParty = null;
+let lobbyCheatsOn = false;
+let lobbyRecording = false;
+let lobbyRecFetched = false;
+let lobbyRecUnavailable = false;
+
+const LOBBY_QUEUE_LABELS = {
+  competitive: "Competitive",
+  unrated: "Unrated",
+  spikerush: "Spike Rush",
+  deathmatch: "Deathmatch",
+  ggteam: "Escalation",
+  onefa: "Replication",
+  swiftplay: "Swiftplay",
+  premier: "Premier",
+  newmap: "New Map",
+};
+
+lobbyPanelToggle.addEventListener("click", () => {
+  lobbyPanel.classList.toggle("collapsed");
+});
+
+// Lobby action buttons
+lobbyBtnAccess.addEventListener("click", async (e) => {
+  e.stopPropagation();
+  if (!currentLobbyParty) return;
+  const newAccess = currentLobbyParty.accessibility === "OPEN" ? "CLOSED" : "OPEN";
+  lobbyBtnAccess.disabled = true;
+  try {
+    await invoke("lobby_set_accessibility", { accessibility: newAccess });
+    currentLobbyParty.accessibility = newAccess;
+    lobbyBtnAccess.textContent = newAccess === "OPEN" ? "OPEN" : "CLOSED";
+    lobbyBtnAccess.classList.toggle("is-open", newAccess === "OPEN");
+    lobbyAccessibility.textContent = newAccess === "OPEN" ? "Open" : "Closed";
+  } catch (err) {
+    showToast(typeof err === "string" ? err : String(err), { title: "Toggle accessibility failed" });
+  }
+  lobbyBtnAccess.disabled = false;
+});
+
+lobbyBtnCheats.addEventListener("click", async (e) => {
+  e.stopPropagation();
+  const newState = !lobbyCheatsOn;
+  lobbyBtnCheats.disabled = true;
+  try {
+    await invoke("lobby_set_cheats", { enabled: newState });
+    lobbyCheatsOn = newState;
+    updateCheatsButton();
+  } catch (err) {
+    showToast(typeof err === "string" ? err : String(err), { title: "Toggle cheats failed" });
+  }
+  lobbyBtnCheats.disabled = false;
+});
+
+lobbyBtnRec.addEventListener("click", async (e) => {
+  e.stopPropagation();
+  if (lobbyRecUnavailable) return;
+  const newState = !lobbyRecording;
+  lobbyBtnRec.disabled = true;
+  try {
+    await invoke("lobby_set_recording", { enabled: newState });
+    lobbyRecording = newState;
+    updateRecButton();
+  } catch (err) {
+    if (String(err).includes("500")) {
+      lobbyRecUnavailable = true;
+      updateRecButton();
+    }
+    showToast(typeof err === "string" ? err : String(err), { title: "Toggle recording failed" });
+  }
+  if (!lobbyRecUnavailable) lobbyBtnRec.disabled = false;
+});
+
+function updateRecButton() {
+  if (lobbyRecUnavailable) {
+    lobbyBtnRec.disabled = true;
+    lobbyBtnRec.classList.remove("is-recording");
+    recDot.classList.remove("active");
+    lobbyBtnRec.title = "Recording toggle unavailable (server error)";
+    lobbyBtnRec.style.opacity = "0.4";
+    return;
+  }
+  lobbyBtnRec.disabled = false;
+  lobbyBtnRec.style.opacity = "";
+  lobbyBtnRec.title = "Toggle replay recording";
+  lobbyBtnRec.classList.toggle("is-recording", lobbyRecording);
+  recDot.classList.toggle("active", lobbyRecording);
+}
+
+function updateCheatsButton() {
+  lobbyBtnCheats.classList.toggle("is-on", lobbyCheatsOn);
+  lobbyBtnCheats.textContent = lobbyCheatsOn ? "CHEATS ON" : "CHEATS";
+}
+
+async function fetchCheatsState() {
+  try {
+    const enabled = await invoke("lobby_get_cheats");
+    lobbyCheatsOn = enabled;
+    updateCheatsButton();
+  } catch (err) {
+    console.warn("Could not fetch cheats state:", err);
+  }
+}
+
+async function fetchRecordingState() {
+  try {
+    const enabled = await invoke("lobby_get_recording");
+    lobbyRecording = enabled;
+    lobbyRecFetched = true;
+    lobbyRecUnavailable = false;
+    updateRecButton();
+  } catch (err) {
+    lobbyRecFetched = true;
+    lobbyRecUnavailable = true;
+    updateRecButton();
+    console.warn("Recording endpoint unavailable:", err);
+  }
+}
+
+function showLobbyPanel() {
+  lobbyPanel.classList.remove("hidden");
+}
+
+function hideLobbyPanel() {
+  lobbyPanel.classList.add("hidden");
+  stopQueueTimer();
+  lobbyCheatsOn = false;
+  lobbyRecFetched = false;
+  lobbyRecUnavailable = false;
+}
+
+function updateLobbyPanel(party) {
+  if (!party) {
+    hideLobbyPanel();
+    return;
+  }
+
+  showLobbyPanel();
+
+  // State badge
+  const stateLabels = {
+    DEFAULT: "Idle",
+    MATCHMAKING: "Matchmaking",
+    MATCHMADE_GAME_STARTING: "Game Found",
+    CUSTOM_GAME_SETUP: "Custom Game",
+  };
+  const stateLabel = stateLabels[party.state] || party.state;
+  lobbyStateBadge.textContent = stateLabel;
+  lobbyStateBadge.className = "lobby-state-badge lobby-state-" + party.state.toLowerCase().replace(/_/g, "-");
+
+  // Title
+  if (party.state === "MATCHMAKING") {
+    lobbyTitleText.textContent = "Searching for Match";
+    lobbyDot.className = "lobby-dot matchmaking";
+  } else if (party.state === "MATCHMADE_GAME_STARTING") {
+    lobbyTitleText.textContent = "Game Found";
+    lobbyDot.className = "lobby-dot game-found";
+  } else if (party.isCustom) {
+    lobbyTitleText.textContent = party.customGameName || "Custom Game";
+    lobbyDot.className = "lobby-dot";
+  } else {
+    lobbyTitleText.textContent = "Party Lobby";
+    lobbyDot.className = "lobby-dot";
+  }
+
+  // Map
+  if (party.mapName) {
+    lobbyMapGroup.style.display = "";
+    lobbyMap.textContent = resolveMapName(party.mapName);
+  } else {
+    lobbyMapGroup.style.display = "none";
+  }
+
+  // Party size
+  lobbyPartySize.textContent = party.members.length + " / " + party.maxPartySize;
+
+  // Accessibility
+  const accessLabels = { CLOSED: "Closed", OPEN: "Open" };
+  lobbyAccessibility.textContent = accessLabels[party.accessibility] || party.accessibility;
+
+  // Queue info
+  if (party.queueId && !party.isCustom) {
+    lobbyQueueGroup.style.display = "";
+    lobbyQueue.textContent = LOBBY_QUEUE_LABELS[party.queueId] || party.queueId;
+  } else {
+    lobbyQueueGroup.style.display = "none";
+  }
+
+  // Queue timer
+  if (party.state === "MATCHMAKING" && party.queueEntryTime) {
+    lobbyTimerGroup.style.display = "";
+    startQueueTimer(party.queueEntryTime);
+  } else {
+    lobbyTimerGroup.style.display = "none";
+    stopQueueTimer();
+  }
+
+  // Action buttons for custom game
+  currentLobbyParty = party;
+  if (party.isCustom) {
+    lobbyActions.style.display = "";
+    lobbyBtnAccess.textContent = party.accessibility === "OPEN" ? "OPEN" : "CLOSED";
+    lobbyBtnAccess.classList.toggle("is-open", party.accessibility === "OPEN");
+    updateCheatsButton();
+    updateRecButton();
+    if (!lobbyRecFetched) {
+      fetchCheatsState();
+      fetchRecordingState();
+    }
+  } else {
+    lobbyActions.style.display = "none";
+  }
+
+  // Render members: custom game uses team columns, regular uses flat list
+  if (party.isCustom) {
+    renderCustomGameLobby(party.members);
+  } else {
+    renderPartyMembers(party.members);
+  }
+}
+
+function renderCustomGameLobby(members) {
+  const attackers = members.filter(m => m.team === "TeamOne");
+  const defenders = members.filter(m => m.team === "TeamTwo");
+  const spectators = members.filter(m => m.team === "TeamSpectate");
+
+  lobbyMembers.innerHTML = "";
+  lobbyMembers.className = "lobby-members lobby-custom-grid";
+
+  const teams = [
+    { label: "ATTACKERS", cls: "lobby-team-atk", players: attackers },
+    { label: "DEFENDERS", cls: "lobby-team-def", players: defenders },
+    { label: "SPECTATORS", cls: "lobby-team-spec", players: spectators },
+  ];
+
+  for (const team of teams) {
+    const col = document.createElement("div");
+    col.className = "lobby-team-col";
+
+    const header = document.createElement("div");
+    header.className = "lobby-team-header " + team.cls;
+    header.textContent = team.label;
+    col.appendChild(header);
+
+    if (team.players.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "lobby-team-empty";
+      col.appendChild(empty);
+    } else {
+      for (const m of team.players) {
+        col.appendChild(createLobbyMemberRow(m, true));
+      }
+    }
+
+    lobbyMembers.appendChild(col);
+  }
+}
+
+function renderPartyMembers(members) {
+  lobbyMembers.innerHTML = "";
+  lobbyMembers.className = "lobby-members lobby-flat-list";
+  for (const m of members) {
+    lobbyMembers.appendChild(createLobbyMemberRow(m, false));
+  }
+}
+
+function createLobbyMemberRow(m, compact) {
+  const row = document.createElement("div");
+  row.className = "lobby-member-row" + (m.isCurrentPlayer ? " lobby-self" : "") + (compact ? " lobby-compact" : "");
+
+  const nameEl = document.createElement("span");
+  nameEl.className = "lobby-member-name";
+  if (m.isOwner) {
+    const crown = document.createElement("span");
+    crown.className = "lobby-member-crown";
+    crown.textContent = "\u2605";
+    crown.title = "Party Leader";
+    nameEl.appendChild(crown);
+  }
+  const nameText = document.createElement("span");
+  nameText.textContent = m.name || "Player";
+  nameEl.appendChild(nameText);
+  row.appendChild(nameEl);
+
+  const rankEl = document.createElement("span");
+  rankEl.className = "lobby-member-rank";
+  rankEl.textContent = m.rankName || "";
+  row.appendChild(rankEl);
+
+  if (!compact) {
+    const levelEl = document.createElement("span");
+    levelEl.className = "lobby-member-level";
+    levelEl.textContent = m.accountLevel ? "Lv. " + m.accountLevel : "";
+    row.appendChild(levelEl);
+  }
+
+  const readyEl = document.createElement("span");
+  readyEl.className = "lobby-member-ready" + (m.isReady ? " is-ready" : "");
+  readyEl.textContent = m.isReady ? "\u2714" : "";
+  row.appendChild(readyEl);
+
+  return row;
+}
+
+function startQueueTimer(entryTimeStr) {
+  const entryTime = new Date(entryTimeStr).getTime();
+  if (isNaN(entryTime)) {
+    lobbyTimer.textContent = "—";
+    return;
+  }
+  if (lobbyQueueStartTime === entryTimeStr && lobbyTimerInterval) return;
+  stopQueueTimer();
+  lobbyQueueStartTime = entryTimeStr;
+
+  function tick() {
+    const elapsed = Math.floor((Date.now() - entryTime) / 1000);
+    if (elapsed < 0) { lobbyTimer.textContent = "0:00"; return; }
+    const m = Math.floor(elapsed / 60);
+    const s = elapsed % 60;
+    lobbyTimer.textContent = m + ":" + String(s).padStart(2, "0");
+  }
+  tick();
+  lobbyTimerInterval = setInterval(tick, 1000);
+}
+
+function stopQueueTimer() {
+  if (lobbyTimerInterval) {
+    clearInterval(lobbyTimerInterval);
+    lobbyTimerInterval = null;
+  }
+  lobbyQueueStartTime = null;
+}
+
+// ─── Live Match Panel ───
+
+const livePanel      = document.getElementById("live-panel");
+const livePanelBody  = document.getElementById("live-panel-body");
+const livePanelToggle = document.getElementById("live-panel-toggle");
+const liveChevron    = document.getElementById("live-chevron");
+const liveDot        = document.getElementById("live-dot");
+const liveTitleText  = document.getElementById("live-title-text");
+
+const liveMap            = document.getElementById("live-map");
+const liveRound          = document.getElementById("live-round");
+const liveScore          = document.getElementById("live-score");
+const livePhase          = document.getElementById("live-phase");
+const liveSide           = document.getElementById("live-side");
+const liveMode           = document.getElementById("live-mode");
+const liveAgent          = document.getElementById("live-agent");
+const liveHp             = document.getElementById("live-hp");
+const liveKills          = document.getElementById("live-kills");
+const liveDeaths         = document.getElementById("live-deaths");
+const liveAssists        = document.getElementById("live-assists");
+const liveHeadshots      = document.getElementById("live-headshots");
+const liveKillfeed       = document.getElementById("live-killfeed");
+const liveRowPlayer      = document.getElementById("live-row-player");
+const liveObservingBanner = document.getElementById("live-observing-banner");
+const liveObservingName  = document.getElementById("live-observing-name");
+
+const liveRosterAlly   = document.getElementById("live-roster-ally");
+const liveRosterEnemy  = document.getElementById("live-roster-enemy");
+const liveRoster       = document.getElementById("live-roster");
+
+let liveMatchActive = false;
+let isSpectating = false;
+let liveApiPhase = null;
+
+const VALORANT_MAP_NAMES = {
+  "Range": "Range",
+  "Rook": "Corrode",
+  "Juliett": "Sunset",
+  "Jam": "Lotus",
+  "Pitt": "Pearl",
+  "Canyon": "Fracture",
+  "Foxtrot": "Breeze",
+  "Port": "Icebox",
+  "Ascent": "Ascent",
+  "Bonsai": "Split",
+  "Duality": "Bind",
+  "Triad": "Haven",
+  "Infinity": "Abyss",
+};
+
+const VALORANT_AGENT_NAMES = {
+  "Terra_PC_C": "Waylay",
+  "Cashew_PC_C": "Tejo",
+  "Nox_PC_C": "Vyse",
+  "Smonk_PC_C": "Clove",
+  "Sequoia_PC_C": "Iso",
+  "Cable_PC_C": "Deadlock",
+  "AggroBot_PC_C": "Gekko",
+  "Mage_PC_C": "Harbor",
+  "BountyHunter_PC_C": "Fade",
+  "Sprinter_PC_C": "Neon",
+  "Deadeye_PC_C": "Chamber",
+  "Grenadier_PC_C": "KAY/O",
+  "Rift_PC_C": "Astra",
+  "Stealth_PC_C": "Yoru",
+  "Guide_PC_C": "Skye",
+  "Killjoy_PC_C": "Killjoy",
+  "Vampire_PC_C": "Reyna",
+  "Breach_PC_C": "Breach",
+  "Sarge_PC_C": "Brimstone",
+  "Gumshoe_PC_C": "Cypher",
+  "Wushu_PC_C": "Jett",
+  "Phoenix_PC_C": "Phoenix",
+  "Thorne_PC_C": "Sage",
+  "Hunter_PC_C": "Sova",
+  "Wraith_PC_C": "Omen",
+  "Pandemic_PC_C": "Viper",
+  "Clay_PC_C": "Raze",
+};
+
+const VALORANT_MODE_NAMES = {
+  "team_deathmatch": "TDM",
+  "Range": "Range",
+  "Swiftplay": "Swiftplay",
+  "Escalation": "Escalation",
+  "Deathmatch": "DM",
+  "Spike Rush": "Spike Rush",
+  "bomb": "Standard",
+};
+
+function resolveMapName(raw) {
+  return VALORANT_MAP_NAMES[raw] || raw || "—";
+}
+
+function resolveAgentName(raw) {
+  return VALORANT_AGENT_NAMES[raw] || raw || "—";
+}
+
+function resolveModeName(raw) {
+  if (!raw) return "—";
+  try {
+    const m = typeof raw === "string" ? JSON.parse(raw) : raw;
+    let label = VALORANT_MODE_NAMES[m.mode] || m.mode || "—";
+    if (m.custom) label += " (Custom)";
+    else if (String(m.ranked) === "1") label += " (Ranked)";
+    return label;
+  } catch (_) {
+    return String(raw);
+  }
+}
+
+function setSpectatingMode(spectating) {
+  isSpectating = spectating;
+  if (spectating) {
+    liveTitleText.textContent = "Spectating";
+    liveRowPlayer.classList.add("spectating-hidden");
+  } else {
+    liveTitleText.textContent = "Live Match";
+    liveRowPlayer.classList.remove("spectating-hidden");
+    liveObservingBanner.classList.add("hidden");
+  }
+}
+
+function showLivePanel() {
+  livePanel.classList.remove("hidden");
+  liveMatchActive = true;
+  hideLobbyPanel();
+}
+
+function hideLivePanel() {
+  livePanel.classList.add("hidden");
+  liveMatchActive = false;
+  resetLivePanel();
+}
+
+function resetLivePanel() {
+  liveMap.textContent = "—";
+  liveRound.textContent = "—";
+  liveScore.textContent = "— : —";
+  livePhase.textContent = "—";
+  liveSide.textContent = "—";
+  liveMode.textContent = "—";
+  liveAgent.textContent = "—";
+  liveHp.textContent = "—";
+  liveKills.textContent = "0";
+  liveDeaths.textContent = "0";
+  liveAssists.textContent = "0";
+  liveHeadshots.textContent = "0";
+  liveKillfeed.innerHTML = "";
+  liveObservingBanner.classList.add("hidden");
+  liveObservingName.textContent = "—";
+  liveRowPlayer.classList.remove("spectating-hidden");
+  isSpectating = false;
+  liveApiPhase = null;
+  clearRoster();
+}
+
+livePanelToggle.addEventListener("click", () => {
+  livePanel.classList.toggle("collapsed");
+});
+
+// ─── Live API state handling ───
+
+function handleLiveGameState(state) {
+  if (!state || !state.phase || state.phase === "menus") {
+    liveApiPhase = null;
+    if (liveMatchActive) {
+      hideLivePanel();
+    }
+    clearRoster();
+    setSpectatingMode(false);
+
+    if (state && state.party && !liveMatchActive) {
+      updateLobbyPanel(state.party);
+    } else if (!liveMatchActive) {
+      hideLobbyPanel();
+    }
+    return;
+  }
+
+  // In pregame/ingame — hide lobby
+  hideLobbyPanel();
+
+  liveApiPhase = state.phase;
+
+  showLivePanel();
+
+  // Spectating vs playing
+  if (state.isSpectating) {
+    setSpectatingMode(true);
+    if (state.spectateScoreAlly != null && state.spectateScoreEnemy != null) {
+      liveScore.textContent = `${state.spectateScoreAlly} : ${state.spectateScoreEnemy}`;
+    }
+  } else {
+    setSpectatingMode(false);
+  }
+
+  if (state.phase === "pregame") {
+    liveTitleText.textContent = state.isSpectating ? "Spectating — Agent Select" : "Agent Select";
+    livePhase.textContent = "Agent Select";
+  } else if (state.phase === "ingame") {
+    liveTitleText.textContent = state.isSpectating ? "Spectating" : "Live Match";
+    livePhase.textContent = "In Game";
+  }
+
+  if (state.mapName) liveMap.textContent = state.mapName;
+  if (state.queueName) liveMode.textContent = state.queueName;
+  if (state.isRanked) {
+    liveMode.textContent = (state.queueName || "Competitive") + " (Ranked)";
+  }
+  if (state.serverId) liveSide.textContent = state.serverId;
+
+  renderRoster(state.allyTeam || [], state.enemyTeam || [], state.phase, state.isSpectating);
+}
+
+function renderRoster(allyTeam, enemyTeam, phase, isSpectating = false) {
+  const allyLabel = isSpectating ? "BLUE TEAM" : "ALLY TEAM";
+  const enemyLabel = isSpectating ? "RED TEAM" : "ENEMY TEAM";
+  renderTeamRoster(liveRosterAlly, allyTeam, phase, allyLabel, "ally-header");
+  renderTeamRoster(liveRosterEnemy, enemyTeam, phase, enemyLabel, "enemy-header");
+  liveRoster.classList.toggle("hidden", allyTeam.length === 0 && enemyTeam.length === 0);
+}
+
+function renderTeamRoster(container, players, phase, headerText, headerClass) {
+  container.innerHTML = "";
+  const header = document.createElement("div");
+  header.className = `live-roster-header ${headerClass}`;
+  header.textContent = headerText;
+  container.appendChild(header);
+
+  for (const p of players) {
+    const row = document.createElement("div");
+    row.className = "live-roster-row" + (p.isCurrentPlayer ? " roster-self" : "");
+
+    const agentEl = document.createElement("span");
+    agentEl.className = "roster-agent";
+    if (phase === "pregame" && !p.isLocked && p.agentName) {
+      agentEl.classList.add("roster-picking");
+    }
+    agentEl.textContent = p.agentName || (phase === "pregame" ? "Picking..." : "—");
+
+    const nameEl = document.createElement("span");
+    nameEl.className = "roster-name";
+    nameEl.textContent = p.name || "Player";
+
+    const rankEl = document.createElement("span");
+    rankEl.className = "roster-rank";
+    rankEl.textContent = p.rankName || "";
+
+    row.appendChild(agentEl);
+    row.appendChild(nameEl);
+    row.appendChild(rankEl);
+
+    if (phase === "pregame") {
+      const lockEl = document.createElement("span");
+      lockEl.className = "roster-lock";
+      lockEl.textContent = p.isLocked ? "\u2714" : "";
+      row.appendChild(lockEl);
+    }
+
+    container.appendChild(row);
+  }
+}
+
+function clearRoster() {
+  liveRosterAlly.innerHTML = '<div class="live-roster-header ally-header">ALLY TEAM</div>';
+  liveRosterEnemy.innerHTML = '<div class="live-roster-header enemy-header">ENEMY TEAM</div>';
+  liveRoster.classList.add("hidden");
+}
+
+function tauriListen(event, handler) {
+  const internals = window.__TAURI_INTERNALS__;
+  if (!internals) return;
+  const id = internals.transformCallback((e) => handler(e));
+  internals.invoke("plugin:event|listen", {
+    event,
+    target: { kind: "Any" },
+    handler: id,
+  });
+}
+
+async function initLiveListeners() {
+  tauriListen("live-game-state", (e) => {
+    handleLiveGameState(e.payload);
+  });
+
+  // Fetch initial live game state from local API
+  try {
+    const liveState = await invoke("get_live_game_state");
+    handleLiveGameState(liveState);
+  } catch (_) {}
+}
+
+// ─── Saved Matches ───
+
+const savedMatchesSection = document.getElementById("saved-matches-section");
+const savedMatchList = document.getElementById("saved-match-list");
+const savedMatchesCount = document.getElementById("saved-matches-count");
+const savedMatchesBody = document.getElementById("saved-matches-body");
+const savedMatchesChevron = document.getElementById("saved-matches-chevron");
+const historyBody = document.getElementById("history-body");
+const historyChevron = document.getElementById("history-chevron");
+
+let savedMatches = [];
+
+async function loadSavedMatches() {
+  try {
+    const index = await invoke("get_saved_matches");
+    savedMatches = index.matches || [];
+    renderSavedMatches();
+  } catch (e) {
+    console.warn("Could not load saved matches:", e);
+  }
+}
+
+function renderSavedMatches() {
+  savedMatchList.innerHTML = "";
+  if (savedMatches.length === 0) {
+    savedMatchesSection.classList.add("hidden");
+    return;
+  }
+  savedMatchesSection.classList.remove("hidden");
+  savedMatchesCount.textContent = String(savedMatches.length);
+
+  for (const m of savedMatches) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "match-wrapper";
+
+    const card = document.createElement("div");
+    card.className = "match-card saved-match-card";
+    card.dataset.matchId = m.matchId;
+
+    const date = new Date(m.timestamp);
+    const timeStr = formatDate(date);
+
+    const badgeClass = m.isSpectated ? "badge-spectated" : "badge-queue";
+    const badgeText = m.isSpectated ? "SPECTATED" : "PLAYED";
+
+    card.innerHTML = `
+      <div class="match-result">
+        <span class="badge ${badgeClass}">${badgeText}</span>
+      </div>
+      <div class="match-info">
+        <span class="match-map">${escapeHtml(m.mapName || "Unknown Map")}</span>
+        <span class="badge-queue">${escapeHtml(m.queueName || "Match")}</span>
+      </div>
+      <div class="match-agent"><span>Saved</span></div>
+      <div class="match-kda"><span class="saved-match-id">${escapeHtml(m.matchId.substring(0, 8))}...</span></div>
+      <div class="match-meta">
+        <span class="match-time">${timeStr}</span>
+      </div>
+    `;
+
+    card.addEventListener("click", () => toggleSavedDetail(wrapper, m.matchId));
+    wrapper.appendChild(card);
+    savedMatchList.appendChild(wrapper);
+  }
+}
+
+async function toggleSavedDetail(wrapper, matchId) {
+  const existing = wrapper.querySelector(".detail-panel");
+  if (existing) {
+    existing.remove();
+    wrapper.querySelector(".match-card").classList.remove("expanded");
+    return;
+  }
+
+  // Close any other open panel in saved matches
+  const prev = savedMatchList.querySelector(".detail-panel");
+  if (prev) {
+    prev.closest(".match-wrapper").querySelector(".match-card").classList.remove("expanded");
+    prev.remove();
+  }
+
+  wrapper.querySelector(".match-card").classList.add("expanded");
+
+  const panel = document.createElement("div");
+  panel.className = "detail-panel";
+  panel.innerHTML = `<div class="detail-loading"><div class="spinner"></div></div>`;
+  wrapper.appendChild(panel);
+
+  try {
+    const detail = await invoke("get_saved_match_detail", { matchId });
+    renderDetailPanel(panel, detail);
+
+    const showFileBtn = document.createElement("button");
+    showFileBtn.className = "btn-show-file";
+    showFileBtn.textContent = "Show file in Explorer";
+    showFileBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      invoke("show_saved_match_file", { matchId }).catch(err => {
+        console.error("Failed to open explorer:", err);
+      });
+    });
+
+    const uploadBody = panel.querySelector(".upload-body");
+    if (uploadBody) {
+      uploadBody.appendChild(showFileBtn);
+    } else {
+      const actionsBar = document.createElement("div");
+      actionsBar.className = "saved-match-actions";
+      actionsBar.appendChild(showFileBtn);
+      panel.appendChild(actionsBar);
+    }
+  } catch (err) {
+    console.error("Failed to load saved match:", err);
+    panel.innerHTML = `<p class="detail-error">Failed to load match details</p>`;
+  }
+}
+
+// Listen for newly saved matches
+function initSavedMatchListeners() {
+  tauriListen("match-saved", (_e) => {
+    loadSavedMatches();
+  });
+}
+
+// ─── Section toggle helpers ───
+function toggleSection(body, chevron) {
+  const isHidden = body.classList.toggle("hidden");
+  chevron.classList.toggle("collapsed", isHidden);
+}
+
+document.getElementById("saved-matches-toggle").addEventListener("click", () => {
+  toggleSection(savedMatchesBody, savedMatchesChevron);
+});
+
+document.getElementById("history-toggle").addEventListener("click", () => {
+  toggleSection(historyBody, historyChevron);
+});
+
 // ─── Init ───
 refreshBtn.addEventListener("click", loadMatches);
 reckonConnectBtn.addEventListener("click", onConnectBtnClick);
@@ -1446,3 +2305,6 @@ loginForm.addEventListener("submit", handleLogin);
 checkReckonStatus();
 fetchReckonData();
 loadMatches();
+initLiveListeners();
+loadSavedMatches();
+initSavedMatchListeners();

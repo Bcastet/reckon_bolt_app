@@ -44,6 +44,8 @@ Class | Method | HTTP request | Description
 *AggregateApi* | [**solo_q_accounts_aggregate**](docs/AggregateApi.md#solo_q_accounts_aggregate) | **GET** /SoloQAccounts/operations/aggregate | 
 *AggregateApi* | [**team_aggregate**](docs/AggregateApi.md#team_aggregate) | **GET** /Team/operations/aggregate | 
 *AggregateApi* | [**user_aggregate**](docs/AggregateApi.md#user_aggregate) | **GET** /User/operations/aggregate | 
+*AppApi* | [**app_download_retrieve**](docs/AppApi.md#app_download_retrieve) | **GET** /App/download/{version} | 
+*AppApi* | [**app_releases_retrieve**](docs/AppApi.md#app_releases_retrieve) | **GET** /App/releases | 
 *ChangePasswordApi* | [**change_password_create**](docs/ChangePasswordApi.md#change_password_create) | **POST** /ChangePassword | 
 *ClientOrganizationApi* | [**client_organization_aggregate**](docs/ClientOrganizationApi.md#client_organization_aggregate) | **GET** /ClientOrganization/operations/aggregate | 
 *ClientOrganizationApi* | [**client_organization_field_values**](docs/ClientOrganizationApi.md#client_organization_field_values) | **GET** /ClientOrganization/operations/field-values | 
@@ -80,6 +82,7 @@ Class | Method | HTTP request | Description
 *CreateApi* | [**solo_q_accounts_create**](docs/CreateApi.md#solo_q_accounts_create) | **POST** /SoloQAccounts/item/{id} | 
 *CreateApi* | [**user_create**](docs/CreateApi.md#user_create) | **POST** /User/item/{id} | 
 *DeleteApi* | [**user_delete**](docs/DeleteApi.md#user_delete) | **DELETE** /User/item/{id} | 
+*DownloadApi* | [**app_download_retrieve**](docs/DownloadApi.md#app_download_retrieve) | **GET** /App/download/{version} | 
 *FieldValuesApi* | [**client_organization_field_values**](docs/FieldValuesApi.md#client_organization_field_values) | **GET** /ClientOrganization/operations/field-values | 
 *FieldValuesApi* | [**competitive_draft_slots_field_values**](docs/FieldValuesApi.md#competitive_draft_slots_field_values) | **GET** /CompetitiveDraftSlots/operations/field-values | 
 *FieldValuesApi* | [**competitive_game_summaries_field_values**](docs/FieldValuesApi.md#competitive_game_summaries_field_values) | **GET** /CompetitiveGameSummaries/operations/field-values | 
@@ -163,6 +166,7 @@ Class | Method | HTTP request | Description
 *PlayerApi* | [**player_patch**](docs/PlayerApi.md#player_patch) | **PATCH** /Player/item/{id} | 
 *PlayerApi* | [**player_variable_distribution**](docs/PlayerApi.md#player_variable_distribution) | **GET** /Player/operations/variable-distribution | 
 *PostApi* | [**change_password_create**](docs/PostApi.md#change_password_create) | **POST** /ChangePassword | 
+*ReleasesApi* | [**app_releases_retrieve**](docs/ReleasesApi.md#app_releases_retrieve) | **GET** /App/releases | 
 *RiotAccountApi* | [**link_riot_account_create**](docs/RiotAccountApi.md#link_riot_account_create) | **POST** /LinkRiotAccount | 
 *SchemaApi* | [**schema_retrieve**](docs/SchemaApi.md#schema_retrieve) | **GET** /schema/ | 
 *ScrimGameSummariesApi* | [**scrim_game_summaries_aggregate**](docs/ScrimGameSummariesApi.md#scrim_game_summaries_aggregate) | **GET** /ScrimGameSummaries/operations/aggregate | 

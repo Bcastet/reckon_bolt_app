@@ -16,6 +16,8 @@ Name | Type | Description | Notes
 **is_active** | **bool** |  | 
 **date_joined** | **String** |  | 
 **draft_model_displayed** | **String** |  | 
+**riot_gamename** | Option<**String**> |  | 
+**riot_tagline** | Option<**String**> |  | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

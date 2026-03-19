@@ -11,27 +11,23 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-/// LinkRiotAccountRequest : Payload sent by the frontend after completing the RSO OAuth2 flow.
+/// LinkRiotAccountRequest : Payload sent by the frontend after the user authorizes with Riot.
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct LinkRiotAccountRequest {
-    /// RSO access token returned by the Riot OAuth2 token endpoint.
-    #[serde(rename = "access_token")]
-    pub access_token: String,
-    /// RSO refresh token returned by the Riot OAuth2 token endpoint.
-    #[serde(rename = "refresh_token")]
-    pub refresh_token: String,
-    /// Access token lifetime in seconds, as returned by the token endpoint.
-    #[serde(rename = "expires_in")]
-    pub expires_in: i32,
+    /// Authorization code from the Riot RSO OAuth2 redirect.
+    #[serde(rename = "code")]
+    pub code: String,
+    /// The redirect URI that was used in the authorization request. Must match exactly for the token exchange to succeed.
+    #[serde(rename = "redirect_uri")]
+    pub redirect_uri: String,
 }
 
 impl LinkRiotAccountRequest {
-    /// Payload sent by the frontend after completing the RSO OAuth2 flow.
-    pub fn new(access_token: String, refresh_token: String, expires_in: i32) -> LinkRiotAccountRequest {
+    /// Payload sent by the frontend after the user authorizes with Riot.
+    pub fn new(code: String, redirect_uri: String) -> LinkRiotAccountRequest {
         LinkRiotAccountRequest {
-            access_token,
-            refresh_token,
-            expires_in,
+            code,
+            redirect_uri,
         }
     }
 }

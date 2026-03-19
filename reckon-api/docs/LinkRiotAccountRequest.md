@@ -4,9 +4,8 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**access_token** | **String** | RSO access token returned by the Riot OAuth2 token endpoint. | 
-**refresh_token** | **String** | RSO refresh token returned by the Riot OAuth2 token endpoint. | 
-**expires_in** | **i32** | Access token lifetime in seconds, as returned by the token endpoint. | 
+**code** | **String** | Authorization code from the Riot RSO OAuth2 redirect. | 
+**redirect_uri** | **String** | The redirect URI that was used in the authorization request. Must match exactly for the token exchange to succeed. | 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

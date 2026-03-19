@@ -65,7 +65,7 @@ pub enum SoloQAccountsVariableDistributionError {
 }
 
 
-pub async fn solo_q_accounts_aggregate(configuration: &configuration::Configuration, groupby: Vec<String>, ordering: Vec<String>, additional_filters: Option<serde_json::Value>, aggregates: Option<Vec<String>>, having: Option<serde_json::Value>, index_on: Option<&str>, metrics: Option<Vec<String>>, puuid: Option<&str>) -> Result<Vec<models::SoloQAccountsAggregate>, Error<SoloQAccountsAggregateError>> {
+pub async fn solo_q_accounts_aggregate(configuration: &configuration::Configuration, groupby: Vec<String>, ordering: Vec<String>, additional_filters: Option<serde_json::Value>, aggregates: Option<Vec<String>>, having: Option<serde_json::Value>, index_on: Option<&str>, metrics: Option<Vec<String>>, player: Option<&str>, puuid: Option<&str>) -> Result<Vec<models::SoloQAccountsAggregate>, Error<SoloQAccountsAggregateError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_groupby = groupby;
     let p_query_ordering = ordering;
@@ -74,6 +74,7 @@ pub async fn solo_q_accounts_aggregate(configuration: &configuration::Configurat
     let p_query_having = having;
     let p_query_index_on = index_on;
     let p_query_metrics = metrics;
+    let p_query_player = player;
     let p_query_puuid = puuid;
 
     let uri_str = format!("{}/SoloQAccounts/operations/aggregate", configuration.base_path);
@@ -110,6 +111,9 @@ pub async fn solo_q_accounts_aggregate(configuration: &configuration::Configurat
         "multi" => req_builder.query(&p_query_ordering.into_iter().map(|p| ("ordering".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
         _ => req_builder.query(&[("ordering", &p_query_ordering.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
     };
+    if let Some(ref param_value) = p_query_player {
+        req_builder = req_builder.query(&[("player", &param_value.to_string())]);
+    }
     if let Some(ref param_value) = p_query_puuid {
         req_builder = req_builder.query(&[("puuid", &param_value.to_string())]);
     }
@@ -196,11 +200,12 @@ pub async fn solo_q_accounts_create(configuration: &configuration::Configuration
     }
 }
 
-pub async fn solo_q_accounts_field_values(configuration: &configuration::Configuration, field: &str, ordering: Vec<String>, additional_filters: Option<serde_json::Value>, puuid: Option<&str>) -> Result<Vec<String>, Error<SoloQAccountsFieldValuesError>> {
+pub async fn solo_q_accounts_field_values(configuration: &configuration::Configuration, field: &str, ordering: Vec<String>, additional_filters: Option<serde_json::Value>, player: Option<&str>, puuid: Option<&str>) -> Result<Vec<String>, Error<SoloQAccountsFieldValuesError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_field = field;
     let p_query_ordering = ordering;
     let p_query_additional_filters = additional_filters;
+    let p_query_player = player;
     let p_query_puuid = puuid;
 
     let uri_str = format!("{}/SoloQAccounts/operations/field-values", configuration.base_path);
@@ -216,6 +221,9 @@ pub async fn solo_q_accounts_field_values(configuration: &configuration::Configu
         "multi" => req_builder.query(&p_query_ordering.into_iter().map(|p| ("ordering".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
         _ => req_builder.query(&[("ordering", &p_query_ordering.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
     };
+    if let Some(ref param_value) = p_query_player {
+        req_builder = req_builder.query(&[("player", &param_value.to_string())]);
+    }
     if let Some(ref param_value) = p_query_puuid {
         req_builder = req_builder.query(&[("puuid", &param_value.to_string())]);
     }
@@ -300,12 +308,13 @@ pub async fn solo_q_accounts_get(configuration: &configuration::Configuration, i
     }
 }
 
-pub async fn solo_q_accounts_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, puuid: Option<&str>) -> Result<Vec<models::SoloQAccounts>, Error<SoloQAccountsListError>> {
+pub async fn solo_q_accounts_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, player: Option<&str>, puuid: Option<&str>) -> Result<Vec<models::SoloQAccounts>, Error<SoloQAccountsListError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_additional_filters = additional_filters;
     let p_query_annotations = annotations;
     let p_query_only_values = only_values;
     let p_query_ordering = ordering;
+    let p_query_player = player;
     let p_query_puuid = puuid;
 
     let uri_str = format!("{}/SoloQAccounts/list", configuration.base_path);
@@ -333,6 +342,9 @@ pub async fn solo_q_accounts_list(configuration: &configuration::Configuration, 
             "multi" => req_builder.query(&param_value.into_iter().map(|p| ("ordering".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
             _ => req_builder.query(&[("ordering", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
         };
+    }
+    if let Some(ref param_value) = p_query_player {
+        req_builder = req_builder.query(&[("player", &param_value.to_string())]);
     }
     if let Some(ref param_value) = p_query_puuid {
         req_builder = req_builder.query(&[("puuid", &param_value.to_string())]);
@@ -420,13 +432,14 @@ pub async fn solo_q_accounts_patch(configuration: &configuration::Configuration,
     }
 }
 
-pub async fn solo_q_accounts_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, puuid: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<SoloQAccountsVariableDistributionError>> {
+pub async fn solo_q_accounts_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, player: Option<&str>, puuid: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<SoloQAccountsVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
     let p_query_metric = metric;
     let p_query_min = min;
     let p_query_additional_filters = additional_filters;
+    let p_query_player = player;
     let p_query_puuid = puuid;
 
     let uri_str = format!("{}/SoloQAccounts/operations/variable-distribution", configuration.base_path);
@@ -441,6 +454,9 @@ pub async fn solo_q_accounts_variable_distribution(configuration: &configuration
     req_builder = req_builder.query(&[("max", &p_query_max.to_string())]);
     req_builder = req_builder.query(&[("metric", &p_query_metric.to_string())]);
     req_builder = req_builder.query(&[("min", &p_query_min.to_string())]);
+    if let Some(ref param_value) = p_query_player {
+        req_builder = req_builder.query(&[("player", &param_value.to_string())]);
+    }
     if let Some(ref param_value) = p_query_puuid {
         req_builder = req_builder.query(&[("puuid", &param_value.to_string())]);
     }

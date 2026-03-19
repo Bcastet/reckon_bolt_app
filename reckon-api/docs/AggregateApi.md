@@ -670,7 +670,7 @@ Name | Type | Description  | Required | Notes
 
 ## solo_q_accounts_aggregate
 
-> Vec<models::SoloQAccountsAggregate> solo_q_accounts_aggregate(groupby, ordering, additional_filters, aggregates, having, index_on, metrics, puuid)
+> Vec<models::SoloQAccountsAggregate> solo_q_accounts_aggregate(groupby, ordering, additional_filters, aggregates, having, index_on, metrics, player, puuid)
 
 
 ### Parameters
@@ -685,6 +685,7 @@ Name | Type | Description  | Required | Notes
 **having** | Option<[**serde_json::Value**](SerdeJson__Value.md)> | Other filters using lookups |  |
 **index_on** | Option<**String**> | Index results on a column |  |
 **metrics** | Option<[**Vec<String>**](String.md)> | Metrics to compute |  |
+**player** | Option<**String**> |  |  |
 **puuid** | Option<**String**> |  |  |
 
 ### Return type

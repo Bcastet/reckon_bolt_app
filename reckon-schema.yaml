@@ -4,6 +4,43 @@ info:
   version: 1.0.0
   description: Backend API for Reckon Bolt
 paths:
+  /App/download/{version}:
+    get:
+      operationId: App_download_retrieve
+      parameters:
+      - in: path
+        name: version
+        schema:
+          type: string
+        required: true
+      tags:
+      - App
+      - download
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          description: ''
+  /App/releases:
+    get:
+      operationId: App_releases_retrieve
+      tags:
+      - App
+      - releases
+      security:
+      - cookieAuth: []
+      - tokenAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
   /ChangePassword:
     post:
       operationId: ChangePassword_create
@@ -3273,13 +3310,15 @@ paths:
       description: |-
         Link the authenticated user's account to their Riot Games identity.
 
-        The frontend is responsible for performing the full RSO OAuth2 authorization
-        flow and obtaining the tokens.  It then sends the token payload here so the
-        backend can:
+        The frontend redirects the user to Riot's authorization page. After the user
+        authorizes, the frontend receives an authorization code and sends it here.
+        The backend then:
 
-        1. Validate the access token against the Riot Account API.
-        2. Retrieve the player's PUUID, game name and tagline.
-        3. Persist everything on the ``AuthUser`` model for later use (e.g. fetching
+        1. Exchanges the authorization code for access / refresh tokens via the
+           Riot RSO token endpoint.
+        2. Uses the access token to retrieve the player's PUUID, game name and
+           tagline from the Riot Account API.
+        3. Persists everything on the ``AuthUser`` model for later use (e.g. fetching
            match history, including private games).
       tags:
       - RiotAccount
@@ -6216,6 +6255,10 @@ paths:
             type: string
         description: Order by
       - in: query
+        name: player
+        schema:
+          type: string
+      - in: query
         name: puuid
         schema:
           type: string
@@ -6283,6 +6326,10 @@ paths:
         description: Order by
         required: true
       - in: query
+        name: player
+        schema:
+          type: string
+      - in: query
         name: puuid
         schema:
           type: string
@@ -6323,6 +6370,10 @@ paths:
             type: string
         description: Order by
         required: true
+      - in: query
+        name: player
+        schema:
+          type: string
       - in: query
         name: puuid
         schema:
@@ -6375,6 +6426,10 @@ paths:
           type: integer
         description: Min threshold
         required: true
+      - in: query
+        name: player
+        schema:
+          type: string
       - in: query
         name: puuid
         schema:
@@ -10748,22 +10803,18 @@ components:
       - id
     LinkRiotAccountRequest:
       type: object
-      description: Payload sent by the frontend after completing the RSO OAuth2 flow.
+      description: Payload sent by the frontend after the user authorizes with Riot.
       properties:
-        access_token:
+        code:
           type: string
-          description: RSO access token returned by the Riot OAuth2 token endpoint.
-        refresh_token:
+          description: Authorization code from the Riot RSO OAuth2 redirect.
+        redirect_uri:
           type: string
-          description: RSO refresh token returned by the Riot OAuth2 token endpoint.
-        expires_in:
-          type: integer
-          description: Access token lifetime in seconds, as returned by the token
-            endpoint.
+          description: The redirect URI that was used in the authorization request.
+            Must match exactly for the token exchange to succeed.
       required:
-      - access_token
-      - expires_in
-      - refresh_token
+      - code
+      - redirect_uri
     LinkRiotAccountResponse:
       type: object
       description: Riot account data that was stored on the user.
@@ -10810,6 +10861,12 @@ components:
           format: date-time
         draft_model_displayed:
           type: string
+        riot_gamename:
+          type: string
+          nullable: true
+        riot_tagline:
+          type: string
+          nullable: true
       required:
       - date_joined
       - draft_model_displayed
@@ -10819,6 +10876,8 @@ components:
       - is_staff
       - organization
       - password
+      - riot_gamename
+      - riot_tagline
       - team
       - token
       - user_id
@@ -11055,14 +11114,13 @@ components:
           maximum: 2147483647
           minimum: -2147483648
           nullable: true
-        player_id:
-          type: string
-          nullable: true
-          maxLength: 50
         server:
           type: string
           nullable: true
           maxLength: 5
+        player:
+          type: string
+          nullable: true
     PatchedTeam:
       type: object
       properties:
@@ -14317,14 +14375,13 @@ components:
           maximum: 2147483647
           minimum: -2147483648
           nullable: true
-        player_id:
-          type: string
-          nullable: true
-          maxLength: 50
         server:
           type: string
           nullable: true
           maxLength: 5
+        player:
+          type: string
+          nullable: true
       required:
       - account_name
       - id
@@ -14346,14 +14403,13 @@ components:
           maximum: 2147483647
           minimum: -2147483648
           nullable: true
-        player_id:
-          type: string
-          nullable: true
-          maxLength: 50
         server:
           type: string
           nullable: true
           maxLength: 5
+        player:
+          type: string
+          nullable: true
       required:
       - account_name
       - id

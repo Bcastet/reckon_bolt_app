@@ -4,8 +4,9 @@ use std::sync::Mutex;
 use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use tauri::Manager;
-use valorant::{api, auth, lockfile, types::{MatchDetailView, MatchSummary}};
-use reckon_api::apis::configuration::BASE_URL_DEV;
+use tokio::sync::watch;
+use valorant::{api, auth, live, lockfile, types::{MatchDetailView, MatchSummary}};
+use reckon_api::apis::configuration::BASE_URL_PROD;
 
 // ─── Reckon Bolt connection state ───────────────────────────────────────────
 
@@ -111,7 +112,7 @@ async fn reckon_login(
     ];
 
     let resp = client
-        .post(format!("{}/Login", BASE_URL_DEV))
+        .post(format!("{}/Login", BASE_URL_PROD))
         .form(&params)
         .send()
         .await
@@ -186,7 +187,7 @@ async fn reckon_fetch_data(
 
     let client = reqwest::Client::new();
 
-    let players: Vec<serde_json::Value> = authed_get(&client, &format!("{}/Player/list", BASE_URL_DEV), &token)
+    let players: Vec<serde_json::Value> = authed_get(&client, &format!("{}/Player/list", BASE_URL_PROD), &token)
         .send()
         .await
         .map_err(|e| format!("Failed to fetch players: {}", e))?
@@ -194,7 +195,7 @@ async fn reckon_fetch_data(
         .await
         .map_err(|e| format!("Failed to parse players: {}", e))?;
 
-    let teams: Vec<serde_json::Value> = authed_get(&client, &format!("{}/Team/list", BASE_URL_DEV), &token)
+    let teams: Vec<serde_json::Value> = authed_get(&client, &format!("{}/Team/list", BASE_URL_PROD), &token)
         .send()
         .await
         .map_err(|e| format!("Failed to fetch teams: {}", e))?
@@ -263,7 +264,7 @@ async fn reckon_upload_match(
     .await?;
 
     // 4. Build the Reckon API configuration with token auth
-    let config = reckon_api::apis::configuration::Configuration::dev().with_token(&token);
+    let config = reckon_api::apis::configuration::Configuration::prod().with_token(&token);
 
     // 5. Build the upload request
     let upload_req = reckon_api::models::UploadScrimGameRequest::new(
@@ -325,7 +326,7 @@ async fn reckon_link_account(
         guard.token.clone().ok_or("Not connected to Reckon Bolt")?
     };
 
-    let config = reckon_api::apis::configuration::Configuration::dev().with_token(&token);
+    let config = reckon_api::apis::configuration::Configuration::prod().with_token(&token);
 
     let mut body = reckon_api::models::AddAccount::new(puuid);
     body.account_name = account_name;
@@ -377,7 +378,7 @@ async fn reckon_get_soloq_accounts(
         return Ok(vec![]);
     }
 
-    let config = reckon_api::apis::configuration::Configuration::dev().with_token(&token);
+    let config = reckon_api::apis::configuration::Configuration::prod().with_token(&token);
     let additional_filters = serde_json::json!({ "puuid__in": puuids });
 
     use reckon_api::apis::solo_q_accounts_api;
@@ -560,10 +561,154 @@ async fn get_match_detail(match_id: String) -> Result<MatchDetailView, String> {
     ))
 }
 
+/// Return the current live game state from the local Riot API poller.
+#[tauri::command]
+fn get_live_game_state(
+    live_state: tauri::State<'_, live::SharedLiveState>,
+) -> live::LiveGameState {
+    live_state.lock().unwrap().clone()
+}
+
+/// Toggle party accessibility (OPEN / CLOSED).
+#[tauri::command]
+async fn lobby_set_accessibility(
+    lobby_auth: tauri::State<'_, live::SharedLobbyAuth>,
+    accessibility: String,
+) -> Result<String, String> {
+    live::lobby_toggle_accessibility(&lobby_auth, &accessibility).await
+}
+
+/// Get current cheats state from party settings.
+#[tauri::command]
+async fn lobby_get_cheats(
+    lobby_auth: tauri::State<'_, live::SharedLobbyAuth>,
+) -> Result<bool, String> {
+    live::lobby_get_cheats_state(&lobby_auth).await
+}
+
+/// Toggle cheats (allow cheat codes) in the custom game.
+#[tauri::command]
+async fn lobby_set_cheats(
+    lobby_auth: tauri::State<'_, live::SharedLobbyAuth>,
+    enabled: bool,
+) -> Result<String, String> {
+    live::lobby_set_cheats(&lobby_auth, enabled).await
+}
+
+/// Get current replay recording state from party settings.
+#[tauri::command]
+async fn lobby_get_recording(
+    lobby_auth: tauri::State<'_, live::SharedLobbyAuth>,
+) -> Result<bool, String> {
+    live::lobby_get_recording_state(&lobby_auth).await
+}
+
+/// Enable or disable replay recording (TournamentMode) in the custom game.
+#[tauri::command]
+async fn lobby_set_recording(
+    lobby_auth: tauri::State<'_, live::SharedLobbyAuth>,
+    enabled: bool,
+) -> Result<bool, String> {
+    live::lobby_set_recording(&lobby_auth, enabled).await
+}
+
+/// List all saved matches (auto-captured on match end).
+#[tauri::command]
+fn get_saved_matches(app_handle: tauri::AppHandle) -> live::SavedMatchIndex {
+    live::get_saved_match_list(&app_handle)
+}
+
+/// Get the full raw JSON of a saved match.
+#[tauri::command]
+fn get_saved_match_json(app_handle: tauri::AppHandle, match_id: String) -> Result<String, String> {
+    live::get_saved_match_json(&app_handle, &match_id)
+}
+
+/// Get a saved match as a MatchDetailView (same format as regular match details).
+#[tauri::command]
+async fn get_saved_match_detail(app_handle: tauri::AppHandle, match_id: String) -> Result<MatchDetailView, String> {
+    let raw_json = live::get_saved_match_json(&app_handle, &match_id)?;
+    let details: valorant::types::MatchDetailsResponse = serde_json::from_str(&raw_json)
+        .map_err(|e| format!("Failed to parse saved match JSON: {}", e))?;
+
+    let lockfile = lockfile::read_lockfile()?;
+    let client = api::build_http_client()?;
+    let entitlements = auth::get_entitlements(&client, &lockfile).await?;
+    let (_region, shard, _client_version) = api::get_session_info(&client, &lockfile).await?;
+
+    let agents = api::fetch_agents(&client).await.unwrap_or_default();
+    let maps = api::fetch_maps(&client).await.unwrap_or_default();
+
+    Ok(api::build_match_detail_view(
+        &details,
+        &entitlements.subject,
+        &shard,
+        &maps,
+        &agents,
+    ))
+}
+
+/// Download match details as a JSON file to the user's Downloads folder.
+#[tauri::command]
+async fn download_match_replay(match_id: String) -> Result<String, String> {
+    let lockfile = lockfile::read_lockfile()?;
+    let client = api::build_http_client()?;
+    let entitlements = auth::get_entitlements(&client, &lockfile).await?;
+    let (_region, shard, client_version) = api::get_session_info(&client, &lockfile).await?;
+
+    let raw_json = api::fetch_match_details_raw(
+        &client,
+        &shard,
+        &match_id,
+        &entitlements.access_token,
+        &entitlements.token,
+        &client_version,
+    )
+    .await?;
+
+    let downloads_dir = dirs::download_dir()
+        .or_else(|| dirs::home_dir().map(|h| h.join("Downloads")))
+        .ok_or("Cannot determine Downloads folder")?;
+
+    let filename = format!("replay_{}.json", match_id);
+    let path = downloads_dir.join(&filename);
+
+    std::fs::write(&path, &raw_json)
+        .map_err(|e| format!("Failed to write replay file: {}", e))?;
+
+    #[cfg(target_os = "windows")]
+    {
+        let _ = std::process::Command::new("explorer")
+            .args(["/select,", &path.to_string_lossy()])
+            .spawn();
+    }
+
+    Ok(path.to_string_lossy().into_owned())
+}
+
+/// Open the saved match JSON file in the system file explorer.
+#[tauri::command]
+fn show_saved_match_file(app_handle: tauri::AppHandle, match_id: String) -> Result<(), String> {
+    let path = live::get_saved_match_path(&app_handle, &match_id)?;
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .args(["/select,", &path.to_string_lossy()])
+            .spawn()
+            .map_err(|e| format!("Failed to open explorer: {}", e))?;
+    }
+    Ok(())
+}
+
 pub fn run() {
+    let live_state = live::new_shared_state();
+    let lobby_auth = live::new_shared_lobby_auth();
+
     tauri::Builder::default()
         .manage(Mutex::new(ReckonState::default()))
-        .setup(|app| {
+        .manage(live_state.clone())
+        .manage(lobby_auth.clone())
+        .setup(move |app| {
             // Restore persisted session from a previous launch
             if let Some(session) = load_session(&app.handle()) {
                 if let Ok(mut guard) = app.state::<Mutex<ReckonState>>().lock() {
@@ -572,7 +717,29 @@ pub fn run() {
                     eprintln!("Restored Reckon session from disk");
                 }
             }
+
+            // Start the live game API poller
+            let (live_stop_tx, live_stop_rx) = watch::channel(false);
+            let live_state_clone = live_state.clone();
+            let lobby_auth_clone = lobby_auth.clone();
+            let app_handle = app.handle().clone();
+            live::start_live_poller(app_handle, live_state_clone, lobby_auth_clone, live_stop_rx);
+
+            app.manage(Mutex::new(Some(live_stop_tx)));
+
             Ok(())
+        })
+        .on_window_event(|window, event| {
+            if let tauri::WindowEvent::Destroyed = event {
+                let app = window.app_handle();
+                if let Some(stop_tx) = app.try_state::<Mutex<Option<watch::Sender<bool>>>>() {
+                    if let Ok(mut guard) = stop_tx.lock() {
+                        if let Some(tx) = guard.take() {
+                            let _ = tx.send(true);
+                        }
+                    }
+                }
+            }
         })
         .invoke_handler(tauri::generate_handler![
             check_valorant_running,
@@ -587,6 +754,17 @@ pub fn run() {
             reckon_upload_match,
             reckon_link_account,
             reckon_get_soloq_accounts,
+            get_live_game_state,
+            get_saved_matches,
+            get_saved_match_json,
+            get_saved_match_detail,
+            show_saved_match_file,
+            download_match_replay,
+            lobby_set_accessibility,
+            lobby_get_cheats,
+            lobby_set_cheats,
+            lobby_get_recording,
+            lobby_set_recording,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

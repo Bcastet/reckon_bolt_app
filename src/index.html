@@ -51,6 +51,128 @@
       </div>
     </div>
 
+    <!-- Lobby panel (party info while in menus) -->
+    <div id="lobby-panel" class="lobby-panel hidden">
+      <div class="lobby-panel-header" id="lobby-panel-toggle">
+        <div class="lobby-panel-title">
+          <span class="lobby-dot" id="lobby-dot"></span>
+          <span id="lobby-title-text">Party Lobby</span>
+        </div>
+        <div class="lobby-header-right">
+          <span class="lobby-state-badge" id="lobby-state-badge"></span>
+          <span class="lobby-panel-chevron" id="lobby-chevron">&#x25B2;</span>
+        </div>
+      </div>
+      <div class="lobby-panel-body" id="lobby-panel-body">
+        <div class="lobby-info-row">
+          <div class="lobby-info-group" id="lobby-map-group" style="display:none;">
+            <span class="lobby-label">Map</span>
+            <span class="lobby-value" id="lobby-map">—</span>
+          </div>
+          <div class="lobby-info-group" id="lobby-queue-group" style="display:none;">
+            <span class="lobby-label">Queue</span>
+            <span class="lobby-value" id="lobby-queue">—</span>
+          </div>
+          <div class="lobby-info-group">
+            <span class="lobby-label">Party</span>
+            <span class="lobby-value" id="lobby-party-size">—</span>
+          </div>
+          <div class="lobby-info-group">
+            <span class="lobby-label">Access</span>
+            <span class="lobby-value" id="lobby-accessibility">—</span>
+          </div>
+          <div class="lobby-info-group" id="lobby-timer-group" style="display:none;">
+            <span class="lobby-label">Searching</span>
+            <span class="lobby-value" id="lobby-timer">—</span>
+          </div>
+          <div class="lobby-actions" id="lobby-actions" style="display:none;">
+            <button class="lobby-action-btn lobby-access-btn" id="lobby-btn-access" title="Toggle open/closed">OPEN</button>
+            <button class="lobby-action-btn lobby-cheats-btn" id="lobby-btn-cheats" title="Toggle cheat codes">CHEATS</button>
+            <button class="lobby-action-btn lobby-rec-btn" id="lobby-btn-rec" title="Toggle replay recording">
+              <span class="rec-dot" id="rec-dot"></span> REC
+            </button>
+          </div>
+        </div>
+        <div class="lobby-members" id="lobby-members"></div>
+      </div>
+    </div>
+
+    <!-- Live match panel -->
+    <div id="live-panel" class="live-panel hidden">
+      <div class="live-panel-header" id="live-panel-toggle">
+        <div class="live-panel-title">
+          <span class="live-dot" id="live-dot"></span>
+          <span id="live-title-text">Live Match</span>
+        </div>
+        <span class="live-panel-chevron" id="live-chevron">&#x25B2;</span>
+      </div>
+      <div class="live-panel-body" id="live-panel-body">
+        <div class="live-observing-banner hidden" id="live-observing-banner">
+          Observing: <span id="live-observing-name">—</span>
+        </div>
+        <div class="live-row live-row-top">
+          <div class="live-info-group">
+            <span class="live-label">Map</span>
+            <span class="live-value" id="live-map">—</span>
+          </div>
+          <div class="live-info-group">
+            <span class="live-label">Round</span>
+            <span class="live-value" id="live-round">—</span>
+          </div>
+          <div class="live-info-group">
+            <span class="live-label">Score</span>
+            <span class="live-value" id="live-score">— : —</span>
+          </div>
+          <div class="live-info-group">
+            <span class="live-label">Phase</span>
+            <span class="live-value" id="live-phase">—</span>
+          </div>
+          <div class="live-info-group">
+            <span class="live-label">Side</span>
+            <span class="live-value" id="live-side">—</span>
+          </div>
+          <div class="live-info-group">
+            <span class="live-label">Mode</span>
+            <span class="live-value" id="live-mode">—</span>
+          </div>
+        </div>
+        <div class="live-row live-row-player" id="live-row-player">
+          <div class="live-info-group">
+            <span class="live-label">Agent</span>
+            <span class="live-value" id="live-agent">—</span>
+          </div>
+          <div class="live-info-group">
+            <span class="live-label">HP</span>
+            <span class="live-value" id="live-hp">—</span>
+          </div>
+          <div class="live-kda-group">
+            <span class="live-label">K / D / A</span>
+            <span class="live-value">
+              <span class="kda-kills" id="live-kills">0</span>
+              <span class="kda-sep">/</span>
+              <span class="kda-deaths" id="live-deaths">0</span>
+              <span class="kda-sep">/</span>
+              <span class="kda-assists" id="live-assists">0</span>
+            </span>
+          </div>
+          <div class="live-info-group">
+            <span class="live-label">HS</span>
+            <span class="live-value" id="live-headshots">0</span>
+          </div>
+        </div>
+        <div class="live-roster" id="live-roster">
+          <div class="live-roster-team" id="live-roster-ally">
+            <div class="live-roster-header ally-header">ALLY TEAM</div>
+          </div>
+          <div class="live-roster-divider"></div>
+          <div class="live-roster-team" id="live-roster-enemy">
+            <div class="live-roster-header enemy-header">ENEMY TEAM</div>
+          </div>
+        </div>
+        <div class="live-killfeed" id="live-killfeed"></div>
+      </div>
+    </div>
+
     <!-- Main content -->
     <main class="main">
       <!-- State: loading -->
@@ -75,7 +197,33 @@
 
       <!-- State: match list -->
       <div id="state-matches" class="hidden">
-        <div id="match-list" class="match-list"></div>
+        <!-- Saved matches (auto-captured) — shown by default -->
+        <div id="saved-matches-section" class="collapsible-section hidden">
+          <div class="section-header" id="saved-matches-toggle">
+            <div class="section-header-left">
+              <span class="section-title">Saved Matches</span>
+              <span class="section-count" id="saved-matches-count">0</span>
+            </div>
+            <span class="section-chevron" id="saved-matches-chevron">&#x25B2;</span>
+          </div>
+          <div class="section-body" id="saved-matches-body">
+            <div id="saved-match-list" class="match-list"></div>
+          </div>
+        </div>
+
+        <!-- Regular match history — hidden by default -->
+        <div id="history-section" class="collapsible-section">
+          <div class="section-header" id="history-toggle">
+            <div class="section-header-left">
+              <span class="section-title">Match History</span>
+              <span class="section-count" id="history-count">0</span>
+            </div>
+            <span class="section-chevron collapsed" id="history-chevron">&#x25B2;</span>
+          </div>
+          <div class="section-body hidden" id="history-body">
+            <div id="match-list" class="match-list"></div>
+          </div>
+        </div>
       </div>
     </main>
 

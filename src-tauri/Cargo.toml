@@ -1,6 +1,6 @@
 [package]
 name = "reckon-bolt-app"
-version = "0.1.0"
+version = "1.0.1"
 description = "Valorant scrims retrieval desktop app"
 authors = ["you"]
 edition = "2021"
@@ -19,3 +19,5 @@ serde_json = "1"
 reqwest = { version = "0.12", features = ["json"] }
 base64 = "0.22"
 reckon_api = { path = "../reckon-api" }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync"] }
+dirs = "5"
