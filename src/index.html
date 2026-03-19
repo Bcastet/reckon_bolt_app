@@ -211,6 +211,46 @@
           </div>
         </div>
 
+        <!-- Local Replays (.vrf files) -->
+        <div id="local-replays-section" class="collapsible-section hidden">
+          <div class="section-header" id="local-replays-toggle">
+            <div class="section-header-left">
+              <span class="section-title">Local Replays</span>
+              <span class="section-count" id="local-replays-count">0</span>
+            </div>
+            <span class="section-chevron collapsed" id="local-replays-chevron">&#x25B2;</span>
+          </div>
+          <div class="section-body hidden" id="local-replays-body">
+            <div class="replay-toolbar">
+              <button id="replay-refresh-btn" class="btn-replay-action" type="button">Refresh</button>
+              <button id="replay-open-folder-btn" class="btn-replay-action" type="button">Open Folder</button>
+            </div>
+            <div id="local-replay-list" class="replay-list"></div>
+
+            <!-- Injection controls -->
+            <div class="injection-section" id="injection-section">
+              <div class="injection-header">Replay Injection</div>
+              <div class="injection-info">Swap a replay file to watch a different match. Select a host replay from the list above, then choose the file you want to inject.</div>
+              <div class="injection-controls">
+                <div class="injection-field">
+                  <span class="injection-label">Host:</span>
+                  <span class="injection-value" id="injection-host-display">None selected</span>
+                </div>
+                <div class="injection-field">
+                  <span class="injection-label">Inject:</span>
+                  <span class="injection-value" id="injection-file-display">None selected</span>
+                  <button id="injection-browse-btn" class="btn-replay-action" type="button">Browse .vrf</button>
+                </div>
+                <div class="injection-actions">
+                  <button id="injection-start-btn" class="btn-injection-start" type="button" disabled>Start Monitoring</button>
+                  <button id="injection-stop-btn" class="btn-injection-stop" type="button" disabled>Stop</button>
+                  <span class="injection-status" id="injection-status"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Regular match history — hidden by default -->
         <div id="history-section" class="collapsible-section">
           <div class="section-header" id="history-toggle">

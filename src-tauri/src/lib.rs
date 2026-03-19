@@ -391,6 +391,7 @@ async fn reckon_get_soloq_accounts(
         None,
         None,
         None,
+        None,
     )
     .await
     .map_err(|e| format!("Failed to fetch SoloQ accounts: {}", e))?;
@@ -452,7 +453,7 @@ async fn reckon_get_soloq_accounts(
                 "puuid": a.puuid,
                 "accountName": a.account_name,
                 "rankTier": a.rank_tier,
-                "playerId": a.player_id,
+                "playerId": a.player,
                 "server": a.server,
             })
         })
@@ -648,42 +649,119 @@ async fn get_saved_match_detail(app_handle: tauri::AppHandle, match_id: String) 
     ))
 }
 
-/// Download match details as a JSON file to the user's Downloads folder.
+/// Copy a Valorant replay (.vrf) file from the Demos folder to Downloads.
+///
+/// The `label` parameter is used to build a human-friendly filename
+/// (e.g. "Haven_Competitive_2026-03-19").
 #[tauri::command]
-async fn download_match_replay(match_id: String) -> Result<String, String> {
-    let lockfile = lockfile::read_lockfile()?;
-    let client = api::build_http_client()?;
-    let entitlements = auth::get_entitlements(&client, &lockfile).await?;
-    let (_region, shard, client_version) = api::get_session_info(&client, &lockfile).await?;
+async fn download_match_replay(match_id: String, label: Option<String>) -> Result<String, String> {
+    let demos_dir = find_valorant_demos_dir()
+        .ok_or("Could not find the Valorant Demos folder. Make sure Valorant is installed.")?;
 
-    let raw_json = api::fetch_match_details_raw(
-        &client,
-        &shard,
-        &match_id,
-        &entitlements.access_token,
-        &entitlements.token,
-        &client_version,
-    )
-    .await?;
+    let replay_file = demos_dir.join(format!("{}.vrf", match_id));
+    if !replay_file.exists() {
+        return Err(
+            "Replay file not found. Open Valorant and download the replay from your match history first."
+                .to_string(),
+        );
+    }
 
     let downloads_dir = dirs::download_dir()
         .or_else(|| dirs::home_dir().map(|h| h.join("Downloads")))
         .ok_or("Cannot determine Downloads folder")?;
 
-    let filename = format!("replay_{}.json", match_id);
-    let path = downloads_dir.join(&filename);
+    let safe_label = label
+        .as_deref()
+        .unwrap_or(&match_id)
+        .replace(['/', '\\', ':', '*', '?', '"', '<', '>', '|'], "_");
+    let dest_name = format!("{}.vrf", safe_label);
+    let dest_path = downloads_dir.join(&dest_name);
 
-    std::fs::write(&path, &raw_json)
-        .map_err(|e| format!("Failed to write replay file: {}", e))?;
+    std::fs::copy(&replay_file, &dest_path)
+        .map_err(|e| format!("Failed to copy replay file: {}", e))?;
 
     #[cfg(target_os = "windows")]
     {
         let _ = std::process::Command::new("explorer")
-            .args(["/select,", &path.to_string_lossy()])
+            .args(["/select,", &dest_path.to_string_lossy()])
             .spawn();
     }
 
-    Ok(path.to_string_lossy().into_owned())
+    Ok(dest_path.to_string_lossy().into_owned())
+}
+
+/// Find the Valorant Demos directory where replay .vrf files are stored.
+pub(crate) fn find_valorant_demos_dir() -> Option<PathBuf> {
+    if let Some(local_app_data) = std::env::var_os("LOCALAPPDATA") {
+        let path = PathBuf::from(local_app_data)
+            .join("VALORANT")
+            .join("Saved")
+            .join("Demos");
+        if path.exists() {
+            return Some(path);
+        }
+    }
+    None
+}
+
+// ─── Local replay commands ──────────────────────────────────────────────────
+
+/// Open the Valorant Demos directory in the system file explorer.
+#[tauri::command]
+fn open_demos_folder() -> Result<(), String> {
+    let demos_dir = find_valorant_demos_dir()
+        .ok_or("Could not find the Valorant Demos folder")?;
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(demos_dir.to_string_lossy().as_ref())
+            .spawn()
+            .map_err(|e| format!("Failed to open explorer: {}", e))?;
+    }
+    Ok(())
+}
+
+/// List all .vrf replay files from the Valorant Demos directory.
+#[tauri::command]
+fn list_local_replays() -> Vec<live::LocalReplayInfo> {
+    live::list_local_replays()
+}
+
+/// Start replay injection monitoring.
+#[tauri::command]
+fn injection_start(
+    state: tauri::State<'_, live::SharedInjectionState>,
+    host_match_id: String,
+    injection_path: String,
+) -> Result<(), String> {
+    live::injection_start(&state, &host_match_id, &injection_path)
+}
+
+/// Stop replay injection monitoring and restore the original file.
+#[tauri::command]
+fn injection_stop(
+    state: tauri::State<'_, live::SharedInjectionState>,
+) -> Result<(), String> {
+    live::injection_stop(&state)
+}
+
+/// Get current injection state.
+#[tauri::command]
+fn injection_get_state(
+    state: tauri::State<'_, live::SharedInjectionState>,
+) -> live::ReplayInjectionConfig {
+    state.lock().unwrap().clone()
+}
+
+/// Browse for a .vrf file using a native file dialog (returns the selected path).
+#[tauri::command]
+async fn browse_replay_file() -> Result<Option<String>, String> {
+    let result = rfd::AsyncFileDialog::new()
+        .add_filter("Valorant Replay", &["vrf"])
+        .set_title("Select a replay file")
+        .pick_file()
+        .await;
+    Ok(result.map(|f| f.path().to_string_lossy().into_owned()))
 }
 
 /// Open the saved match JSON file in the system file explorer.
@@ -703,11 +781,13 @@ fn show_saved_match_file(app_handle: tauri::AppHandle, match_id: String) -> Resu
 pub fn run() {
     let live_state = live::new_shared_state();
     let lobby_auth = live::new_shared_lobby_auth();
+    let injection_state = live::new_shared_injection_state();
 
     tauri::Builder::default()
         .manage(Mutex::new(ReckonState::default()))
         .manage(live_state.clone())
         .manage(lobby_auth.clone())
+        .manage(injection_state.clone())
         .setup(move |app| {
             // Restore persisted session from a previous launch
             if let Some(session) = load_session(&app.handle()) {
@@ -722,8 +802,9 @@ pub fn run() {
             let (live_stop_tx, live_stop_rx) = watch::channel(false);
             let live_state_clone = live_state.clone();
             let lobby_auth_clone = lobby_auth.clone();
+            let injection_clone = injection_state.clone();
             let app_handle = app.handle().clone();
-            live::start_live_poller(app_handle, live_state_clone, lobby_auth_clone, live_stop_rx);
+            live::start_live_poller(app_handle, live_state_clone, lobby_auth_clone, injection_clone, live_stop_rx);
 
             app.manage(Mutex::new(Some(live_stop_tx)));
 
@@ -760,6 +841,12 @@ pub fn run() {
             get_saved_match_detail,
             show_saved_match_file,
             download_match_replay,
+            open_demos_folder,
+            list_local_replays,
+            injection_start,
+            injection_stop,
+            injection_get_state,
+            browse_replay_file,
             lobby_set_accessibility,
             lobby_get_cheats,
             lobby_set_cheats,

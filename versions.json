@@ -1,4 +1,10 @@
 {
-    "latest": "",
-    "versions": []
+    "latest":  "1.0.1",
+    "versions":  [
+                     {
+                         "version":  "1.0.1",
+                         "date":  "2026-03-19",
+                         "installer":  "Reckon Bolt_1.0.1_x64-setup.exe"
+                     }
+                 ]
 }

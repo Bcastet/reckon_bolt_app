@@ -21,3 +21,4 @@ base64 = "0.22"
 reckon_api = { path = "../reckon-api" }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync"] }
 dirs = "5"
+rfd = "0.15"

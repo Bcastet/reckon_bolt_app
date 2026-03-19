@@ -344,7 +344,7 @@ function renderDetailPanel(panel, detail, accounts = []) {
   const downloadBtn = panel.querySelector(".download-replay-btn");
   if (downloadBtn) {
     downloadBtn.addEventListener("click", () => {
-      handleDownloadReplay(detail.matchId, downloadBtn);
+      handleDownloadReplay(detail.matchId, detail, downloadBtn);
     });
   }
 
@@ -417,7 +417,7 @@ function renderDownloadOnlySection() {
 }
 
 // ─── Download replay handler ───
-async function handleDownloadReplay(matchId, btn) {
+async function handleDownloadReplay(matchId, detail, btn) {
   const textEl = btn.querySelector(".download-replay-text");
   const spinnerEl = btn.querySelector(".download-replay-spinner");
 
@@ -425,8 +425,20 @@ async function handleDownloadReplay(matchId, btn) {
   textEl.classList.add("hidden");
   spinnerEl.classList.remove("hidden");
 
+  // Build a descriptive label for the filename
+  const parts = [];
+  if (detail.mapName) parts.push(detail.mapName);
+  if (detail.queueDisplayName) parts.push(detail.queueDisplayName);
+  // Find the match in loadedMatches to get the timestamp
+  const summary = loadedMatches.find(m => m.matchId === matchId);
+  if (summary && summary.gameStartTime) {
+    const d = new Date(summary.gameStartTime);
+    parts.push(d.toISOString().slice(0, 10));
+  }
+  const label = parts.length > 0 ? parts.join("_") : null;
+
   try {
-    const savedPath = await invoke("download_match_replay", { matchId });
+    await invoke("download_match_replay", { matchId, label });
     textEl.textContent = "Downloaded!";
     setTimeout(() => { textEl.textContent = "Download Replay"; }, 2000);
   } catch (err) {
@@ -2296,6 +2308,181 @@ document.getElementById("history-toggle").addEventListener("click", () => {
   toggleSection(historyBody, historyChevron);
 });
 
+// ─── Local Replays ───
+
+const localReplaysSection = document.getElementById("local-replays-section");
+const localReplayList = document.getElementById("local-replay-list");
+const localReplaysCount = document.getElementById("local-replays-count");
+const localReplaysBody = document.getElementById("local-replays-body");
+const localReplaysChevron = document.getElementById("local-replays-chevron");
+
+let localReplays = [];
+let selectedHostReplay = null;
+let selectedInjectionPath = null;
+let injectionMonitoringActive = false;
+
+document.getElementById("local-replays-toggle").addEventListener("click", () => {
+  toggleSection(localReplaysBody, localReplaysChevron);
+});
+
+document.getElementById("replay-refresh-btn").addEventListener("click", loadLocalReplays);
+
+document.getElementById("replay-open-folder-btn").addEventListener("click", async () => {
+  try {
+    await invoke("open_demos_folder");
+  } catch (err) {
+    showToast(typeof err === "string" ? err : "Could not open folder", { title: "Error" });
+  }
+});
+
+async function loadLocalReplays() {
+  try {
+    localReplays = await invoke("list_local_replays");
+    renderLocalReplays();
+  } catch (e) {
+    console.warn("Could not load local replays:", e);
+  }
+}
+
+function renderLocalReplays() {
+  localReplayList.innerHTML = "";
+  if (localReplays.length === 0) {
+    localReplaysSection.classList.add("hidden");
+    return;
+  }
+  localReplaysSection.classList.remove("hidden");
+  localReplaysCount.textContent = String(localReplays.length);
+
+  for (const r of localReplays) {
+    const row = document.createElement("div");
+    row.className = "replay-row" + (selectedHostReplay === r.matchId ? " replay-selected" : "");
+    row.dataset.matchId = r.matchId;
+
+    const sizeMb = (r.sizeBytes / (1024 * 1024)).toFixed(1);
+    const date = new Date(r.modifiedMs);
+    const dateStr = formatDate(date);
+
+    row.innerHTML = `
+      <span class="replay-id" title="${escapeHtml(r.matchId)}">${escapeHtml(r.matchId.substring(0, 8))}...</span>
+      <span class="replay-size">${sizeMb} MB</span>
+      <span class="replay-date">${dateStr}</span>
+      <div class="replay-actions">
+        <button class="btn-replay-action replay-export-btn" type="button" title="Copy to Downloads">Export</button>
+        <button class="btn-replay-action replay-host-btn" type="button" title="Select as injection host">Use as Host</button>
+      </div>
+    `;
+
+    row.querySelector(".replay-export-btn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      handleExportReplay(r);
+    });
+
+    row.querySelector(".replay-host-btn").addEventListener("click", (e) => {
+      e.stopPropagation();
+      selectHostReplay(r.matchId);
+    });
+
+    localReplayList.appendChild(row);
+  }
+}
+
+function selectHostReplay(matchId) {
+  selectedHostReplay = matchId;
+  document.getElementById("injection-host-display").textContent = matchId.substring(0, 16) + "...";
+  renderLocalReplays();
+  updateInjectionReady();
+}
+
+async function handleExportReplay(replay) {
+  try {
+    await invoke("download_match_replay", { matchId: replay.matchId, label: null });
+  } catch (err) {
+    showToast(typeof err === "string" ? err : "Export failed", { title: "Export Error" });
+  }
+}
+
+// ─── Injection controls ───
+
+document.getElementById("injection-browse-btn").addEventListener("click", async () => {
+  try {
+    const path = await invoke("browse_replay_file");
+    if (path) {
+      selectedInjectionPath = path;
+      const name = path.replace(/^.*[/\\]/, "");
+      document.getElementById("injection-file-display").textContent = name;
+      updateInjectionReady();
+    }
+  } catch (err) {
+    showToast(typeof err === "string" ? err : "Browse failed", { title: "Error" });
+  }
+});
+
+function updateInjectionReady() {
+  const startBtn = document.getElementById("injection-start-btn");
+  startBtn.disabled = !selectedHostReplay || !selectedInjectionPath || injectionMonitoringActive;
+}
+
+document.getElementById("injection-start-btn").addEventListener("click", async () => {
+  if (!selectedHostReplay || !selectedInjectionPath) return;
+  const startBtn = document.getElementById("injection-start-btn");
+  const stopBtn = document.getElementById("injection-stop-btn");
+  const statusEl = document.getElementById("injection-status");
+
+  startBtn.disabled = true;
+  try {
+    await invoke("injection_start", {
+      hostMatchId: selectedHostReplay,
+      injectionPath: selectedInjectionPath,
+    });
+    injectionMonitoringActive = true;
+    stopBtn.disabled = false;
+    statusEl.textContent = "Monitoring — play the host replay in Valorant";
+    statusEl.className = "injection-status active";
+  } catch (err) {
+    showToast(typeof err === "string" ? err : "Failed to start injection", { title: "Injection Error" });
+    startBtn.disabled = false;
+  }
+});
+
+document.getElementById("injection-stop-btn").addEventListener("click", async () => {
+  const startBtn = document.getElementById("injection-start-btn");
+  const stopBtn = document.getElementById("injection-stop-btn");
+  const statusEl = document.getElementById("injection-status");
+
+  try {
+    await invoke("injection_stop");
+  } catch (err) {
+    console.error("Injection stop error:", err);
+  }
+  injectionMonitoringActive = false;
+  stopBtn.disabled = true;
+  statusEl.textContent = "";
+  statusEl.className = "injection-status";
+  updateInjectionReady();
+});
+
+function initInjectionListeners() {
+  tauriListen("replay-injection", (e) => {
+    const data = e.payload;
+    const statusEl = document.getElementById("injection-status");
+    if (data.status === "injected") {
+      statusEl.textContent = "Injected! Watching replay...";
+      statusEl.className = "injection-status injected";
+    } else if (data.status === "restored") {
+      statusEl.textContent = "Original file restored";
+      statusEl.className = "injection-status";
+      setTimeout(() => {
+        if (!injectionMonitoringActive) return;
+        statusEl.textContent = "Monitoring — play the host replay in Valorant";
+        statusEl.className = "injection-status active";
+      }, 3000);
+    } else if (data.status === "error" || data.status === "restore-error") {
+      statusEl.textContent = "Error: " + (data.message || "Unknown");
+      statusEl.className = "injection-status error";
+    }
+  });
+}
+
 // ─── Init ───
 refreshBtn.addEventListener("click", loadMatches);
 reckonConnectBtn.addEventListener("click", onConnectBtnClick);
@@ -2308,3 +2495,5 @@ loadMatches();
 initLiveListeners();
 loadSavedMatches();
 initSavedMatchListeners();
+loadLocalReplays();
+initInjectionListeners();

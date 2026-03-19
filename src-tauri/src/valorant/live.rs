@@ -18,6 +18,7 @@ pub enum GamePhase {
     Menus,
     PreGame,
     InGame,
+    Replay,
 }
 
 #[derive(Debug, Clone, Serialize)]
@@ -111,6 +112,156 @@ pub type SharedLobbyAuth = Arc<Mutex<LobbyAuth>>;
 
 pub fn new_shared_lobby_auth() -> SharedLobbyAuth {
     Arc::new(Mutex::new(LobbyAuth::default()))
+}
+
+// ─── Replay injection state ─────────────────────────────────────────────────
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ReplayInjectionConfig {
+    pub host_match_id: String,
+    pub injection_path: String,
+    pub active: bool,
+    pub injected: bool,
+    pub backup_path: Option<String>,
+}
+
+impl Default for ReplayInjectionConfig {
+    fn default() -> Self {
+        Self {
+            host_match_id: String::new(),
+            injection_path: String::new(),
+            active: false,
+            injected: false,
+            backup_path: None,
+        }
+    }
+}
+
+pub type SharedInjectionState = Arc<Mutex<ReplayInjectionConfig>>;
+
+pub fn new_shared_injection_state() -> SharedInjectionState {
+    Arc::new(Mutex::new(ReplayInjectionConfig::default()))
+}
+
+/// Start monitoring: set host and injection files.
+pub fn injection_start(state: &SharedInjectionState, host_match_id: &str, injection_path: &str) -> Result<(), String> {
+    let demos_dir = super::super::find_valorant_demos_dir()
+        .ok_or("Could not find the Valorant Demos folder")?;
+    let host_file = demos_dir.join(format!("{}.vrf", host_match_id));
+    if !host_file.exists() {
+        return Err(format!("Host replay file not found: {}", host_file.display()));
+    }
+    let inj = std::path::Path::new(injection_path);
+    if !inj.exists() {
+        return Err(format!("Injection file not found: {}", injection_path));
+    }
+    let mut cfg = state.lock().map_err(|_| "Lock poisoned".to_string())?;
+    cfg.host_match_id = host_match_id.to_string();
+    cfg.injection_path = injection_path.to_string();
+    cfg.active = true;
+    cfg.injected = false;
+    cfg.backup_path = None;
+    eprintln!("[Injection] Armed: host={}, injection={}", host_match_id, injection_path);
+    Ok(())
+}
+
+/// Stop monitoring and restore original file if needed.
+pub fn injection_stop(state: &SharedInjectionState) -> Result<(), String> {
+    let mut cfg = state.lock().map_err(|_| "Lock poisoned".to_string())?;
+    if cfg.injected {
+        restore_original(&cfg)?;
+    }
+    cfg.active = false;
+    cfg.injected = false;
+    cfg.backup_path = None;
+    eprintln!("[Injection] Stopped");
+    Ok(())
+}
+
+/// Perform the file swap: backup host, copy injection over it.
+fn perform_injection(cfg: &mut ReplayInjectionConfig) -> Result<(), String> {
+    let demos_dir = super::super::find_valorant_demos_dir()
+        .ok_or("Could not find the Valorant Demos folder")?;
+    let host_file = demos_dir.join(format!("{}.vrf", cfg.host_match_id));
+
+    let backup_name = format!("{}_backup.vrf", cfg.host_match_id);
+    let backup_path = demos_dir.join(&backup_name);
+
+    std::fs::copy(&host_file, &backup_path)
+        .map_err(|e| format!("Failed to create backup: {}", e))?;
+    cfg.backup_path = Some(backup_path.to_string_lossy().into_owned());
+    eprintln!("[Injection] Backup created: {}", backup_path.display());
+
+    std::fs::copy(&cfg.injection_path, &host_file)
+        .map_err(|e| format!("Failed to inject replay: {}", e))?;
+    cfg.injected = true;
+    eprintln!("[Injection] File swapped successfully");
+    Ok(())
+}
+
+/// Restore the original host file from backup.
+fn restore_original(cfg: &ReplayInjectionConfig) -> Result<(), String> {
+    if let Some(ref backup) = cfg.backup_path {
+        let demos_dir = super::super::find_valorant_demos_dir()
+            .ok_or("Could not find the Valorant Demos folder")?;
+        let host_file = demos_dir.join(format!("{}.vrf", cfg.host_match_id));
+        let backup_path = std::path::Path::new(backup);
+
+        if backup_path.exists() {
+            std::fs::copy(backup_path, &host_file)
+                .map_err(|e| format!("Failed to restore backup: {}", e))?;
+            let _ = std::fs::remove_file(backup_path);
+            eprintln!("[Injection] Original file restored");
+        }
+    }
+    Ok(())
+}
+
+/// List .vrf replay files from the Valorant Demos directory.
+pub fn list_local_replays() -> Vec<LocalReplayInfo> {
+    let demos_dir = match super::super::find_valorant_demos_dir() {
+        Some(d) => d,
+        None => return vec![],
+    };
+
+    let mut replays = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(&demos_dir) {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            if path.extension().and_then(|e| e.to_str()) == Some("vrf") {
+                let filename = path.file_name().unwrap_or_default().to_string_lossy().into_owned();
+                let match_id = path.file_stem().unwrap_or_default().to_string_lossy().into_owned();
+                let size = entry.metadata().map(|m| m.len()).unwrap_or(0);
+                let modified = entry.metadata().ok()
+                    .and_then(|m| m.modified().ok())
+                    .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                    .map(|d| d.as_millis() as u64)
+                    .unwrap_or(0);
+
+                replays.push(LocalReplayInfo {
+                    filename,
+                    match_id,
+                    path: path.to_string_lossy().into_owned(),
+                    size_bytes: size,
+                    modified_ms: modified,
+                });
+            }
+        }
+    }
+
+    replays.sort_by(|a, b| b.modified_ms.cmp(&a.modified_ms));
+    replays
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LocalReplayInfo {
+    pub filename: String,
+    pub match_id: String,
+    pub path: String,
+    pub size_bytes: u64,
+    pub modified_ms: u64,
 }
 
 // ─── Lobby action commands ──────────────────────────────────────────────────
@@ -699,6 +850,7 @@ async fn fetch_presence(
     let phase = match raw_state {
         "PREGAME" => GamePhase::PreGame,
         "INGAME" => GamePhase::InGame,
+        "REPLAY" => GamePhase::Replay,
         _ => GamePhase::Menus,
     };
 
@@ -1196,6 +1348,7 @@ pub fn start_live_poller(
     app_handle: AppHandle,
     state: SharedLiveState,
     lobby_auth: SharedLobbyAuth,
+    injection_state: SharedInjectionState,
     stop_rx: watch::Receiver<bool>,
 ) {
     tauri::async_runtime::spawn(async move {
@@ -1305,6 +1458,36 @@ pub fn start_live_poller(
 
                 match phase {
                     GamePhase::Menus => {
+                        // Auto-restore injected replay when leaving REPLAY state
+                        if old_phase == Some(GamePhase::Replay) {
+                            let should_restore = {
+                                let inj = injection_state.lock().unwrap();
+                                inj.injected
+                            };
+                            if should_restore {
+                                let result = {
+                                    let mut inj = injection_state.lock().unwrap();
+                                    let r = restore_original(&inj);
+                                    inj.injected = false;
+                                    r
+                                };
+                                match result {
+                                    Ok(()) => {
+                                        let _ = app_handle.emit("replay-injection", serde_json::json!({
+                                            "status": "restored"
+                                        }));
+                                    }
+                                    Err(e) => {
+                                        eprintln!("[Injection] Restore failed: {}", e);
+                                        let _ = app_handle.emit("replay-injection", serde_json::json!({
+                                            "status": "restore-error",
+                                            "message": e,
+                                        }));
+                                    }
+                                }
+                            }
+                        }
+
                         // Check for a pending match to save regardless of what old_phase was,
                         // since lockfile errors can reset prev_phase to None and mask the
                         // InGame -> Menus transition.
@@ -1458,7 +1641,58 @@ pub fn start_live_poller(
                         }
                         tokio::time::sleep(Duration::from_secs(10)).await;
                     }
+                    GamePhase::Replay => {
+                        if phase_changed {
+                            eprintln!("[LiveAPI] Entered REPLAY state");
+
+                            // Check if injection is armed
+                            let should_inject = {
+                                let inj = injection_state.lock().unwrap();
+                                inj.active && !inj.injected
+                            };
+                            if should_inject {
+                                let result = {
+                                    let mut inj = injection_state.lock().unwrap();
+                                    perform_injection(&mut inj)
+                                };
+                                match result {
+                                    Ok(()) => {
+                                        let _ = app_handle.emit("replay-injection", serde_json::json!({
+                                            "status": "injected"
+                                        }));
+                                    }
+                                    Err(e) => {
+                                        eprintln!("[Injection] Failed: {}", e);
+                                        let _ = app_handle.emit("replay-injection", serde_json::json!({
+                                            "status": "error",
+                                            "message": e,
+                                        }));
+                                    }
+                                }
+                            }
+
+                            let replay_state = LiveGameState {
+                                phase: Some(GamePhase::Replay),
+                                ..Default::default()
+                            };
+                            {
+                                let mut s = state.lock().unwrap();
+                                *s = replay_state.clone();
+                            }
+                            let _ = app_handle.emit("live-game-state", &replay_state);
+                        }
+                        tokio::time::sleep(Duration::from_secs(3)).await;
+                    }
                 }
+            }
+        }
+
+        // Auto-restore on poller shutdown if injection was active
+        {
+            let mut inj = injection_state.lock().unwrap();
+            if inj.injected {
+                let _ = restore_original(&inj);
+                inj.injected = false;
             }
         }
 
