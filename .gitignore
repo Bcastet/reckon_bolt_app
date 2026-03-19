@@ -12,9 +12,6 @@ Thumbs.db
 .env
 .env.*
 
-# Release artifacts
-releases/
-
 # IDE
 .idea/
 *.swp
