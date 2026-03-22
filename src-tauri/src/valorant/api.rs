@@ -159,9 +159,11 @@ pub async fn fetch_match_details(
         .map_err(|e| format!("Failed to fetch match details: {}", e))?;
 
     if !resp.status().is_success() {
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
         return Err(format!(
-            "Match details request failed with status {}",
-            resp.status()
+            "Match details request failed with status {} | URL: {} | Body: {}",
+            status, url, body
         ));
     }
 
@@ -197,9 +199,11 @@ pub async fn fetch_match_details_raw(
         .map_err(|e| format!("Failed to fetch match details: {}", e))?;
 
     if !resp.status().is_success() {
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
         return Err(format!(
-            "Match details request failed with status {}",
-            resp.status()
+            "Match details request failed with status {} | URL: {} | Body: {}",
+            status, url, body
         ));
     }
 
@@ -404,7 +408,7 @@ pub fn build_match_detail_view(
     }
 }
 
-fn extract_map_fallback(map_id: &str) -> String {
+pub fn extract_map_fallback(map_id: &str) -> String {
     map_id
         .split('/')
         .last()
@@ -412,7 +416,7 @@ fn extract_map_fallback(map_id: &str) -> String {
         .to_string()
 }
 
-fn queue_display_name(queue_id: &str, is_custom: bool) -> String {
+pub fn queue_display_name(queue_id: &str, is_custom: bool) -> String {
     if is_custom {
         return "Custom Game".to_string();
     }

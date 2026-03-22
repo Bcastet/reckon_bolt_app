@@ -335,6 +335,36 @@ body {
   flex: 1;
   padding: 1.5rem;
   overflow-y: auto;
+  position: relative;
+}
+
+.drop-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  background: rgba(10, 20, 28, 0.88);
+  border: 2px dashed #3b8eea;
+  border-radius: 10px;
+  margin: 0.5rem;
+  pointer-events: none;
+  align-items: center;
+  justify-content: center;
+}
+
+.drop-overlay.visible {
+  display: flex;
+}
+
+.drop-overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  color: #7eb8e0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .hidden {
@@ -1290,9 +1320,27 @@ body {
 
 .unlinked-row {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1fr auto;
   gap: 0.75rem;
   align-items: center;
+}
+
+.unlinked-row-linked {
+  grid-template-columns: 1fr 1fr;
+  opacity: 0.7;
+}
+
+.unlinked-link-btn {
+  padding: 0.4rem 0.75rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.unlinked-linked-badge {
+  font-size: 0.75rem;
+  color: #4caf50;
+  font-weight: 500;
+  white-space: nowrap;
 }
 
 .unlinked-account-label {
@@ -1401,6 +1449,30 @@ body {
   color: #768a96;
   padding: 0.1rem 0.45rem;
   border-radius: 10px;
+}
+
+.section-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-section-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: #596d7a;
+  cursor: pointer;
+  padding: 0.2rem;
+  border-radius: 4px;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.btn-section-icon:hover {
+  color: #a8c4d4;
+  background-color: rgba(255, 255, 255, 0.08);
 }
 
 .section-chevron {

@@ -462,6 +462,69 @@ fn matches_dir(app: &AppHandle) -> Result<PathBuf, String> {
     Ok(matches)
 }
 
+pub fn get_matches_dir(app: &AppHandle) -> Result<PathBuf, String> {
+    matches_dir(app)
+}
+
+pub fn import_match_from_path(app: &AppHandle, path: &str) -> Result<SavedMatchEntry, String> {
+    let raw = std::fs::read_to_string(path)
+        .map_err(|e| format!("Cannot read file: {}", e))?;
+
+    let parsed: serde_json::Value = serde_json::from_str(&raw)
+        .map_err(|_| "File is not valid JSON".to_string())?;
+
+    let match_info = parsed.get("matchInfo")
+        .ok_or("JSON is missing matchInfo — not a Valorant match file")?;
+
+    let match_id = match_info.get("matchId")
+        .and_then(|v| v.as_str())
+        .ok_or("matchInfo is missing matchId")?
+        .to_string();
+
+    let map_id = match_info.get("mapId")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let map_name = api::extract_map_fallback(map_id);
+
+    let queue_id = match_info.get("queueID")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let provisioning = match_info.get("provisioningFlowID")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let is_custom = provisioning == "CustomGame";
+    let queue_name = api::queue_display_name(queue_id, is_custom);
+
+    let timestamp = match_info.get("gameStartMillis")
+        .and_then(|v| v.as_u64())
+        .unwrap_or_else(|| {
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .map(|d| d.as_millis() as u64)
+                .unwrap_or(0)
+        });
+
+    let mut index = load_match_index(app);
+    if index.matches.iter().any(|m| m.match_id == match_id) {
+        return Err(format!("Match {} is already saved", match_id));
+    }
+
+    save_match_json(app, &match_id, &raw)?;
+
+    let entry = SavedMatchEntry {
+        match_id,
+        map_name: Some(map_name),
+        queue_name: Some(queue_name),
+        is_spectated: false,
+        timestamp,
+    };
+
+    index.matches.insert(0, entry.clone());
+    save_match_index(app, &index)?;
+
+    Ok(entry)
+}
+
 fn load_match_index(app: &AppHandle) -> SavedMatchIndex {
     let dir = match matches_dir(app) {
         Ok(d) => d,

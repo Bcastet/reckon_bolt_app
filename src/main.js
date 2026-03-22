@@ -113,7 +113,10 @@ async function loadMatches() {
 
     if (!running) {
       setOnline(false);
-      showState(stateOffline);
+      stateLoading.classList.add("hidden");
+      stateOffline.classList.add("hidden");
+      stateError.classList.add("hidden");
+      stateMatches.classList.add("hidden");
       refreshBtn.disabled = false;
       return;
     }
@@ -134,8 +137,10 @@ async function loadMatches() {
   } catch (err) {
     console.error(err);
     setOnline(false);
-    errorMsg.textContent = typeof err === "string" ? err : "Failed to load match history";
-    showState(stateError);
+    stateLoading.classList.add("hidden");
+    stateOffline.classList.add("hidden");
+    stateError.classList.add("hidden");
+    stateMatches.classList.add("hidden");
   }
 
   refreshBtn.disabled = false;
@@ -375,6 +380,7 @@ function renderDetailPanel(panel, detail, accounts = []) {
       uploadBtn.addEventListener("click", () => {
         handleUploadMatch({
           matchId: detail.matchId,
+          server: detail.server,
           blueSelector,
           redSelector,
           uploadBtn,
@@ -457,7 +463,7 @@ async function handleDownloadReplay(matchId, detail, btn) {
 }
 
 // ─── Upload match handler ───
-async function handleUploadMatch({ matchId, blueSelector, redSelector, uploadBtn, uploadError, uploadSuccess }) {
+async function handleUploadMatch({ matchId, server, blueSelector, redSelector, uploadBtn, uploadError, uploadSuccess }) {
   const uploadSection = uploadBtn.closest(".upload-section");
   const unlinkedContainer = uploadSection.querySelector(".unlinked-accounts");
 
@@ -490,12 +496,14 @@ async function handleUploadMatch({ matchId, blueSelector, redSelector, uploadBtn
       team1: String(blueTeam.id),
       team2: String(redTeam.id),
       matchId: matchId,
+      server: server || "",
     });
 
     // Check if the response contains unlinked accounts
     if (result && result.unlinkedAccounts && result.unlinkedAccounts.length > 0) {
       renderUnlinkedAccounts(unlinkedContainer, result.unlinkedAccounts, result.server, {
         matchId,
+        server,
         blueSelector,
         redSelector,
         uploadBtn,
@@ -506,13 +514,21 @@ async function handleUploadMatch({ matchId, blueSelector, redSelector, uploadBtn
       uploadSuccess.textContent = "Match uploaded successfully!";
       uploadSuccess.classList.remove("hidden");
     } else if (result && result.error) {
-      uploadError.textContent = result.error;
-      uploadError.classList.remove("hidden");
+      showToast(result.error, { title: "Upload failed" });
     }
   } catch (err) {
     console.error("Upload failed:", err);
-    uploadError.textContent = typeof err === "string" ? err : "Upload failed. Please try again.";
-    uploadError.classList.remove("hidden");
+    const raw = typeof err === "string" ? err : String(err);
+    try {
+      const data = JSON.parse(raw);
+      if (data.uploadError) {
+        showToast(data.message, { title: "Upload failed", apiResponse: data.log });
+      } else {
+        showToast(raw, { title: "Upload failed" });
+      }
+    } catch (_) {
+      showToast(raw, { title: "Upload failed" });
+    }
   }
 
   setUploadLoading(uploadBtn, false);
@@ -532,7 +548,6 @@ function renderUnlinkedAccounts(container, accounts, server, uploadContext) {
   container.innerHTML = "";
   container.classList.remove("hidden");
 
-  // Header
   const header = document.createElement("div");
   header.className = "unlinked-header";
   header.innerHTML = `
@@ -541,10 +556,6 @@ function renderUnlinkedAccounts(container, accounts, server, uploadContext) {
   `;
   container.appendChild(header);
 
-  // Track player selectors for each account
-  const selectorMap = [];
-
-  // Account rows
   const list = document.createElement("div");
   list.className = "unlinked-list";
 
@@ -559,82 +570,73 @@ function renderUnlinkedAccounts(container, accounts, server, uploadContext) {
     const selectorContainer = document.createElement("div");
     selectorContainer.className = "unlinked-player-selector";
 
+    const linkBtn = document.createElement("button");
+    linkBtn.type = "button";
+    linkBtn.className = "upload-btn unlinked-link-btn";
+    linkBtn.innerHTML = `
+      <span class="upload-btn-text">Link</span>
+      <div class="spinner-small upload-spinner hidden"></div>
+    `;
+
     row.appendChild(label);
     row.appendChild(selectorContainer);
+    row.appendChild(linkBtn);
     list.appendChild(row);
 
     const selector = createPlayerSelector(selectorContainer, {
       placeholder: "Link to player\u2026",
     });
 
-    selectorMap.push({ account, selector });
+    linkBtn.addEventListener("click", async () => {
+      const player = selector.getValue();
+      if (!player) {
+        showToast(`Please select a player for ${account.accountName}.`, { title: "Missing player" });
+        return;
+      }
+
+      setUploadLoading(linkBtn, true);
+      try {
+        await invoke("reckon_link_account", {
+          playerId: player.id,
+          puuid: account.puuid,
+          accountName: account.accountName || null,
+        });
+        row.classList.add("unlinked-row-linked");
+        linkBtn.remove();
+        selectorContainer.remove();
+        const linkedBadge = document.createElement("span");
+        linkedBadge.className = "unlinked-linked-badge";
+        linkedBadge.textContent = `Linked to ${player.id}`;
+        row.appendChild(linkedBadge);
+      } catch (err) {
+        console.error(`Failed to link ${account.accountName}:`, err);
+        showToast(`Failed to link ${account.accountName}: ${typeof err === "string" ? err : "Unknown error"}`, { title: "Link failed" });
+        setUploadLoading(linkBtn, false);
+      }
+    });
   }
 
   container.appendChild(list);
 
-  // Action row
   const actions = document.createElement("div");
   actions.className = "unlinked-actions";
 
-  const linkBtn = document.createElement("button");
-  linkBtn.type = "button";
-  linkBtn.className = "upload-btn link-retry-btn";
-  linkBtn.innerHTML = `
-    <span class="upload-btn-text">Link Accounts &amp; Retry Upload</span>
+  const retryBtn = document.createElement("button");
+  retryBtn.type = "button";
+  retryBtn.className = "upload-btn link-retry-btn";
+  retryBtn.innerHTML = `
+    <span class="upload-btn-text">Retry Upload</span>
     <div class="spinner-small upload-spinner hidden"></div>
   `;
 
-  const linkError = document.createElement("p");
-  linkError.className = "upload-error hidden";
-
-  actions.appendChild(linkBtn);
+  actions.appendChild(retryBtn);
   container.appendChild(actions);
-  container.appendChild(linkError);
 
-  linkBtn.addEventListener("click", () => {
-    handleLinkAndRetry(selectorMap, server, linkBtn, linkError, container, uploadContext);
+  retryBtn.addEventListener("click", () => {
+    container.classList.add("hidden");
+    container.innerHTML = "";
+    handleUploadMatch(uploadContext);
   });
-}
-
-async function handleLinkAndRetry(selectorMap, server, linkBtn, linkError, container, uploadContext) {
-  linkError.classList.add("hidden");
-
-  // Validate all selectors have a player chosen
-  for (const { account, selector } of selectorMap) {
-    if (!selector.getValue()) {
-      linkError.textContent = `Please select a player for ${account.accountName}.`;
-      linkError.classList.remove("hidden");
-      return;
-    }
-  }
-
-  setUploadLoading(linkBtn, true);
-
-  // Link each account sequentially
-  for (const { account, selector } of selectorMap) {
-    const player = selector.getValue();
-    try {
-      await invoke("reckon_link_account", {
-        playerId: player.id,
-        puuid: account.puuid,
-        accountName: account.accountName || null,
-      });
-    } catch (err) {
-      console.error(`Failed to link ${account.accountName}:`, err);
-      linkError.textContent = `Failed to link ${account.accountName}: ${typeof err === "string" ? err : "Unknown error"}`;
-      linkError.classList.remove("hidden");
-      setUploadLoading(linkBtn, false);
-      return;
-    }
-  }
-
-  // All linked — hide the linking UI and retry upload
-  setUploadLoading(linkBtn, false);
-  container.classList.add("hidden");
-  container.innerHTML = "";
-
-  // Retry upload with the same parameters
-  handleUploadMatch(uploadContext);
 }
 
 function playerRow(p, accountByPuuid = new Map()) {
@@ -2305,9 +2307,78 @@ function toggleSection(body, chevron) {
   chevron.classList.toggle("collapsed", isHidden);
 }
 
-document.getElementById("saved-matches-toggle").addEventListener("click", () => {
+document.getElementById("saved-matches-toggle").addEventListener("click", (e) => {
+  if (e.target.closest(".btn-section-icon")) return;
   toggleSection(savedMatchesBody, savedMatchesChevron);
 });
+
+document.getElementById("saved-matches-folder-btn").addEventListener("click", async (e) => {
+  e.stopPropagation();
+  try {
+    await invoke("open_saved_matches_folder");
+  } catch (err) {
+    showToast(typeof err === "string" ? err : "Could not open folder", { title: "Error" });
+  }
+});
+
+document.getElementById("saved-matches-import-btn").addEventListener("click", async (e) => {
+  e.stopPropagation();
+  try {
+    const count = await invoke("browse_import_matches");
+    if (count > 0) {
+      showToast(`Imported ${count} match${count > 1 ? "es" : ""}`, { title: "Import" });
+    }
+  } catch (err) {
+    showToast(typeof err === "string" ? err : "Import failed", { title: "Error" });
+  }
+});
+
+// ─── Drag-and-drop import for saved matches (Tauri native events) ───
+{
+  const dropOverlay = document.getElementById("drop-overlay");
+
+  tauriListen("tauri://drag-drop", async (e) => {
+    const { type, paths } = e.payload || {};
+
+    if (type === "enter" || type === "over") {
+      dropOverlay.classList.add("visible");
+      return;
+    }
+
+    if (type === "leave" || type === "cancel") {
+      dropOverlay.classList.remove("visible");
+      return;
+    }
+
+    if (type === "drop") {
+      dropOverlay.classList.remove("visible");
+      if (!paths || paths.length === 0) return;
+
+      const jsonPaths = paths.filter(p => p.endsWith(".json"));
+      if (jsonPaths.length === 0) {
+        showToast("No .json files found in drop", { title: "Import" });
+        return;
+      }
+
+      let imported = 0;
+      let lastErr = "";
+      for (const path of jsonPaths) {
+        try {
+          await invoke("import_match_file", { path });
+          imported++;
+        } catch (err) {
+          lastErr = typeof err === "string" ? err : "Import failed";
+        }
+      }
+
+      if (imported > 0) {
+        showToast(`Imported ${imported} match${imported > 1 ? "es" : ""}`, { title: "Import" });
+      } else if (lastErr) {
+        showToast(lastErr, { title: "Import Error" });
+      }
+    }
+  });
+}
 
 document.getElementById("history-toggle").addEventListener("click", () => {
   toggleSection(historyBody, historyChevron);

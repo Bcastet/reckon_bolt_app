@@ -181,6 +181,17 @@
 
     <!-- Main content -->
     <main class="main">
+      <!-- Drop overlay for match JSON import -->
+      <div id="drop-overlay" class="drop-overlay">
+        <div class="drop-overlay-content">
+          <svg width="40" height="40" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="10" y1="4" x2="10" y2="16"/>
+            <line x1="4" y1="10" x2="16" y2="10"/>
+          </svg>
+          <span>Drop match JSON files to import</span>
+        </div>
+      </div>
+
       <!-- State: loading -->
       <div id="state-loading" class="state">
         <div class="spinner"></div>
@@ -201,22 +212,35 @@
         <p class="state-sub">Check that Valorant is running and try again.</p>
       </div>
 
-      <!-- State: match list -->
-      <div id="state-matches" class="hidden">
-        <!-- Saved matches (auto-captured) — shown by default -->
-        <div id="saved-matches-section" class="collapsible-section hidden">
-          <div class="section-header" id="saved-matches-toggle">
-            <div class="section-header-left">
-              <span class="section-title">Saved Matches</span>
-              <span class="section-count" id="saved-matches-count">0</span>
-            </div>
+      <!-- Saved matches (auto-captured) — always visible regardless of Valorant status -->
+      <div id="saved-matches-section" class="collapsible-section hidden">
+        <div class="section-header" id="saved-matches-toggle">
+          <div class="section-header-left">
+            <span class="section-title">Saved Matches</span>
+            <span class="section-count" id="saved-matches-count">0</span>
+          </div>
+          <div class="section-header-right">
+            <button class="btn-section-icon" id="saved-matches-import-btn" type="button" title="Import match JSON file">
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="10" y1="4" x2="10" y2="16"/>
+                <line x1="4" y1="10" x2="16" y2="10"/>
+              </svg>
+            </button>
+            <button class="btn-section-icon" id="saved-matches-folder-btn" type="button" title="Open saved matches folder">
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 5a2 2 0 0 1 2-2h3.172a2 2 0 0 1 1.414.586l1.828 1.828A2 2 0 0 0 11.828 6H16a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5z"/>
+              </svg>
+            </button>
             <span class="section-chevron" id="saved-matches-chevron">&#x25B2;</span>
           </div>
-          <div class="section-body" id="saved-matches-body">
-            <div id="saved-match-list" class="match-list"></div>
-          </div>
         </div>
+        <div class="section-body" id="saved-matches-body">
+          <div id="saved-match-list" class="match-list"></div>
+        </div>
+      </div>
 
+      <!-- State: match list -->
+      <div id="state-matches" class="hidden">
         <!-- Local Replays (.vrf files) -->
         <div id="local-replays-section" class="collapsible-section hidden">
           <div class="section-header" id="local-replays-toggle">

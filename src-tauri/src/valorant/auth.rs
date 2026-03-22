@@ -22,9 +22,11 @@ pub async fn get_entitlements(
         .map_err(|e| format!("Failed to reach Riot Client API: {}", e))?;
 
     if !resp.status().is_success() {
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
         return Err(format!(
-            "Entitlements request failed with status {}",
-            resp.status()
+            "Entitlements request failed with status {} | Body: {}",
+            status, body
         ));
     }
 

@@ -3,7 +3,7 @@ mod valorant;
 use std::sync::Mutex;
 use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 use tokio::sync::watch;
 use valorant::{api, auth, live, lockfile, types::{MatchDetailView, MatchSummary}};
 use reckon_api::apis::configuration::BASE_URL_PROD;
@@ -233,61 +233,120 @@ fn reckon_get_teams(state: tauri::State<'_, Mutex<ReckonState>>) -> Vec<serde_js
 /// Returns a JSON value:
 ///   - On success: `{ "success": true, "gameId": "…", … }`
 ///   - On unlinked accounts: `{ "error": "…", "unlinkedAccounts": [{ "puuid", "accountName" }], "server": "…" }`
-///   - On other errors: returns Err(String)
+///   - On other errors: returns Err(JSON string with `uploadError`, `message`, `log`)
 #[tauri::command]
 async fn reckon_upload_match(
+    app: tauri::AppHandle,
     state: tauri::State<'_, Mutex<ReckonState>>,
     team1: String,
     team2: String,
     match_id: String,
+    server: String,
 ) -> Result<serde_json::Value, String> {
+    let mut log: Vec<String> = Vec::new();
+
+    macro_rules! log_step {
+        ($($arg:tt)*) => { log.push(format!($($arg)*)) }
+    }
+
+    macro_rules! fail {
+        ($msg:expr) => {{
+            log_step!("FAILED: {}", $msg);
+            let err = serde_json::json!({
+                "uploadError": true,
+                "message": $msg,
+                "log": log.join("\n"),
+            });
+            return Err(err.to_string());
+        }};
+    }
+
+    log_step!("Upload started for match {}", match_id);
+    log_step!("Teams: {} vs {}", team1, team2);
+
     // 1. Get auth token from state
     let token = {
         let guard = state.lock().map_err(|_| "State lock poisoned".to_string())?;
-        guard.token.clone().ok_or("Not connected to Reckon Bolt")?
+        match guard.token.clone() {
+            Some(t) => { log_step!("Reckon Bolt auth token: present"); t }
+            None => fail!("Not connected to Reckon Bolt"),
+        }
     };
 
-    // 2. Fetch the full match-details response as raw JSON (preserves roundResults, kills, etc.)
-    let lockfile = valorant::lockfile::read_lockfile()?;
-    let riot_client = valorant::api::build_http_client()?;
-    let entitlements = valorant::auth::get_entitlements(&riot_client, &lockfile).await?;
-    let (_region, shard, client_version) = valorant::api::get_session_info(&riot_client, &lockfile).await?;
+    // 2. Get match JSON — prefer locally saved file, fall back to Riot API
+    let match_json = match live::get_saved_match_json(&app, &match_id) {
+        Ok(json) => {
+            log_step!("Loaded match from saved files ({} bytes)", json.len());
+            json
+        }
+        Err(_) => {
+            log_step!("Match not found in saved files, fetching from Riot API...");
 
-    let match_json = valorant::api::fetch_match_details_raw(
-        &riot_client,
-        &shard,
-        &match_id,
-        &entitlements.access_token,
-        &entitlements.token,
-        &client_version,
-    )
-    .await?;
+            log_step!("Reading Valorant lockfile...");
+            let lockfile = match valorant::lockfile::read_lockfile() {
+                Ok(lf) => { log_step!("Lockfile OK (port {})", lf.port); lf }
+                Err(e) => fail!(e),
+            };
+
+            let riot_client = match valorant::api::build_http_client() {
+                Ok(c) => c,
+                Err(e) => fail!(e),
+            };
+
+            log_step!("GET https://127.0.0.1:{}/entitlements/v1/token", lockfile.port);
+            let entitlements = match valorant::auth::get_entitlements(&riot_client, &lockfile).await {
+                Ok(ent) => { log_step!("Entitlements OK (subject: {})", ent.subject); ent }
+                Err(e) => fail!(e),
+            };
+
+            log_step!("GET https://127.0.0.1:{}/product-session/v1/external-sessions", lockfile.port);
+            let (_region, shard, client_version) = match valorant::api::get_session_info(&riot_client, &lockfile).await {
+                Ok(info) => { log_step!("Session OK (region: {}, shard: {}, version: {})", info.0, info.1, info.2); info }
+                Err(e) => fail!(e),
+            };
+
+            let match_url = format!("https://pd.{}.a.pvp.net/match-details/v1/matches/{}", shard, match_id);
+            log_step!("GET {}", match_url);
+            match valorant::api::fetch_match_details_raw(
+                &riot_client, &shard, &match_id,
+                &entitlements.access_token, &entitlements.token, &client_version,
+            ).await {
+                Ok(json) => { log_step!("Match details OK ({} bytes)", json.len()); json }
+                Err(e) => fail!(e),
+            }
+        }
+    };
+
+    let shard = server;
 
     // 4. Build the Reckon API configuration with token auth
     let config = reckon_api::apis::configuration::Configuration::prod().with_token(&token);
 
-    // 5. Build the upload request
     let upload_req = reckon_api::models::UploadScrimGameRequest::new(
         team1,
         team2,
         match_json,
     );
 
-    // 6. Call the upload endpoint, using the Riot match ID as the resource id
+    // 5. Call the upload endpoint
+    let upload_url = format!("{}/ScrimsData/item/{}/upload_scrim_game", BASE_URL_PROD, match_id);
+    log_step!("POST {}", upload_url);
+
     use reckon_api::apis::{Error as ApiError, scrims_data_api};
 
     match scrims_data_api::upload_scrim_game(&config, &match_id, upload_req).await {
         Ok(success) => {
+            log_step!("Upload succeeded");
             Ok(serde_json::to_value(success)
                 .unwrap_or(serde_json::json!({"success": true})))
         }
         Err(ApiError::ResponseError(resp)) => {
-            // Try to extract the typed 400 error with unlinked accounts
+            log_step!("Upload responded with status {}", resp.status);
+            log_step!("Response body: {}", resp.content);
+
             if let Some(scrims_data_api::UploadScrimGameError::Status400(err_body)) = resp.entity {
                 if let Some(ref accounts) = err_body.unlinked_accounts {
                     if !accounts.is_empty() {
-                        // Return structured data so frontend can show the linking UI.
-                        // Include the shard so the link_account command knows the server.
                         let accounts_json: Vec<serde_json::Value> = accounts.iter().map(|a| {
                             serde_json::json!({
                                 "puuid": a.puuid,
@@ -302,13 +361,17 @@ async fn reckon_upload_match(
                         }));
                     }
                 }
-                // 400 error but no unlinked accounts — regular error
-                Err(err_body.error)
+                let msg = format!("Upload failed (400): {}", err_body.error);
+                fail!(msg)
             } else {
-                Err(format!("Upload failed ({}): {}", resp.status, resp.content))
+                let msg = format!("Upload failed ({}): {}", resp.status, resp.content);
+                fail!(msg)
             }
         }
-        Err(e) => Err(format!("Upload failed: {}", e)),
+        Err(e) => {
+            let msg = format!("Upload failed: {}", e);
+            fail!(msg)
+        }
     }
 }
 
@@ -727,23 +790,34 @@ fn get_saved_match_json(app_handle: tauri::AppHandle, match_id: String) -> Resul
 }
 
 /// Get a saved match as a MatchDetailView (same format as regular match details).
+/// Works even when Valorant is not running — player highlight and server info
+/// are best-effort.
 #[tauri::command]
 async fn get_saved_match_detail(app_handle: tauri::AppHandle, match_id: String) -> Result<MatchDetailView, String> {
     let raw_json = live::get_saved_match_json(&app_handle, &match_id)?;
     let details: valorant::types::MatchDetailsResponse = serde_json::from_str(&raw_json)
         .map_err(|e| format!("Failed to parse saved match JSON: {}", e))?;
 
-    let lockfile = lockfile::read_lockfile()?;
-    let client = api::build_http_client()?;
-    let entitlements = auth::get_entitlements(&client, &lockfile).await?;
-    let (_region, shard, _client_version) = api::get_session_info(&client, &lockfile).await?;
+    let (puuid, shard) = match lockfile::read_lockfile() {
+        Ok(lf) => {
+            let c = api::build_http_client()?;
+            let ent = auth::get_entitlements(&c, &lf).await.ok();
+            let sess = api::get_session_info(&c, &lf).await.ok();
+            (
+                ent.map(|e| e.subject).unwrap_or_default(),
+                sess.map(|(_, s, _)| s).unwrap_or_default(),
+            )
+        }
+        Err(_) => (String::new(), String::new()),
+    };
 
+    let client = api::build_http_client()?;
     let agents = api::fetch_agents(&client).await.unwrap_or_default();
     let maps = api::fetch_maps(&client).await.unwrap_or_default();
 
     Ok(api::build_match_detail_view(
         &details,
-        &entitlements.subject,
+        &puuid,
         &shard,
         &maps,
         &agents,
@@ -865,6 +939,59 @@ async fn browse_replay_file() -> Result<Option<String>, String> {
     Ok(result.map(|f| f.path().to_string_lossy().into_owned()))
 }
 
+/// Browse for match JSON files and import them into saved matches.
+#[tauri::command]
+async fn browse_import_matches(app_handle: tauri::AppHandle) -> Result<u32, String> {
+    let files = rfd::AsyncFileDialog::new()
+        .add_filter("Match JSON", &["json"])
+        .set_title("Select match JSON file(s)")
+        .pick_files()
+        .await;
+
+    let files = match files {
+        Some(f) if !f.is_empty() => f,
+        _ => return Ok(0),
+    };
+
+    let mut imported = 0u32;
+    for file in &files {
+        let path_str = file.path().to_string_lossy().to_string();
+        match live::import_match_from_path(&app_handle, &path_str) {
+            Ok(entry) => {
+                let _ = app_handle.emit("match-saved", &entry);
+                imported += 1;
+            }
+            Err(e) => {
+                eprintln!("[Import] Skipped {}: {}", path_str, e);
+            }
+        }
+    }
+
+    Ok(imported)
+}
+
+/// Import a match JSON from a file path (used by drag-and-drop).
+#[tauri::command]
+fn import_match_file(app_handle: tauri::AppHandle, path: String) -> Result<(), String> {
+    let entry = live::import_match_from_path(&app_handle, &path)?;
+    let _ = app_handle.emit("match-saved", &entry);
+    Ok(())
+}
+
+/// Open the saved matches directory in the system file explorer.
+#[tauri::command]
+fn open_saved_matches_folder(app_handle: tauri::AppHandle) -> Result<(), String> {
+    let dir = live::get_matches_dir(&app_handle)?;
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("explorer")
+            .arg(dir.to_string_lossy().as_ref())
+            .spawn()
+            .map_err(|e| format!("Failed to open explorer: {}", e))?;
+    }
+    Ok(())
+}
+
 /// Open the saved match JSON file in the system file explorer.
 #[tauri::command]
 fn show_saved_match_file(app_handle: tauri::AppHandle, match_id: String) -> Result<(), String> {
@@ -943,6 +1070,9 @@ pub fn run() {
             get_saved_match_json,
             get_saved_match_detail,
             show_saved_match_file,
+            open_saved_matches_folder,
+            browse_import_matches,
+            import_match_file,
             download_match_replay,
             open_demos_folder,
             list_local_replays,
