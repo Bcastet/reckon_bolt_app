@@ -2384,7 +2384,7 @@ document.getElementById("history-toggle").addEventListener("click", () => {
   toggleSection(historyBody, historyChevron);
 });
 
-// ─── Local Replays ───
+// ─── Local Replays (hidden for now — UI elements removed from HTML) ───
 
 const localReplaysSection = document.getElementById("local-replays-section");
 const localReplayList = document.getElementById("local-replay-list");
@@ -2397,19 +2397,25 @@ let selectedHostReplay = null;
 let selectedInjectionPath = null;
 let injectionMonitoringActive = false;
 
-document.getElementById("local-replays-toggle").addEventListener("click", () => {
-  toggleSection(localReplaysBody, localReplaysChevron);
-});
+if (document.getElementById("local-replays-toggle")) {
+  document.getElementById("local-replays-toggle").addEventListener("click", () => {
+    toggleSection(localReplaysBody, localReplaysChevron);
+  });
+}
 
-document.getElementById("replay-refresh-btn").addEventListener("click", loadLocalReplays);
+if (document.getElementById("replay-refresh-btn")) {
+  document.getElementById("replay-refresh-btn").addEventListener("click", loadLocalReplays);
+}
 
-document.getElementById("replay-open-folder-btn").addEventListener("click", async () => {
-  try {
-    await invoke("open_demos_folder");
-  } catch (err) {
-    showToast(typeof err === "string" ? err : "Could not open folder", { title: "Error" });
-  }
-});
+if (document.getElementById("replay-open-folder-btn")) {
+  document.getElementById("replay-open-folder-btn").addEventListener("click", async () => {
+    try {
+      await invoke("open_demos_folder");
+    } catch (err) {
+      showToast(typeof err === "string" ? err : "Could not open folder", { title: "Error" });
+    }
+  });
+}
 
 async function loadLocalReplays() {
   try {
@@ -2477,8 +2483,9 @@ async function handleExportReplay(replay) {
   }
 }
 
-// ─── Injection controls ───
+// ─── Injection controls (hidden for now) ───
 
+if (document.getElementById("injection-browse-btn"))
 document.getElementById("injection-browse-btn").addEventListener("click", async () => {
   try {
     const path = await invoke("browse_replay_file");
@@ -2495,9 +2502,10 @@ document.getElementById("injection-browse-btn").addEventListener("click", async 
 
 function updateInjectionReady() {
   const startBtn = document.getElementById("injection-start-btn");
-  startBtn.disabled = !selectedHostReplay || !selectedInjectionPath || injectionMonitoringActive;
+  if (startBtn) startBtn.disabled = !selectedHostReplay || !selectedInjectionPath || injectionMonitoringActive;
 }
 
+if (document.getElementById("injection-start-btn"))
 document.getElementById("injection-start-btn").addEventListener("click", async () => {
   if (!selectedHostReplay || !selectedInjectionPath) return;
   const startBtn = document.getElementById("injection-start-btn");
@@ -2520,6 +2528,7 @@ document.getElementById("injection-start-btn").addEventListener("click", async (
   }
 });
 
+if (document.getElementById("injection-stop-btn"))
 document.getElementById("injection-stop-btn").addEventListener("click", async () => {
   const startBtn = document.getElementById("injection-start-btn");
   const stopBtn = document.getElementById("injection-stop-btn");
@@ -2614,5 +2623,5 @@ loadMatches();
 initLiveListeners();
 loadSavedMatches();
 initSavedMatchListeners();
-loadLocalReplays();
-initInjectionListeners();
+// loadLocalReplays();
+// initInjectionListeners();
