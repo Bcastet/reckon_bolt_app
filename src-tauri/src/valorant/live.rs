@@ -1419,6 +1419,7 @@ pub fn start_live_poller(
 
         let mut prev_phase: Option<GamePhase> = None;
         let mut last_ingame_state: Option<LiveGameState> = None;
+        let mut last_details_probe = std::time::Instant::now();
         let mut agents: HashMap<String, String> = HashMap::new();
         let mut maps: HashMap<String, String> = HashMap::new();
         let mut static_data_loaded = false;
@@ -1702,6 +1703,49 @@ pub fn start_live_poller(
                             }
                             Err(e) => eprintln!("[LiveAPI] CoreGame fetch failed: {}", e),
                         }
+
+                        // Probe match-details every 30s while in-game.
+                        // If Riot returns the data, the game has ended server-side
+                        // even though presence still reports InGame.
+                        if last_details_probe.elapsed() >= Duration::from_secs(30) {
+                            last_details_probe = std::time::Instant::now();
+                            let probe_mid = last_ingame_state.as_ref()
+                                .and_then(|s| s.match_id.clone());
+                            if let Some(mid) = probe_mid {
+                                match api::fetch_match_details_raw(
+                                    &client, &shard, &mid,
+                                    &entitlements.access_token, &entitlements.token,
+                                    &client_version,
+                                ).await {
+                                    Ok(raw_json) => {
+                                        eprintln!("[LiveAPI] In-game probe succeeded — match {} details available, saving", mid);
+                                        let ls = last_ingame_state.take().unwrap();
+                                        if let Err(e) = save_match_json(&app_handle, &mid, &raw_json) {
+                                            eprintln!("[LiveAPI] Failed to save probed match: {}", e);
+                                        } else {
+                                            let entry = SavedMatchEntry {
+                                                match_id: mid.clone(),
+                                                map_name: ls.map_name.clone(),
+                                                queue_name: ls.queue_name.clone(),
+                                                is_spectated: ls.is_spectating,
+                                                timestamp: std::time::SystemTime::now()
+                                                    .duration_since(std::time::UNIX_EPOCH)
+                                                    .map(|d| d.as_millis() as u64)
+                                                    .unwrap_or(0),
+                                            };
+                                            let mut index = load_match_index(&app_handle);
+                                            if !index.matches.iter().any(|m| m.match_id == mid) {
+                                                index.matches.insert(0, entry.clone());
+                                                let _ = save_match_index(&app_handle, &index);
+                                            }
+                                            let _ = app_handle.emit("match-saved", &entry);
+                                        }
+                                    }
+                                    Err(_) => {} // expected — match still in progress
+                                }
+                            }
+                        }
+
                         tokio::time::sleep(Duration::from_secs(10)).await;
                     }
                     GamePhase::Replay => {
