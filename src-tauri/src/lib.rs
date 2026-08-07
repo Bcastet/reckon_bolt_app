@@ -1,3 +1,4 @@
+mod journal;
 mod valorant;
 
 use std::sync::Mutex;
@@ -121,7 +122,9 @@ async fn reckon_login(
     if !resp.status().is_success() {
         let status = resp.status();
         let body = resp.text().await.unwrap_or_default();
-        return Err(format!("Login failed ({}): {}", status, body));
+        let msg = format!("Login failed ({}): {}", status, body);
+        journal::error("Reckon", &msg);
+        return Err(msg);
     }
 
     let result: LoginResponse = resp
@@ -143,6 +146,7 @@ async fn reckon_login(
     guard.token = Some(result.token);
     guard.user = Some(user.clone());
 
+    journal::info("Reckon", &format!("Logged in as {}", user.username));
     Ok(user)
 }
 
@@ -153,6 +157,7 @@ fn reckon_logout(app: tauri::AppHandle, state: tauri::State<'_, Mutex<ReckonStat
     let mut guard = state.lock().map_err(|_| "State lock poisoned".to_string())?;
     guard.token = None;
     guard.user = None;
+    journal::info("Reckon", "Logged out");
     Ok(())
 }
 
@@ -588,6 +593,10 @@ async fn check_for_update(app: tauri::AppHandle) -> Result<UpdateInfo, String> {
     let latest_info = releases.versions.iter()
         .find(|v| v.version == releases.latest);
 
+    if update_available {
+        journal::info("Update", &format!("Update available: v{} → v{}", current_version, releases.latest));
+    }
+
     Ok(UpdateInfo {
         update_available,
         latest_version: releases.latest,
@@ -637,6 +646,7 @@ fn check_valorant_running() -> bool {
 /// Full flow: read lockfile → get tokens → get session info → fetch match history + details.
 #[tauri::command]
 async fn get_match_history() -> Result<Vec<MatchSummary>, String> {
+    journal::info("MatchHistory", "Loading match history");
     // 1. Read the lockfile
     let lockfile = lockfile::read_lockfile()?;
 
@@ -688,11 +698,12 @@ async fn get_match_history() -> Result<Vec<MatchSummary>, String> {
                 ));
             }
             Err(e) => {
-                eprintln!("Skipping match {}: {}", entry.match_id, e);
+                crate::journal::warn("MatchHistory", &format!("Skipping match {}: {}", entry.match_id, e));
             }
         }
     }
 
+    journal::info("MatchHistory", &format!("Loaded {} matches", summaries.len()));
     Ok(summaries)
 }
 
@@ -909,6 +920,7 @@ fn injection_start(
     host_match_id: String,
     injection_path: String,
 ) -> Result<(), String> {
+    journal::info("Injection", &format!("Start requested: host={}", host_match_id));
     live::injection_start(&state, &host_match_id, &injection_path)
 }
 
@@ -962,7 +974,7 @@ async fn browse_import_matches(app_handle: tauri::AppHandle) -> Result<u32, Stri
                 imported += 1;
             }
             Err(e) => {
-                eprintln!("[Import] Skipped {}: {}", path_str, e);
+                crate::journal::warn("Import", &format!("Skipped {}: {}", path_str, e));
             }
         }
     }
@@ -1017,12 +1029,17 @@ pub fn run() {
         .manage(lobby_auth.clone())
         .manage(injection_state.clone())
         .setup(move |app| {
+            // Initialize log journal (file + in-memory ring buffer)
+            if let Err(e) = journal::init(&app.handle()) {
+                eprintln!("Failed to init journal: {}", e);
+            }
+
             // Restore persisted session from a previous launch
             if let Some(session) = load_session(&app.handle()) {
                 if let Ok(mut guard) = app.state::<Mutex<ReckonState>>().lock() {
                     guard.token = Some(session.token);
                     guard.user = Some(session.user);
-                    eprintln!("Restored Reckon session from disk");
+                    journal::info("App", "Restored Reckon session from disk");
                 }
             }
 
@@ -1085,6 +1102,10 @@ pub fn run() {
             lobby_set_cheats,
             lobby_get_recording,
             lobby_set_recording,
+            journal::get_journal_entries,
+            journal::clear_journal,
+            journal::open_journal_folder,
+            journal::append_journal_entry,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -3026,9 +3026,10 @@ checksum = "20675572f6f24e9e76ef639bc5552774ed45f1c30e2951e1e99c59888861c539"
 
 [[package]]
 name = "reckon-bolt-app"
-version = "1.0.6"
+version = "1.0.7"
 dependencies = [
  "base64 0.22.1",
+ "chrono",
  "dirs 5.0.1",
  "reckon_api",
  "reqwest 0.12.28",

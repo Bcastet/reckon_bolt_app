@@ -1,6 +1,6 @@
 [package]
 name = "reckon-bolt-app"
-version = "1.0.6"
+version = "1.0.7"
 description = "Valorant scrims retrieval desktop app"
 authors = ["you"]
 edition = "2021"
@@ -22,3 +22,4 @@ reckon_api = { path = "../reckon-api" }
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync"] }
 dirs = "5"
 rfd = "0.15"
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }

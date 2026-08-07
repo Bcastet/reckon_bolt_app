@@ -29,6 +29,129 @@ const updateBtn      = document.getElementById("update-btn");
 const updateBtnText  = document.getElementById("update-btn-text");
 const updateSpinner  = document.getElementById("update-spinner");
 
+// Journal DOM refs
+const journalBtn       = document.getElementById("journal-btn");
+const journalOverlay   = document.getElementById("journal-overlay");
+const journalCloseBtn  = document.getElementById("journal-close-btn");
+const journalEntriesEl = document.getElementById("journal-entries");
+const journalCopyBtn   = document.getElementById("journal-copy-btn");
+const journalClearBtn  = document.getElementById("journal-clear-btn");
+const journalFolderBtn = document.getElementById("journal-folder-btn");
+
+let journalEntries = [];
+let journalStickToBottom = true;
+
+function appendJournal(level, source, message) {
+  invoke("append_journal_entry", {
+    level: level || "info",
+    source: source || "UI",
+    message: String(message ?? ""),
+  }).catch(() => {});
+}
+
+function formatJournalLine(entry) {
+  return `[${entry.timestamp}] [${(entry.level || "info").toUpperCase()}] [${entry.source}] ${entry.message}`;
+}
+
+function renderJournalEntries() {
+  if (!journalEntriesEl) return;
+  if (journalEntries.length === 0) {
+    journalEntriesEl.innerHTML = '<div class="journal-empty">No log entries yet.</div>';
+    return;
+  }
+
+  const wasNearBottom =
+    journalEntriesEl.scrollHeight - journalEntriesEl.scrollTop - journalEntriesEl.clientHeight < 48;
+
+  journalEntriesEl.innerHTML = journalEntries.map((entry) => {
+    const level = (entry.level || "info").toLowerCase();
+    return `<div class="journal-line">` +
+      `<span class="journal-ts">${escapeHtml(entry.timestamp || "")}</span>` +
+      `<span class="journal-level ${escapeHtml(level)}">${escapeHtml(level)}</span>` +
+      `<span class="journal-source">${escapeHtml(entry.source || "")}</span>` +
+      `<span class="journal-msg">${escapeHtml(entry.message || "")}</span>` +
+      `</div>`;
+  }).join("");
+
+  if (journalStickToBottom || wasNearBottom) {
+    journalEntriesEl.scrollTop = journalEntriesEl.scrollHeight;
+  }
+}
+
+function appendJournalEntryLocal(entry) {
+  if (!entry) return;
+  if (journalEntries.some((e) => e.id === entry.id)) return;
+  journalEntries.push(entry);
+  if (journalEntries.length > 2000) {
+    journalEntries = journalEntries.slice(-2000);
+  }
+  if (!journalOverlay.classList.contains("hidden")) {
+    renderJournalEntries();
+  }
+}
+
+async function loadJournalEntries() {
+  try {
+    journalEntries = await invoke("get_journal_entries");
+  } catch (_) {
+    journalEntries = [];
+  }
+  renderJournalEntries();
+}
+
+async function showJournalModal() {
+  journalStickToBottom = true;
+  journalOverlay.classList.remove("hidden");
+  await loadJournalEntries();
+}
+
+function hideJournalModal() {
+  journalOverlay.classList.add("hidden");
+}
+
+function initJournal() {
+  journalBtn.addEventListener("click", showJournalModal);
+  journalCloseBtn.addEventListener("click", hideJournalModal);
+  journalOverlay.addEventListener("click", (e) => {
+    if (e.target === journalOverlay) hideJournalModal();
+  });
+
+  journalEntriesEl.addEventListener("scroll", () => {
+    journalStickToBottom =
+      journalEntriesEl.scrollHeight - journalEntriesEl.scrollTop - journalEntriesEl.clientHeight < 48;
+  });
+
+  journalCopyBtn.addEventListener("click", async () => {
+    const text = journalEntries.map(formatJournalLine).join("\n");
+    try {
+      await navigator.clipboard.writeText(text || "");
+      journalCopyBtn.textContent = "Copied!";
+      setTimeout(() => { journalCopyBtn.textContent = "Copy all"; }, 1500);
+    } catch (_) {}
+  });
+
+  journalClearBtn.addEventListener("click", async () => {
+    try {
+      await invoke("clear_journal");
+      await loadJournalEntries();
+    } catch (err) {
+      showToast(typeof err === "string" ? err : "Failed to clear journal", { title: "Journal" });
+    }
+  });
+
+  journalFolderBtn.addEventListener("click", async () => {
+    try {
+      await invoke("open_journal_folder");
+    } catch (err) {
+      showToast(typeof err === "string" ? err : "Could not open folder", { title: "Journal" });
+    }
+  });
+
+  tauriListen("journal-entry", (e) => {
+    appendJournalEntryLocal(e.payload);
+  });
+}
+
 // Track which match detail panel is currently open
 let openDetailId = null;
 
@@ -66,6 +189,8 @@ function showToast(message, options = {}) {
   if (apiResponse) logParts.push(`API Response: ${apiResponse}`);
   logParts.push(`Time: ${new Date().toISOString()}`);
   const logText = logParts.join("\n");
+
+  appendJournal("error", "Toast", logParts.slice(0, -1).join(" — "));
 
   let html = `<span class="toast-title">${escapeHtml(title)}</span><p class="toast-message">${escapeHtml(message)}</p>`;
   if (status != null) {
@@ -107,6 +232,7 @@ async function loadMatches() {
   showState(stateLoading);
   refreshBtn.disabled = true;
   openDetailId = null;
+  appendJournal("info", "UI", "Refreshing match history");
 
   try {
     const running = await invoke("check_valorant_running");
@@ -118,6 +244,7 @@ async function loadMatches() {
       stateError.classList.add("hidden");
       stateMatches.classList.add("hidden");
       refreshBtn.disabled = false;
+      appendJournal("warn", "UI", "Valorant is not running");
       return;
     }
 
@@ -721,10 +848,12 @@ async function handleLogin(e) {
     reckonUser = await invoke("reckon_login", { username, password });
     updateReckonUI();
     hideLoginModal();
+    appendJournal("info", "UI", `Signed in as ${reckonUser.username}`);
     // Re-fetch data now that we have an auth token
     fetchReckonData();
   } catch (err) {
     console.error("Reckon login failed:", err);
+    appendJournal("error", "UI", `Login failed: ${typeof err === "string" ? err : "Unknown error"}`);
     loginError.textContent = typeof err === "string" ? err : "Login failed. Check your credentials.";
     loginError.classList.remove("hidden");
   }
@@ -737,6 +866,7 @@ async function handleLogin(e) {
 async function handleReckonDisconnect() {
   try {
     await invoke("reckon_logout");
+    appendJournal("info", "UI", "Disconnected from Reckon");
   } catch (err) {
     console.error("Reckon logout error:", err);
   }
@@ -784,7 +914,12 @@ loginOverlay.addEventListener("click", (e) => {
 
 // Close modal with Escape
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !loginOverlay.classList.contains("hidden")) {
+  if (e.key !== "Escape") return;
+  if (!journalOverlay.classList.contains("hidden")) {
+    hideJournalModal();
+    return;
+  }
+  if (!loginOverlay.classList.contains("hidden")) {
     hideLoginModal();
   }
 });
@@ -2623,5 +2758,6 @@ loadMatches();
 initLiveListeners();
 loadSavedMatches();
 initSavedMatchListeners();
+initJournal();
 // loadLocalReplays();
 // initInjectionListeners();

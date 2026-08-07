@@ -99,6 +99,28 @@ body {
   cursor: not-allowed;
 }
 
+/* Journal button — discrete */
+.btn-journal {
+  background: none;
+  border: 1px solid transparent;
+  color: #5a6f7c;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.btn-journal:hover {
+  background-color: #2a3a47;
+  border-color: #3a4f5f;
+  color: #ece8e1;
+}
+
 /* ─── Update button ─── */
 .btn-update {
   display: flex;
@@ -312,6 +334,116 @@ body {
 .btn-login:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* ─── Log journal modal ─── */
+.journal-modal {
+  background-color: #1b2733;
+  border: 1px solid #2a3a47;
+  border-radius: 12px;
+  width: min(720px, calc(100vw - 2rem));
+  max-height: min(80vh, 640px);
+  padding: 1.25rem 1.5rem 1.25rem;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.journal-entries {
+  flex: 1;
+  min-height: 240px;
+  max-height: 52vh;
+  overflow-y: auto;
+  background-color: #0f1923;
+  border: 1px solid #2a3a47;
+  border-radius: 8px;
+  padding: 0.6rem 0.75rem;
+  font-family: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+  font-size: 0.72rem;
+  line-height: 1.45;
+}
+
+.journal-empty {
+  color: #4a5f6d;
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 1.5rem 0.5rem;
+  text-align: center;
+}
+
+.journal-line {
+  display: grid;
+  grid-template-columns: 11.5rem 3.2rem 5.5rem 1fr;
+  gap: 0.55rem;
+  padding: 0.15rem 0;
+  border-bottom: 1px solid rgba(42, 58, 71, 0.45);
+  word-break: break-word;
+}
+
+.journal-line:last-child {
+  border-bottom: none;
+}
+
+.journal-ts {
+  color: #5a6f7c;
+  white-space: nowrap;
+}
+
+.journal-level {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.journal-level.info { color: #768a96; }
+.journal-level.warn { color: #e0a84a; }
+.journal-level.error { color: #ff4655; }
+.journal-level.debug { color: #4a5f6d; }
+
+.journal-source {
+  color: #9bb0bd;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.journal-msg {
+  color: #c8d0d6;
+}
+
+.journal-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.journal-action-btn {
+  background: none;
+  border: 1px solid #2a3a47;
+  color: #9bb0bd;
+  padding: 0.35rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.journal-action-btn:hover {
+  background-color: #2a3a47;
+  border-color: #3a4f5f;
+  color: #ece8e1;
+}
+
+@media (max-width: 640px) {
+  .journal-line {
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
+    padding: 0.35rem 0;
+  }
 }
 
 .spinner-small {

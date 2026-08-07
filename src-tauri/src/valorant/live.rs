@@ -162,7 +162,7 @@ pub fn injection_start(state: &SharedInjectionState, host_match_id: &str, inject
     cfg.active = true;
     cfg.injected = false;
     cfg.backup_path = None;
-    eprintln!("[Injection] Armed: host={}, injection={}", host_match_id, injection_path);
+    crate::journal::info("Injection", &format!("Armed: host={}, injection={}", host_match_id, injection_path));
     Ok(())
 }
 
@@ -175,7 +175,7 @@ pub fn injection_stop(state: &SharedInjectionState) -> Result<(), String> {
     cfg.active = false;
     cfg.injected = false;
     cfg.backup_path = None;
-    eprintln!("[Injection] Stopped");
+    crate::journal::info("Injection", &format!("Stopped"));
     Ok(())
 }
 
@@ -191,12 +191,12 @@ fn perform_injection(cfg: &mut ReplayInjectionConfig) -> Result<(), String> {
     std::fs::copy(&host_file, &backup_path)
         .map_err(|e| format!("Failed to create backup: {}", e))?;
     cfg.backup_path = Some(backup_path.to_string_lossy().into_owned());
-    eprintln!("[Injection] Backup created: {}", backup_path.display());
+    crate::journal::info("Injection", &format!("Backup created: {}", backup_path.display()));
 
     std::fs::copy(&cfg.injection_path, &host_file)
         .map_err(|e| format!("Failed to inject replay: {}", e))?;
     cfg.injected = true;
-    eprintln!("[Injection] File swapped successfully");
+    crate::journal::info("Injection", &format!("File swapped successfully"));
     Ok(())
 }
 
@@ -212,7 +212,7 @@ fn restore_original(cfg: &ReplayInjectionConfig) -> Result<(), String> {
             std::fs::copy(backup_path, &host_file)
                 .map_err(|e| format!("Failed to restore backup: {}", e))?;
             let _ = std::fs::remove_file(backup_path);
-            eprintln!("[Injection] Original file restored");
+            crate::journal::info("Injection", &format!("Original file restored"));
         }
     }
     Ok(())
@@ -395,7 +395,7 @@ pub async fn lobby_set_recording(
     );
     glz_mutate(&client, reqwest::Method::POST, &settings_url, &ctx, &modified).await?;
 
-    eprintln!("[LiveAPI] Recording set to {}", enabled);
+    crate::journal::info("LiveAPI", &format!("Recording set to {}", enabled));
     Ok(enabled)
 }
 
@@ -584,7 +584,7 @@ async fn auto_save_match(
     client_version: &str,
     live_state: &LiveGameState,
 ) {
-    eprintln!("[LiveAPI] Match ended — fetching details for {}", match_id);
+    crate::journal::info("LiveAPI", &format!("Match ended — fetching details for {}", match_id));
 
     let delays_secs: &[u64] = &[5, 10, 20, 30, 60];
 
@@ -597,7 +597,7 @@ async fn auto_save_match(
         ).await {
             Ok(raw_json) => {
                 if let Err(e) = save_match_json(app, match_id, &raw_json) {
-                    eprintln!("[LiveAPI] Failed to save match JSON: {}", e);
+                    crate::journal::info("LiveAPI", &format!("Failed to save match JSON: {}", e));
                     return;
                 }
 
@@ -616,24 +616,24 @@ async fn auto_save_match(
                 if !index.matches.iter().any(|m| m.match_id == match_id) {
                     index.matches.insert(0, entry.clone());
                     if let Err(e) = save_match_index(app, &index) {
-                        eprintln!("[LiveAPI] Failed to save index: {}", e);
+                        crate::journal::info("LiveAPI", &format!("Failed to save index: {}", e));
                     }
                 }
 
-                eprintln!("[LiveAPI] Match saved on attempt {}: {} ({:?} on {:?})",
-                    attempt + 1, match_id, live_state.queue_name, live_state.map_name);
+                crate::journal::info("LiveAPI", &format!("Match saved on attempt {}: {} ({:?} on {:?})",
+                    attempt + 1, match_id, live_state.queue_name, live_state.map_name));
 
                 let _ = app.emit("match-saved", &entry);
                 return;
             }
             Err(e) => {
-                eprintln!("[LiveAPI] Attempt {}/{} failed for {}: {}",
-                    attempt + 1, delays_secs.len(), match_id, e);
+                crate::journal::info("LiveAPI", &format!("Attempt {}/{} failed for {}: {}",
+                    attempt + 1, delays_secs.len(), match_id, e));
             }
         }
     }
 
-    eprintln!("[LiveAPI] All {} attempts exhausted for match {}", delays_secs.len(), match_id);
+    crate::journal::info("LiveAPI", &format!("All {} attempts exhausted for match {}", delays_secs.len(), match_id));
 }
 
 // ─── Presence types ─────────────────────────────────────────────────────────
@@ -905,10 +905,10 @@ async fn fetch_presence(
         .map(|t| t == "TeamSpectate")
         .unwrap_or(false);
 
-    eprintln!("[LiveAPI] sessionLoopState='{}', spectating={}, map={:?}",
+    crate::journal::info("LiveAPI", &format!("sessionLoopState='{}', spectating={}, map={:?}",
         raw_state, is_spectating,
         match_data.and_then(|m| m.match_map.as_deref()),
-    );
+    ));
 
     let phase = match raw_state {
         "PREGAME" => GamePhase::PreGame,
@@ -1415,7 +1415,7 @@ pub fn start_live_poller(
     stop_rx: watch::Receiver<bool>,
 ) {
     tauri::async_runtime::spawn(async move {
-        eprintln!("[LiveAPI] Poller started");
+        crate::journal::info("LiveAPI", &format!("Poller started"));
 
         let mut prev_phase: Option<GamePhase> = None;
         let mut last_ingame_state: Option<LiveGameState> = None;
@@ -1423,6 +1423,8 @@ pub fn start_live_poller(
         let mut agents: HashMap<String, String> = HashMap::new();
         let mut maps: HashMap<String, String> = HashMap::new();
         let mut static_data_loaded = false;
+        // Avoid spamming the journal while Riot Client is down but a stale lockfile remains.
+        let mut logged_unreachable = false;
 
         loop {
             if *stop_rx.borrow() {
@@ -1432,7 +1434,7 @@ pub fn start_live_poller(
             let client = match api::build_http_client() {
                 Ok(c) => c,
                 Err(e) => {
-                    eprintln!("[LiveAPI] Client build failed: {}", e);
+                    crate::journal::warn("LiveAPI", &format!("Client build failed: {}", e));
                     tokio::time::sleep(Duration::from_secs(5)).await;
                     continue;
                 }
@@ -1449,6 +1451,10 @@ pub fn start_live_poller(
                             let _ = app_handle.emit("live-game-state", LiveGameState::default());
                         }
                     }
+                    if !logged_unreachable {
+                        crate::journal::info("LiveAPI", "Riot Client offline (no lockfile)");
+                        logged_unreachable = true;
+                    }
                     prev_phase = None;
                     tokio::time::sleep(Duration::from_secs(5)).await;
                     continue;
@@ -1458,7 +1464,23 @@ pub fn start_live_poller(
             let entitlements = match auth::get_entitlements(&client, &lockfile).await {
                 Ok(e) => e,
                 Err(e) => {
-                    eprintln!("[LiveAPI] Entitlements failed: {}", e);
+                    // Stale lockfile is common when Valorant/Riot Client isn't actually up.
+                    // Log once per offline stretch instead of every poll.
+                    if !logged_unreachable {
+                        crate::journal::info(
+                            "LiveAPI",
+                            &format!("Riot Client unreachable (stale lockfile or still starting): {}", e),
+                        );
+                        logged_unreachable = true;
+                    }
+                    {
+                        let mut s = state.lock().unwrap();
+                        if s.phase.is_some() {
+                            *s = LiveGameState::default();
+                            let _ = app_handle.emit("live-game-state", LiveGameState::default());
+                        }
+                    }
+                    prev_phase = None;
                     tokio::time::sleep(Duration::from_secs(5)).await;
                     continue;
                 }
@@ -1468,11 +1490,22 @@ pub fn start_live_poller(
                 match api::get_session_info(&client, &lockfile).await {
                     Ok(info) => info,
                     Err(e) => {
-                        eprintln!("[LiveAPI] Session info failed: {}", e);
+                        if !logged_unreachable {
+                            crate::journal::info(
+                                "LiveAPI",
+                                &format!("Session info failed: {}", e),
+                            );
+                            logged_unreachable = true;
+                        }
                         tokio::time::sleep(Duration::from_secs(5)).await;
                         continue;
                     }
                 };
+
+            if logged_unreachable {
+                crate::journal::info("LiveAPI", "Riot Client connected");
+                logged_unreachable = false;
+            }
 
             if !static_data_loaded {
                 if let Ok(m) = api::fetch_maps(&client).await {
@@ -1482,7 +1515,7 @@ pub fn start_live_poller(
                     agents = a;
                 }
                 static_data_loaded = true;
-                eprintln!("[LiveAPI] Static data loaded ({} maps, {} agents)", maps.len(), agents.len());
+                crate::journal::info("LiveAPI", &format!("Static data loaded ({} maps, {} agents)", maps.len(), agents.len()));
             }
 
             let glz_base = api::glz_base_url(&region, &shard);
@@ -1497,7 +1530,7 @@ pub fn start_live_poller(
                 {
                     Ok(p) => p,
                     Err(e) => {
-                        eprintln!("[LiveAPI] Presence error: {}", e);
+                        crate::journal::info("LiveAPI", &format!("Presence error: {}", e));
                         break; // re-auth on next outer loop
                     }
                 };
@@ -1516,7 +1549,7 @@ pub fn start_live_poller(
                 let old_phase = prev_phase;
                 let phase_changed = old_phase != Some(phase);
                 if phase_changed {
-                    eprintln!("[LiveAPI] Phase: {:?} -> {:?} (spectating={})", old_phase, phase, is_spectating);
+                    crate::journal::info("LiveAPI", &format!("Phase: {:?} -> {:?} (spectating={})", old_phase, phase, is_spectating));
                 }
                 prev_phase = Some(phase);
 
@@ -1542,7 +1575,7 @@ pub fn start_live_poller(
                                         }));
                                     }
                                     Err(e) => {
-                                        eprintln!("[Injection] Restore failed: {}", e);
+                                        crate::journal::info("Injection", &format!("Restore failed: {}", e));
                                         let _ = app_handle.emit("replay-injection", serde_json::json!({
                                             "status": "restore-error",
                                             "message": e,
@@ -1557,7 +1590,7 @@ pub fn start_live_poller(
                         // InGame -> Menus transition.
                         if let Some(ref last_state) = last_ingame_state {
                             if let Some(ref mid) = last_state.match_id {
-                                eprintln!("[LiveAPI] Match ended (old_phase={:?}), saving {}", old_phase, mid);
+                                crate::journal::info("LiveAPI", &format!("Match ended (old_phase={:?}), saving {}", old_phase, mid));
                                 let app_h = app_handle.clone();
                                 let client_c = client.clone();
                                 let shard_c = shard.clone();
@@ -1573,15 +1606,15 @@ pub fn start_live_poller(
                                     ).await;
                                 });
                             } else {
-                                eprintln!("[LiveAPI] Match ended but no match_id in last state");
+                                crate::journal::info("LiveAPI", &format!("Match ended but no match_id in last state"));
                             }
                             last_ingame_state = None;
                         }
 
                         if phase_changed {
                             if let Some(ref party) = pres.party {
-                                eprintln!("[LiveAPI] Party: id={}, state={}, members={}, queue={}",
-                                    party.id, party.state, party.members.len(), party.queue_id);
+                                crate::journal::info("LiveAPI", &format!("Party: id={}, state={}, members={}, queue={}",
+                                    party.id, party.state, party.members.len(), party.queue_id));
                             }
                         }
 
@@ -1641,7 +1674,7 @@ pub fn start_live_poller(
                                 }
                                 let _ = app_handle.emit("live-game-state", &game_state);
                             }
-                            Err(e) => eprintln!("[LiveAPI] PreGame fetch failed: {}", e),
+                            Err(e) => crate::journal::info("LiveAPI", &format!("PreGame fetch failed: {}", e)),
                         }
                         tokio::time::sleep(Duration::from_secs(3)).await;
                     }
@@ -1653,8 +1686,8 @@ pub fn start_live_poller(
                                 &client_version, &agents, &maps,
                             ).await {
                                 Ok(mut gs) => {
-                                    eprintln!("[LiveAPI] Spectator: GLZ coregame OK ({} ally, {} enemy)",
-                                        gs.ally_team.len(), gs.enemy_team.len());
+                                    crate::journal::info("LiveAPI", &format!("Spectator: GLZ coregame OK ({} ally, {} enemy)",
+                                        gs.ally_team.len(), gs.enemy_team.len()));
                                     gs.is_spectating = true;
                                     gs.spectate_score_ally = pres.private.party_owner_match_score_ally_team;
                                     gs.spectate_score_enemy = pres.private.party_owner_match_score_enemy_team;
@@ -1666,7 +1699,7 @@ pub fn start_live_poller(
                                     Ok(gs)
                                 }
                                 Err(e) => {
-                                    eprintln!("[LiveAPI] Spectator: GLZ failed ({}), using presence fallback", e);
+                                    crate::journal::info("LiveAPI", &format!("Spectator: GLZ failed ({}), using presence fallback", e));
                                     build_spectator_state(&pres.private, &maps, GamePhase::InGame)
                                 }
                             }
@@ -1690,10 +1723,10 @@ pub fn start_live_poller(
 
                         match result {
                             Ok(game_state) => {
-                                eprintln!("[LiveAPI] Emitting InGame state: map={:?}, spectating={}, score={:?}:{:?}, ally={}, enemy={}",
+                                crate::journal::info("LiveAPI", &format!("Emitting InGame state: map={:?}, spectating={}, score={:?}:{:?}, ally={}, enemy={}",
                                     game_state.map_name, game_state.is_spectating,
                                     game_state.spectate_score_ally, game_state.spectate_score_enemy,
-                                    game_state.ally_team.len(), game_state.enemy_team.len());
+                                    game_state.ally_team.len(), game_state.enemy_team.len()));
                                 last_ingame_state = Some(game_state.clone());
                                 {
                                     let mut s = state.lock().unwrap();
@@ -1701,7 +1734,7 @@ pub fn start_live_poller(
                                 }
                                 let _ = app_handle.emit("live-game-state", &game_state);
                             }
-                            Err(e) => eprintln!("[LiveAPI] CoreGame fetch failed: {}", e),
+                            Err(e) => crate::journal::info("LiveAPI", &format!("CoreGame fetch failed: {}", e)),
                         }
 
                         // Probe match-details every 30s while in-game.
@@ -1718,10 +1751,10 @@ pub fn start_live_poller(
                                     &client_version,
                                 ).await {
                                     Ok(raw_json) => {
-                                        eprintln!("[LiveAPI] In-game probe succeeded — match {} details available, saving", mid);
+                                        crate::journal::info("LiveAPI", &format!("In-game probe succeeded — match {} details available, saving", mid));
                                         let ls = last_ingame_state.take().unwrap();
                                         if let Err(e) = save_match_json(&app_handle, &mid, &raw_json) {
-                                            eprintln!("[LiveAPI] Failed to save probed match: {}", e);
+                                            crate::journal::info("LiveAPI", &format!("Failed to save probed match: {}", e));
                                         } else {
                                             let entry = SavedMatchEntry {
                                                 match_id: mid.clone(),
@@ -1750,7 +1783,7 @@ pub fn start_live_poller(
                     }
                     GamePhase::Replay => {
                         if phase_changed {
-                            eprintln!("[LiveAPI] Entered REPLAY state");
+                            crate::journal::info("LiveAPI", &format!("Entered REPLAY state"));
 
                             // Check if injection is armed
                             let should_inject = {
@@ -1769,7 +1802,7 @@ pub fn start_live_poller(
                                         }));
                                     }
                                     Err(e) => {
-                                        eprintln!("[Injection] Failed: {}", e);
+                                        crate::journal::info("Injection", &format!("Failed: {}", e));
                                         let _ = app_handle.emit("replay-injection", serde_json::json!({
                                             "status": "error",
                                             "message": e,
@@ -1803,6 +1836,6 @@ pub fn start_live_poller(
             }
         }
 
-        eprintln!("[LiveAPI] Poller stopped");
+        crate::journal::info("LiveAPI", &format!("Poller stopped"));
     });
 }
