@@ -1065,6 +1065,14 @@ fn build_party_from_presences(
 
 // ─── GLZ fetch functions ────────────────────────────────────────────────────
 
+/// True when a GLZ/PD error indicates the RSO access token must be refreshed.
+fn is_auth_failure(err: &str) -> bool {
+    err.contains("BAD_CLAIMS")
+        || err.contains("401 Unauthorized")
+        || err.contains("\"errorCode\": \"UNAUTHORIZED\"")
+        || err.contains("ACCESS_DENIED")
+}
+
 async fn fetch_glz<T: serde::de::DeserializeOwned>(
     client: &reqwest::Client,
     url: &str,
@@ -1461,7 +1469,7 @@ pub fn start_live_poller(
                 }
             };
 
-            let entitlements = match auth::get_entitlements(&client, &lockfile).await {
+            let mut entitlements = match auth::get_entitlements(&client, &lockfile).await {
                 Ok(e) => e,
                 Err(e) => {
                     // Stale lockfile is common when Valorant/Riot Client isn't actually up.
@@ -1485,6 +1493,7 @@ pub fn start_live_poller(
                     continue;
                 }
             };
+            let mut auth_fetched_at = std::time::Instant::now();
 
             let (region, shard, client_version) =
                 match api::get_session_info(&client, &lockfile).await {
@@ -1520,10 +1529,31 @@ pub fn start_live_poller(
 
             let glz_base = api::glz_base_url(&region, &shard);
 
-            // Inner poll loop — reuse auth until it fails
+            // Inner poll loop — refresh auth on a timer or when GLZ returns BAD_CLAIMS.
+            // Presence uses local lockfile auth, so it keeps working after the RSO
+            // access token expires; we must not treat a successful presence poll as
+            // proof that remote GLZ tokens are still valid.
             loop {
                 if *stop_rx.borrow() {
                     break;
+                }
+
+                // RSO tokens expire; refresh proactively so CoreGame/PreGame stay healthy.
+                if auth_fetched_at.elapsed() >= Duration::from_secs(4 * 60) {
+                    match auth::get_entitlements(&client, &lockfile).await {
+                        Ok(e) => {
+                            entitlements = e;
+                            auth_fetched_at = std::time::Instant::now();
+                            crate::journal::info("LiveAPI", "Refreshed RSO entitlements");
+                        }
+                        Err(e) => {
+                            crate::journal::info(
+                                "LiveAPI",
+                                &format!("Entitlements refresh failed: {}", e),
+                            );
+                            break;
+                        }
+                    }
                 }
 
                 let presence = match fetch_presence(&client, &lockfile, &entitlements.subject).await
@@ -1674,11 +1704,18 @@ pub fn start_live_poller(
                                 }
                                 let _ = app_handle.emit("live-game-state", &game_state);
                             }
-                            Err(e) => crate::journal::info("LiveAPI", &format!("PreGame fetch failed: {}", e)),
+                            Err(e) => {
+                                crate::journal::info("LiveAPI", &format!("PreGame fetch failed: {}", e));
+                                if is_auth_failure(&e) {
+                                    crate::journal::info("LiveAPI", "Auth failure — refreshing tokens");
+                                    break;
+                                }
+                            }
                         }
                         tokio::time::sleep(Duration::from_secs(3)).await;
                     }
                     GamePhase::InGame => {
+                        let mut auth_refresh_needed = false;
                         let result = if is_spectating {
                             match fetch_coregame_state(
                                 &client, &glz_base, &entitlements.subject,
@@ -1700,6 +1737,9 @@ pub fn start_live_poller(
                                 }
                                 Err(e) => {
                                     crate::journal::info("LiveAPI", &format!("Spectator: GLZ failed ({}), using presence fallback", e));
+                                    if is_auth_failure(&e) {
+                                        auth_refresh_needed = true;
+                                    }
                                     build_spectator_state(&pres.private, &maps, GamePhase::InGame)
                                 }
                             }
@@ -1733,8 +1773,18 @@ pub fn start_live_poller(
                                     *s = game_state.clone();
                                 }
                                 let _ = app_handle.emit("live-game-state", &game_state);
+                                if auth_refresh_needed {
+                                    crate::journal::info("LiveAPI", "Auth failure — refreshing tokens");
+                                    break;
+                                }
                             }
-                            Err(e) => crate::journal::info("LiveAPI", &format!("CoreGame fetch failed: {}", e)),
+                            Err(e) => {
+                                crate::journal::info("LiveAPI", &format!("CoreGame fetch failed: {}", e));
+                                if is_auth_failure(&e) {
+                                    crate::journal::info("LiveAPI", "Auth failure — refreshing tokens");
+                                    break;
+                                }
+                            }
                         }
 
                         // Probe match-details every 30s while in-game.
