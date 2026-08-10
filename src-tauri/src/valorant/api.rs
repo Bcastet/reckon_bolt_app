@@ -94,6 +94,245 @@ pub fn local_auth_header(lockfile: &LockfileData) -> String {
     format!("Basic {}", credentials)
 }
 
+/// Fetch a usable Riot client version without requiring Valorant to be running.
+pub async fn fetch_riot_client_version(client: &Client) -> Result<String, String> {
+    #[derive(serde::Deserialize)]
+    #[serde(rename_all = "camelCase")]
+    struct VersionData {
+        riot_client_version: String,
+    }
+    #[derive(serde::Deserialize)]
+    struct VersionResponse {
+        data: VersionData,
+    }
+
+    let resp = client
+        .get("https://valorant-api.com/v1/version")
+        .send()
+        .await
+        .map_err(|e| format!("Failed to fetch client version: {}", e))?;
+
+    if !resp.status().is_success() {
+        return Err(format!(
+            "Client version request failed with status {}",
+            resp.status()
+        ));
+    }
+
+    let body: VersionResponse = resp
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse client version: {}", e))?;
+
+    if body.data.riot_client_version.is_empty() {
+        return Err("Empty riotClientVersion from valorant-api.com".to_string());
+    }
+    Ok(body.data.riot_client_version)
+}
+
+/// Infer PD shard from match pod / GLZ zone strings in match-details JSON.
+pub fn shard_from_match_info(info: &MatchInfo) -> Option<String> {
+    shard_from_pod_string(&info.game_pod_id)
+        .or_else(|| shard_from_pod_string(&info.game_loop_zone))
+}
+
+fn shard_from_pod_string(s: &str) -> Option<String> {
+    let lower = s.to_lowercase();
+    // Prefer longer / more specific tokens first (latam before na, etc.)
+    for key in ["latam", "pbe", "br", "na", "eu", "ap", "kr"] {
+        let dotted = format!(".{key}-");
+        let dashed = format!("-{key}-");
+        let dotted_end = format!(".{key}.");
+        if lower.contains(&dotted) || lower.contains(&dashed) || lower.contains(&dotted_end) {
+            return Some(region_to_shard(key));
+        }
+    }
+    None
+}
+
+/// Resolve Riot IDs (gameName#tagLine) for a list of PUUIDs via the name-service.
+/// Match-details often returns empty gameName/tagLine; this fills them in.
+pub async fn resolve_player_names(
+    client: &Client,
+    shard: &str,
+    puuids: &[String],
+    auth_token: &str,
+    entitlement_token: &str,
+    client_version: &str,
+) -> HashMap<String, String> {
+    if puuids.is_empty() || shard.is_empty() || client_version.is_empty() {
+        crate::journal::warn(
+            "NameService",
+            &format!(
+                "Skipping resolve (puuids={}, shard='{}', version empty={})",
+                puuids.len(),
+                shard,
+                client_version.is_empty()
+            ),
+        );
+        return HashMap::new();
+    }
+
+    let url = format!("https://pd.{}.a.pvp.net/name-service/v2/players", shard);
+    let headers = build_riot_headers(auth_token, entitlement_token, client_version);
+
+    let mut req = client.put(&url);
+    for (name, value) in headers {
+        req = req.header(name, value);
+    }
+    req = req.json(puuids);
+
+    let resp = match req.send().await {
+        Ok(r) => r,
+        Err(e) => {
+            crate::journal::warn("NameService", &format!("Request failed: {}", e));
+            return HashMap::new();
+        }
+    };
+
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        crate::journal::warn(
+            "NameService",
+            &format!("HTTP {} for {} puuids: {}", status, puuids.len(), body),
+        );
+        return HashMap::new();
+    }
+
+    #[derive(serde::Deserialize)]
+    #[serde(rename_all = "PascalCase")]
+    struct NameEntry {
+        subject: String,
+        game_name: String,
+        tag_line: String,
+    }
+
+    let entries: Vec<NameEntry> = match resp.json().await {
+        Ok(e) => e,
+        Err(e) => {
+            crate::journal::warn("NameService", &format!("Failed to parse response: {}", e));
+            return HashMap::new();
+        }
+    };
+
+    let map: HashMap<String, String> = entries
+        .into_iter()
+        .filter(|e| !e.game_name.is_empty())
+        .map(|e| (e.subject, format!("{}#{}", e.game_name, e.tag_line)))
+        .collect();
+
+    crate::journal::info(
+        "NameService",
+        &format!("Resolved {}/{} names on shard={}", map.len(), puuids.len(), shard),
+    );
+    map
+}
+
+/// Write resolved Riot IDs back into match-details JSON (`gameName` / `tagLine`).
+pub fn apply_names_to_match_json(
+    raw_json: &str,
+    names: &HashMap<String, String>,
+) -> Result<String, String> {
+    if names.is_empty() {
+        return Ok(raw_json.to_string());
+    }
+
+    let mut value: serde_json::Value = serde_json::from_str(raw_json)
+        .map_err(|e| format!("Invalid match JSON: {}", e))?;
+
+    let Some(players) = value.get_mut("players").and_then(|p| p.as_array_mut()) else {
+        return Ok(raw_json.to_string());
+    };
+
+    for player in players {
+        let subject = player
+            .get("subject")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .to_string();
+        let Some(full) = names.get(&subject) else {
+            continue;
+        };
+        let Some((game, tag)) = full.split_once('#') else {
+            continue;
+        };
+        if game.is_empty() {
+            continue;
+        }
+        player["gameName"] = serde_json::Value::String(game.to_string());
+        player["tagLine"] = serde_json::Value::String(tag.to_string());
+    }
+
+    serde_json::to_string(&value).map_err(|e| format!("Failed to serialize match JSON: {}", e))
+}
+
+/// True when a Riot ID string looks usable (non-empty name and tagline).
+pub fn is_usable_riot_id(name: &str) -> bool {
+    let t = name.trim();
+    if t.is_empty() || t == "#" || t == "Unknown" {
+        return false;
+    }
+    match t.split_once('#') {
+        Some((game, tag)) => !game.is_empty() && !tag.is_empty(),
+        None => false,
+    }
+}
+
+/// Resolve missing player names for a match using Riot Client auth when available.
+/// Does not require an active Valorant session (uses match pod + public client version).
+pub async fn resolve_missing_match_names(
+    client: &Client,
+    details: &MatchDetailsResponse,
+    auth_token: &str,
+    entitlement_token: &str,
+    preferred_shard: Option<&str>,
+    preferred_version: Option<&str>,
+) -> HashMap<String, String> {
+    let needs_resolve: Vec<String> = details
+        .players
+        .iter()
+        .filter(|p| p.game_name.trim().is_empty())
+        .map(|p| p.subject.clone())
+        .collect();
+
+    if needs_resolve.is_empty() {
+        return HashMap::new();
+    }
+
+    let shard = preferred_shard
+        .map(|s| s.to_string())
+        .filter(|s| !s.is_empty())
+        .or_else(|| shard_from_match_info(&details.match_info));
+
+    let Some(shard) = shard else {
+        crate::journal::warn("NameService", "Could not determine shard for name resolve");
+        return HashMap::new();
+    };
+
+    let version = if let Some(v) = preferred_version.filter(|v| !v.is_empty()) {
+        v.to_string()
+    } else {
+        match fetch_riot_client_version(client).await {
+            Ok(v) => v,
+            Err(e) => {
+                crate::journal::warn("NameService", &format!("No client version: {}", e));
+                return HashMap::new();
+            }
+        }
+    };
+
+    resolve_player_names(
+        client,
+        &shard,
+        &needs_resolve,
+        auth_token,
+        entitlement_token,
+        &version,
+    )
+    .await
+}
+
 // ─── Match History ───
 
 pub async fn fetch_match_history(
@@ -339,6 +578,7 @@ pub fn build_match_detail_view(
     shard: &str,
     maps: &HashMap<String, String>,
     agents: &HashMap<String, String>,
+    resolved_names: &HashMap<String, String>,
 ) -> MatchDetailView {
     let info = &details.match_info;
     let is_custom = info.provisioning_flow_id == "CustomGame";
@@ -359,9 +599,19 @@ pub fn build_match_detail_view(
             .cloned()
             .unwrap_or_else(|| "Unknown".to_string());
 
+        let from_match = format!("{}#{}", p.game_name, p.tag_line);
+        let name = if is_usable_riot_id(&from_match) {
+            from_match
+        } else {
+            resolved_names
+                .get(&p.subject)
+                .cloned()
+                .unwrap_or(from_match)
+        };
+
         let summary = PlayerSummary {
             puuid: p.subject.clone(),
-            name: format!("{}#{}", p.game_name, p.tag_line),
+            name,
             agent: agent_name,
             kills: stats.map_or(0, |s| s.kills),
             deaths: stats.map_or(0, |s| s.deaths),

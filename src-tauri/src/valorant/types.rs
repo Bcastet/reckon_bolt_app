@@ -82,6 +82,11 @@ pub struct MatchInfo {
     pub queue_id: String,
     pub is_ranked: bool,
     pub season_id: String,
+    /// e.g. "aresriot.aws-euc1-prod.eu-gp-frankfurt-1" — used to infer shard
+    #[serde(default)]
+    pub game_pod_id: String,
+    #[serde(default)]
+    pub game_loop_zone: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

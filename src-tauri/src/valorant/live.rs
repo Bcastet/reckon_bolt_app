@@ -9,6 +9,7 @@ use tauri::{AppHandle, Emitter, Manager};
 use tokio::sync::watch;
 
 use super::{api, auth, lockfile};
+use super::types::MatchDetailsResponse;
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -546,6 +547,36 @@ fn save_match_index(app: &AppHandle, index: &SavedMatchIndex) -> Result<(), Stri
         .map_err(|e| format!("Write index: {}", e))
 }
 
+/// Fill blank gameName/tagLine in raw match-details JSON via the name-service.
+async fn enrich_match_json_names(
+    client: &reqwest::Client,
+    shard: &str,
+    auth_token: &str,
+    entitlement_token: &str,
+    client_version: &str,
+    raw_json: &str,
+) -> String {
+    let details: MatchDetailsResponse = match serde_json::from_str(raw_json) {
+        Ok(d) => d,
+        Err(_) => return raw_json.to_string(),
+    };
+
+    let names = api::resolve_missing_match_names(
+        client,
+        &details,
+        auth_token,
+        entitlement_token,
+        Some(shard),
+        Some(client_version),
+    )
+    .await;
+
+    match api::apply_names_to_match_json(raw_json, &names) {
+        Ok(enriched) => enriched,
+        Err(_) => raw_json.to_string(),
+    }
+}
+
 fn save_match_json(app: &AppHandle, match_id: &str, json: &str) -> Result<(), String> {
     let dir = matches_dir(app)?;
     let path = dir.join(format!("{}.json", match_id));
@@ -562,6 +593,10 @@ pub fn get_saved_match_json(app: &AppHandle, match_id: &str) -> Result<String, S
     let path = dir.join(format!("{}.json", match_id));
     std::fs::read_to_string(&path)
         .map_err(|e| format!("Read match {}: {}", match_id, e))
+}
+
+pub fn write_saved_match_json(app: &AppHandle, match_id: &str, json: &str) -> Result<(), String> {
+    save_match_json(app, match_id, json)
 }
 
 pub fn get_saved_match_path(app: &AppHandle, match_id: &str) -> Result<PathBuf, String> {
@@ -596,6 +631,10 @@ async fn auto_save_match(
             auth_token, entitlement_token, client_version,
         ).await {
             Ok(raw_json) => {
+                let raw_json = enrich_match_json_names(
+                    client, shard, auth_token, entitlement_token, client_version, &raw_json,
+                ).await;
+
                 if let Err(e) = save_match_json(app, match_id, &raw_json) {
                     crate::journal::info("LiveAPI", &format!("Failed to save match JSON: {}", e));
                     return;
@@ -1302,49 +1341,6 @@ async fn fetch_coregame_state(
     })
 }
 
-// ─── Name resolution via /name-service/v2/players ───────────────────────────
-
-async fn resolve_names(
-    client: &reqwest::Client,
-    shard: &str,
-    puuids: &[String],
-    auth_token: &str,
-    entitlement_token: &str,
-    client_version: &str,
-) -> HashMap<String, String> {
-    let url = format!("https://pd.{}.a.pvp.net/name-service/v2/players", shard);
-    let headers = api::build_riot_headers(auth_token, entitlement_token, client_version);
-
-    let mut req = client.put(&url);
-    for (name, value) in headers {
-        req = req.header(name, value);
-    }
-    req = req.json(puuids);
-
-    let resp = match req.send().await {
-        Ok(r) if r.status().is_success() => r,
-        _ => return HashMap::new(),
-    };
-
-    #[derive(Deserialize)]
-    #[serde(rename_all = "PascalCase")]
-    struct NameEntry {
-        subject: String,
-        game_name: String,
-        tag_line: String,
-    }
-
-    let entries: Vec<NameEntry> = match resp.json().await {
-        Ok(e) => e,
-        Err(_) => return HashMap::new(),
-    };
-
-    entries
-        .into_iter()
-        .map(|e| (e.subject, format!("{}#{}", e.game_name, e.tag_line)))
-        .collect()
-}
-
 // ─── Spectator state from presence data ─────────────────────────────────────
 
 fn build_spectator_state(
@@ -1404,7 +1400,7 @@ async fn resolve_and_attach_names(
         return;
     }
 
-    let names = resolve_names(client, shard, &puuids, auth_token, entitlement_token, client_version).await;
+    let names = api::resolve_player_names(client, shard, &puuids, auth_token, entitlement_token, client_version).await;
 
     for p in game_state.ally_team.iter_mut().chain(game_state.enemy_team.iter_mut()) {
         if let Some(name) = names.get(&p.puuid) {
@@ -1803,6 +1799,11 @@ pub fn start_live_poller(
                                     Ok(raw_json) => {
                                         crate::journal::info("LiveAPI", &format!("In-game probe succeeded — match {} details available, saving", mid));
                                         let ls = last_ingame_state.take().unwrap();
+                                        let raw_json = enrich_match_json_names(
+                                            &client, &shard,
+                                            &entitlements.access_token, &entitlements.token,
+                                            &client_version, &raw_json,
+                                        ).await;
                                         if let Err(e) = save_match_json(&app_handle, &mid, &raw_json) {
                                             crate::journal::info("LiveAPI", &format!("Failed to save probed match: {}", e));
                                         } else {

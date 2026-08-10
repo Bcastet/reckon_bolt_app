@@ -813,60 +813,19 @@ body {
 }
 
 .player-row .col-name {
-  min-width: 0;
-  overflow: hidden;
-  font-weight: 500;
-  line-height: 1.25;
-  /* Two-line slot: primary name + secondary Riot ID (or empty placeholder) */
-  min-height: calc(1.25em + 0.15rem + 0.7rem * 1.25);
-}
-
-.player-row .col-name.col-name-copy {
-  cursor: pointer;
-  border-radius: 3px;
-  outline: none;
-}
-
-.player-row .col-name.col-name-copy:hover,
-.player-row .col-name.col-name-copy:focus-visible {
-  color: #e8eef2;
-  background-color: rgba(255, 255, 255, 0.06);
-}
-
-.player-row .col-name.col-name-copy.copied {
-  color: #4caf50;
-}
-
-/* Player inferred from "{TRICODE} Name" Riot IGN (not a linked SoloQ account) */
-.player-row .col-name.player-name-inferred .player-name-text {
-  color: #f48fb1;
-}
-
-.player-row .col-name.player-name-inferred.col-name-copy:hover .player-name-text,
-.player-row .col-name.player-name-inferred.col-name-copy:focus-visible .player-name-text {
-  color: #f8bbd0;
-}
-
-.player-row .col-name.player-name-inferred.col-name-copy.copied .player-name-text {
-  color: #4caf50;
-}
-
-.player-row .col-name .player-name-text {
-  display: block;
-  height: 1.25em;
-  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
 }
 
 .player-row .col-name .player-id-label {
   display: block;
-  height: calc(0.7rem * 1.25);
-  margin-top: 0.15rem;
+  min-height: 1.1em;
   font-size: 0.7rem;
   font-weight: 400;
-  line-height: 1.25;
   color: #768a96;
+  margin-top: 0.15rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

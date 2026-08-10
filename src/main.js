@@ -372,47 +372,11 @@ async function toggleDetail(wrapper, matchId) {
     // Check if user clicked away while loading
     if (openDetailId !== matchId) return;
 
-    // Query SoloQAccount entries for all players in the game (when logged in).
-    // Missing accounts are created using server and player names from the match.
-    let accounts = [];
-    if (reckonUser) {
-      const allPlayers = [
-        ...(detail.teamBlue || []),
-        ...(detail.teamRed || []),
-      ];
-      const puuids = allPlayers.map((p) => p.puuid).filter(Boolean);
-      const players = allPlayers.map((p) => ({
-        puuid: p.puuid,
-        accountName: p.name,
-      }));
-      try {
-        accounts = await invoke("reckon_get_soloq_accounts", {
-          puuids,
-          server: detail.server || null,
-          players: detail.server ? players : null,
-        });
-      } catch (e) {
-        console.warn("Failed to fetch SoloQ accounts for match:", e);
-        const msg = typeof e === "string" ? e : (e?.message || String(e));
-        try {
-          const data = JSON.parse(msg);
-          if (data.soloqCreateError) {
-            showToast(data.message, {
-              title: "SoloQ account create failed",
-              status: data.status,
-              apiResponse: data.apiResponse,
-            });
-          } else {
-            showToast(msg, { title: "Error" });
-          }
-        } catch (_) {
-          showToast(msg, { title: "Error" });
-        }
-      }
-    }
+    const accounts = await fetchSoloqAccountsForDetail(detail);
+    const inferredByPuuid = await fetchInferredPlayersForDetail(detail, accounts);
 
     if (openDetailId !== matchId) return;
-    renderDetailPanel(panel, detail, accounts);
+    renderDetailPanel(panel, detail, accounts, inferredByPuuid);
   } catch (err) {
     console.error(err);
     if (openDetailId !== matchId) return;
@@ -421,11 +385,11 @@ async function toggleDetail(wrapper, matchId) {
 }
 
 // ─── Render the expanded scoreboard ───
-function renderDetailPanel(panel, detail, accounts = []) {
+function renderDetailPanel(panel, detail, accounts = [], inferredByPuuid = new Map()) {
   const blueWon = detail.blueRoundsWon > detail.redRoundsWon;
   const redWon  = detail.redRoundsWon > detail.blueRoundsWon;
 
-  // Map puuid -> account so we can show player_id below name when set
+  // Map puuid -> account so we can show player id (or account name when unlinked)
   const accountByPuuid = new Map();
   for (const a of accounts) {
     if (a.puuid) accountByPuuid.set(a.puuid, a);
@@ -451,7 +415,7 @@ function renderDetailPanel(panel, detail, accounts = []) {
             <span class="col-a">A</span>
             <span class="col-score">Score</span>
           </div>
-          ${detail.teamBlue.map(p => playerRow(p, accountByPuuid)).join("")}
+          ${detail.teamBlue.map(p => playerRow(p, accountByPuuid, inferredByPuuid)).join("")}
         </div>
       </div>
       <div class="scoreboard-divider"></div>
@@ -470,12 +434,27 @@ function renderDetailPanel(panel, detail, accounts = []) {
             <span class="col-a">A</span>
             <span class="col-score">Score</span>
           </div>
-          ${detail.teamRed.map(p => playerRow(p, accountByPuuid)).join("")}
+          ${detail.teamRed.map(p => playerRow(p, accountByPuuid, inferredByPuuid)).join("")}
         </div>
       </div>
     </div>
     ${canUpload ? renderUploadSection() : renderDownloadOnlySection()}
   `;
+
+  // Click player name → copy Riot ID + PUUID
+  panel.querySelectorAll(".col-name-copy").forEach((el) => {
+    el.addEventListener("click", (e) => {
+      e.stopPropagation();
+      copyPlayerIdentity(el);
+    });
+    el.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        e.stopPropagation();
+        copyPlayerIdentity(el);
+      }
+    });
+  });
 
   // Wire up the download replay button (always present)
   const downloadBtn = panel.querySelector(".download-replay-btn");
@@ -498,6 +477,16 @@ function renderDetailPanel(panel, detail, accounts = []) {
       placeholder: "Select red side team\u2026",
     });
 
+    // Auto-select side teams when 2+ known players share the same current_team
+    const blueTeamId = detectMajorityTeam(detail.teamBlue, accountByPuuid, inferredByPuuid);
+    const redTeamId = detectMajorityTeam(detail.teamRed, accountByPuuid, inferredByPuuid);
+    if (blueTeamId && redTeamId && blueTeamId === redTeamId) {
+      // Same team majority on both sides — leave unset rather than guess wrong
+    } else {
+      if (blueTeamId) blueSelector.setValue(blueTeamId);
+      if (redTeamId) redSelector.setValue(redTeamId);
+    }
+
     // Wire up the upload button
     const uploadBtn = panel.querySelector(".upload-btn");
     const uploadError = panel.querySelector(".upload-error");
@@ -513,10 +502,24 @@ function renderDetailPanel(panel, detail, accounts = []) {
           uploadBtn,
           uploadError,
           uploadSuccess,
+          nameByPuuid: buildNameByPuuidFromDetail(detail),
         });
       });
     }
   }
+}
+
+/** Map puuid → resolved Riot ID from the open match detail (name-service enriched). */
+function buildNameByPuuidFromDetail(detail) {
+  const map = {};
+  for (const p of [...(detail.teamBlue || []), ...(detail.teamRed || [])]) {
+    if (!p?.puuid) continue;
+    const name = (p.name || "").trim();
+    if (name && name !== "#" && name !== "Unknown") {
+      map[p.puuid] = name;
+    }
+  }
+  return map;
 }
 
 // ─── Upload section HTML ───
@@ -590,7 +593,16 @@ async function handleDownloadReplay(matchId, detail, btn) {
 }
 
 // ─── Upload match handler ───
-async function handleUploadMatch({ matchId, server, blueSelector, redSelector, uploadBtn, uploadError, uploadSuccess }) {
+async function handleUploadMatch({
+  matchId,
+  server,
+  blueSelector,
+  redSelector,
+  uploadBtn,
+  uploadError,
+  uploadSuccess,
+  nameByPuuid = {},
+}) {
   const uploadSection = uploadBtn.closest(".upload-section");
   const unlinkedContainer = uploadSection.querySelector(".unlinked-accounts");
 
@@ -618,6 +630,17 @@ async function handleUploadMatch({ matchId, server, blueSelector, redSelector, u
   // Show loading state
   setUploadLoading(uploadBtn, true);
 
+  const uploadContext = {
+    matchId,
+    server,
+    blueSelector,
+    redSelector,
+    uploadBtn,
+    uploadError,
+    uploadSuccess,
+    nameByPuuid,
+  };
+
   try {
     const result = await invoke("reckon_upload_match", {
       team1: String(blueTeam.id),
@@ -628,15 +651,12 @@ async function handleUploadMatch({ matchId, server, blueSelector, redSelector, u
 
     // Check if the response contains unlinked accounts
     if (result && result.unlinkedAccounts && result.unlinkedAccounts.length > 0) {
-      renderUnlinkedAccounts(unlinkedContainer, result.unlinkedAccounts, result.server, {
-        matchId,
-        server,
-        blueSelector,
-        redSelector,
-        uploadBtn,
-        uploadError,
-        uploadSuccess,
-      });
+      await renderUnlinkedAccounts(
+        unlinkedContainer,
+        result.unlinkedAccounts,
+        result.server,
+        uploadContext,
+      );
     } else if (result && result.success) {
       uploadSuccess.textContent = "Match uploaded successfully!";
       uploadSuccess.classList.remove("hidden");
@@ -671,9 +691,23 @@ function setUploadLoading(btn, loading) {
 
 // ─── Unlinked accounts resolution UI ───
 
-function renderUnlinkedAccounts(container, accounts, server, uploadContext) {
+function resolveUnlinkedDisplayName(account, nameByPuuid = {}) {
+  const fromDetail = nameByPuuid[account.puuid] || "";
+  const fromFile = account.fileAccountName || "";
+  const recorded = account.recordedAccountName || account.accountName || "";
+  // Prefer match-file / detail Riot ID (more recent) over stored SoloQ account_name
+  for (const candidate of [fromFile, fromDetail, recorded, account.accountName]) {
+    const t = (candidate || "").trim();
+    if (t && t !== "#" && t !== "Unknown") return t;
+  }
+  return "Unknown";
+}
+
+async function renderUnlinkedAccounts(container, accounts, server, uploadContext) {
   container.innerHTML = "";
   container.classList.remove("hidden");
+
+  const nameByPuuid = uploadContext.nameByPuuid || {};
 
   const header = document.createElement("div");
   header.className = "unlinked-header";
@@ -683,16 +717,46 @@ function renderUnlinkedAccounts(container, accounts, server, uploadContext) {
   `;
   container.appendChild(header);
 
+  // Resolve assumed identities ("KC suyAHOOO" → player suyAHOOO) in one batch
+  const displayNames = accounts.map((a) => resolveUnlinkedDisplayName(a, nameByPuuid));
+  const assumedNames = [];
+  for (const displayName of displayNames) {
+    const parsed = parseTricodePlayerName(displayName);
+    if (parsed) assumedNames.push(parsed.playerName);
+  }
+  let assumedByName = new Map();
+  if (assumedNames.length > 0) {
+    try {
+      const found = await invoke("reckon_lookup_players_by_names", { names: assumedNames });
+      for (const pl of found || []) {
+        if (pl?.id) assumedByName.set(String(pl.id).toLowerCase(), String(pl.id));
+      }
+    } catch (e) {
+      console.warn("Failed to look up assumed players for unlinked accounts:", e);
+      for (const n of assumedNames) {
+        const local = reckonPlayers.find(
+          (pl) => String(pl.id || "").toLowerCase() === String(n).toLowerCase()
+        );
+        if (local?.id) assumedByName.set(String(local.id).toLowerCase(), String(local.id));
+      }
+    }
+  }
+
   const list = document.createElement("div");
   list.className = "unlinked-list";
 
-  for (const account of accounts) {
+  for (let i = 0; i < accounts.length; i++) {
+    const account = accounts[i];
+    const displayName = displayNames[i];
+    const recordedName = account.recordedAccountName || account.accountName || "";
+    const fileName = account.fileAccountName || nameByPuuid[account.puuid] || displayName;
+
     const row = document.createElement("div");
     row.className = "unlinked-row";
 
     const label = document.createElement("div");
     label.className = "unlinked-account-label";
-    label.innerHTML = `<span class="unlinked-account-name">${escapeHtml(account.accountName)}</span>`;
+    label.innerHTML = `<span class="unlinked-account-name">${escapeHtml(displayName)}</span>`;
 
     const selectorContainer = document.createElement("div");
     selectorContainer.className = "unlinked-player-selector";
@@ -714,10 +778,17 @@ function renderUnlinkedAccounts(container, accounts, server, uploadContext) {
       placeholder: "Link to player\u2026",
     });
 
+    // Preload assumed player from "{TRICODE} Name" pattern when found
+    const parsed = parseTricodePlayerName(displayName);
+    if (parsed) {
+      const assumedId = assumedByName.get(String(parsed.playerName).toLowerCase());
+      if (assumedId) selector.setValue(assumedId);
+    }
+
     linkBtn.addEventListener("click", async () => {
       const player = selector.getValue();
       if (!player) {
-        showToast(`Please select a player for ${account.accountName}.`, { title: "Missing player" });
+        showToast(`Please select a player for ${displayName}.`, { title: "Missing player" });
         return;
       }
 
@@ -726,7 +797,8 @@ function renderUnlinkedAccounts(container, accounts, server, uploadContext) {
         await invoke("reckon_link_account", {
           playerId: player.id,
           puuid: account.puuid,
-          accountName: account.accountName || null,
+          accountName: fileName || displayName || null,
+          recordedAccountName: recordedName || null,
         });
         row.classList.add("unlinked-row-linked");
         linkBtn.remove();
@@ -736,8 +808,8 @@ function renderUnlinkedAccounts(container, accounts, server, uploadContext) {
         linkedBadge.textContent = `Linked to ${player.id}`;
         row.appendChild(linkedBadge);
       } catch (err) {
-        console.error(`Failed to link ${account.accountName}:`, err);
-        showToast(`Failed to link ${account.accountName}: ${typeof err === "string" ? err : "Unknown error"}`, { title: "Link failed" });
+        console.error(`Failed to link ${displayName}:`, err);
+        showToast(`Failed to link ${displayName}: ${typeof err === "string" ? err : "Unknown error"}`, { title: "Link failed" });
         setUploadLoading(linkBtn, false);
       }
     });
@@ -766,15 +838,224 @@ function renderUnlinkedAccounts(container, accounts, server, uploadContext) {
   });
 }
 
-function playerRow(p, accountByPuuid = new Map()) {
+function isUsableRiotId(name) {
+  if (!name || typeof name !== "string") return false;
+  const t = name.trim();
+  if (!t || t === "#" || t === "Unknown") return false;
+  const hash = t.indexOf("#");
+  return hash > 0 && hash < t.length - 1;
+}
+
+/**
+ * Detect Riot IGNs shaped like "{team tricode} {player name}"
+ * e.g. "SGE Jamelinho#EUW" / "KC Avez".
+ */
+function parseTricodePlayerName(name) {
+  if (!name || typeof name !== "string") return null;
+  const gameName = name.split("#")[0].trim();
+  // Allow "KC Avez", "SGE Jamelinho", "kc bigking07"
+  const m = gameName.match(/^([A-Za-z0-9]{2,5})\s+(.+)$/);
+  if (!m) return null;
+  const playerName = m[2].trim();
+  if (!playerName) return null;
+  return { tricode: m[1].toUpperCase(), playerName };
+}
+
+/** List SoloQAccounts filtered by match player PUUIDs. */
+async function fetchSoloqAccountsForDetail(detail) {
+  if (!reckonUser) return [];
+
+  const allPlayers = [
+    ...(detail.teamBlue || []),
+    ...(detail.teamRed || []),
+  ];
+  const puuids = allPlayers.map((p) => p.puuid).filter(Boolean);
+  if (puuids.length === 0) return [];
+
+  const players = allPlayers.map((p) => ({
+    puuid: p.puuid,
+    accountName: isUsableRiotId(p.name) ? p.name : "Unknown",
+  }));
+
+  try {
+    return await invoke("reckon_get_soloq_accounts", {
+      puuids,
+      server: detail.server || null,
+      players: detail.server ? players : null,
+    });
+  } catch (e) {
+    console.warn("Failed to fetch SoloQ accounts for match:", e);
+    const msg = typeof e === "string" ? e : (e?.message || String(e));
+    try {
+      const data = JSON.parse(msg);
+      if (data.soloqCreateError) {
+        showToast(data.message, {
+          title: "SoloQ account create failed",
+          status: data.status,
+          apiResponse: data.apiResponse,
+        });
+      } else {
+        showToast(msg, { title: "Error" });
+      }
+    } catch (_) {
+      showToast(msg, { title: "Error" });
+    }
+    return [];
+  }
+}
+
+/**
+ * For unlinked accounts whose Riot name looks like "{TRICODE} PlayerName",
+ * query Player/list by id and return Map<puuid, { id, currentTeam }>.
+ */
+async function fetchInferredPlayersForDetail(detail, accounts = []) {
+  const inferredByPuuid = new Map();
+  if (!reckonUser) return inferredByPuuid;
+
+  const accountByPuuid = new Map();
+  for (const a of accounts) {
+    if (a.puuid) accountByPuuid.set(a.puuid, a);
+  }
+
+  const allPlayers = [
+    ...(detail.teamBlue || []),
+    ...(detail.teamRed || []),
+  ];
+
+  const candidateByPuuid = new Map(); // puuid -> playerName to look up
+  const namesToQuery = [];
+
+  for (const p of allPlayers) {
+    const account = accountByPuuid.get(p.puuid);
+    if (account?.playerId != null && String(account.playerId).trim() !== "") continue;
+
+    const riotName = [account?.accountName, p.name].find(isUsableRiotId)
+      || [account?.accountName, p.name].find((n) => n && String(n).trim() && String(n).trim() !== "Unknown")
+      || "";
+    const parsed = parseTricodePlayerName(riotName || p.name || "");
+    if (!parsed) continue;
+
+    candidateByPuuid.set(p.puuid, parsed.playerName);
+    namesToQuery.push(parsed.playerName);
+  }
+
+  if (namesToQuery.length === 0) return inferredByPuuid;
+
+  let found = [];
+  try {
+    found = await invoke("reckon_lookup_players_by_names", { names: namesToQuery });
+  } catch (e) {
+    console.warn("Failed to look up players by name:", e);
+    // Fall back to the already-loaded player list
+    found = reckonPlayers
+      .filter((pl) =>
+        namesToQuery.some((n) => String(pl.id || "").toLowerCase() === String(n).toLowerCase())
+      )
+      .map((pl) => ({
+        id: pl.id,
+        currentTeam: pl.current_team || pl.currentTeam || null,
+      }));
+  }
+
+  const playerByName = new Map();
+  for (const pl of found || []) {
+    if (!pl?.id) continue;
+    playerByName.set(String(pl.id).toLowerCase(), {
+      id: String(pl.id),
+      currentTeam: pl.currentTeam || pl.current_team || null,
+    });
+  }
+
+  for (const [puuid, playerName] of candidateByPuuid) {
+    const match = playerByName.get(String(playerName).toLowerCase());
+    if (match) inferredByPuuid.set(puuid, match);
+  }
+
+  return inferredByPuuid;
+}
+
+/** Resolve a Reckon player's current_team id from cache / inferred lookup. */
+function resolvePlayerTeamId(playerId, inferred = null) {
+  if (inferred?.currentTeam) return String(inferred.currentTeam);
+  if (!playerId) return null;
+  const key = String(playerId).toLowerCase();
+  const cached = reckonPlayers.find((pl) => String(pl.id || "").toLowerCase() === key);
+  const team = cached?.current_team || cached?.currentTeam || null;
+  return team ? String(team) : null;
+}
+
+/**
+ * If 2+ known players on a side share the same current_team, return that team id.
+ * Returns null when no majority or when multiple teams tie at the top count.
+ */
+function detectMajorityTeam(sidePlayers, accountByPuuid, inferredByPuuid) {
+  const counts = new Map();
+
+  for (const p of sidePlayers || []) {
+    const account = accountByPuuid.get(p.puuid);
+    const linkedId = account?.playerId != null && String(account.playerId).trim() !== ""
+      ? String(account.playerId).trim()
+      : null;
+    const inferred = !linkedId ? inferredByPuuid.get(p.puuid) : null;
+    const playerId = linkedId || inferred?.id || null;
+    if (!playerId) continue;
+
+    const teamId = resolvePlayerTeamId(playerId, inferred);
+    if (!teamId) continue;
+    counts.set(teamId, (counts.get(teamId) || 0) + 1);
+  }
+
+  let bestTeam = null;
+  let bestCount = 0;
+  let ties = 0;
+  for (const [teamId, count] of counts) {
+    if (count < 2) continue;
+    if (count > bestCount) {
+      bestTeam = teamId;
+      bestCount = count;
+      ties = 1;
+    } else if (count === bestCount) {
+      ties += 1;
+    }
+  }
+
+  return ties === 1 ? bestTeam : null;
+}
+
+function playerRow(p, accountByPuuid = new Map(), inferredByPuuid = new Map()) {
   const highlight = p.isCurrentPlayer ? " player-self" : "";
   const account = accountByPuuid.get(p.puuid);
   const playerId = account?.playerId;
-  const playerIdText = (playerId != null && playerId !== "") ? escapeHtml(String(playerId)) : "";
-  const nameContent = `${escapeHtml(p.name)}<span class="player-id-label">${playerIdText}</span>`;
+  const hasPlayer = playerId != null && String(playerId).trim() !== "";
+  const inferred = !hasPlayer ? inferredByPuuid.get(p.puuid) : null;
+  const inferredPlayerId = inferred?.id || null;
+
+  // Riot account name#tag (from SoloQ account or match)
+  const riotName = [account?.accountName, p.name].find(isUsableRiotId)
+    || [account?.accountName, p.name].find((n) => n && String(n).trim() && String(n).trim() !== "Unknown")
+    || "";
+
+  const showPlayer = hasPlayer || !!inferredPlayerId;
+  const primaryText = hasPlayer
+    ? String(playerId).trim()
+    : (inferredPlayerId
+      ? String(inferredPlayerId)
+      : (isUsableRiotId(riotName) ? riotName : (riotName || "Unknown")));
+  const secondaryText = showPlayer
+    ? (isUsableRiotId(riotName) ? riotName : (riotName || ""))
+    : "";
+  const inferredClass = inferredPlayerId ? " player-name-inferred" : "";
+
+  // Always render the secondary line so every row has the same height
+  const nameContent = `<span class="player-name-text">${escapeHtml(primaryText)}</span><span class="player-id-label">${escapeHtml(secondaryText)}</span>`;
   return `
     <div class="player-row${highlight}">
-      <span class="col-name">${nameContent}</span>
+      <span class="col-name col-name-copy${inferredClass}"
+            role="button"
+            tabindex="0"
+            title="Click to copy name and PUUID"
+            data-puuid="${escapeAttr(p.puuid || "")}"
+            data-riot-name="${escapeAttr(isUsableRiotId(riotName) ? riotName : (riotName || primaryText))}">${nameContent}</span>
       <span class="col-agent">${escapeHtml(p.agent)}</span>
       <span class="col-k">${p.kills}</span>
       <span class="col-d">${p.deaths}</span>
@@ -782,6 +1063,25 @@ function playerRow(p, accountByPuuid = new Map()) {
       <span class="col-score">${p.score}</span>
     </div>
   `;
+}
+
+async function copyPlayerIdentity(nameEl) {
+  const name = nameEl.dataset.riotName || "";
+  const puuid = nameEl.dataset.puuid || "";
+  const text = [name, puuid].filter(Boolean).join("\n");
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    nameEl.classList.add("copied");
+    const prevTitle = nameEl.title;
+    nameEl.title = "Copied!";
+    setTimeout(() => {
+      nameEl.classList.remove("copied");
+      nameEl.title = prevTitle || "Click to copy name and PUUID";
+    }, 1200);
+  } catch (_) {
+    showToast("Could not copy to clipboard", { title: "Copy failed" });
+  }
 }
 
 // ─── Helpers ───
@@ -802,6 +1102,14 @@ function escapeHtml(str) {
   const el = document.createElement("span");
   el.textContent = str;
   return el.innerHTML;
+}
+
+function escapeAttr(str) {
+  return String(str ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
 // ─── Reckon Bolt connection ───
@@ -2402,7 +2710,9 @@ async function toggleSavedDetail(wrapper, matchId) {
 
   try {
     const detail = await invoke("get_saved_match_detail", { matchId });
-    renderDetailPanel(panel, detail);
+    const accounts = await fetchSoloqAccountsForDetail(detail);
+    const inferredByPuuid = await fetchInferredPlayersForDetail(detail, accounts);
+    renderDetailPanel(panel, detail, accounts, inferredByPuuid);
 
     const showFileBtn = document.createElement("button");
     showFileBtn.className = "btn-show-file";

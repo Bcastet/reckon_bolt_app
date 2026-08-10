@@ -225,6 +225,120 @@ fn reckon_get_players(state: tauri::State<'_, Mutex<ReckonState>>) -> Vec<serde_
     state.lock().map(|g| g.players.clone()).unwrap_or_default()
 }
 
+/// Look up Player records by id (player name) via GET /Player/list?id=…
+#[tauri::command]
+async fn reckon_lookup_players_by_names(
+    state: tauri::State<'_, Mutex<ReckonState>>,
+    names: Vec<String>,
+) -> Result<Vec<serde_json::Value>, String> {
+    let token = {
+        let guard = state.lock().map_err(|_| "State lock poisoned".to_string())?;
+        guard.token.clone().ok_or("Not connected to Reckon Bolt")?
+    };
+
+    let mut unique: Vec<String> = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    for name in names {
+        let trimmed = name.trim().to_string();
+        if trimmed.is_empty() {
+            continue;
+        }
+        let key = trimmed.to_lowercase();
+        if seen.insert(key) {
+            unique.push(trimmed);
+        }
+    }
+    if unique.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let config = reckon_api::apis::configuration::Configuration::prod().with_token(&token);
+    use reckon_api::apis::player_api;
+
+    // Prefer a single list call filtered on id__in
+    let filters = serde_json::json!({ "id__in": unique });
+    if let Ok(players) = player_api::player_list(
+        &config,
+        Some(filters),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+    .await
+    {
+        if !players.is_empty() {
+            return Ok(players
+                .into_iter()
+                .map(|p| {
+                    serde_json::json!({
+                        "id": p.id,
+                        "currentTeam": p.current_team.flatten(),
+                    })
+                })
+                .collect());
+        }
+    }
+
+    // Fallback: query each name with the `id` field
+    let mut found: Vec<serde_json::Value> = Vec::new();
+    let mut found_keys = std::collections::HashSet::new();
+    for name in &unique {
+        match player_api::player_list(
+            &config,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            Some(name.as_str()),
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+            None,
+        )
+        .await
+        {
+            Ok(players) => {
+                for p in players {
+                    let key = p.id.to_lowercase();
+                    if found_keys.insert(key) {
+                        found.push(serde_json::json!({
+                            "id": p.id,
+                            "currentTeam": p.current_team.flatten(),
+                        }));
+                    }
+                }
+            }
+            Err(e) => {
+                crate::journal::warn(
+                    "PlayerLookup",
+                    &format!("Player/list?id={} failed: {}", name, e),
+                );
+            }
+        }
+    }
+
+    Ok(found)
+}
+
 /// Return cached teams list.
 #[tauri::command]
 fn reckon_get_teams(state: tauri::State<'_, Mutex<ReckonState>>) -> Vec<serde_json::Value> {
@@ -324,6 +438,9 @@ async fn reckon_upload_match(
 
     let shard = server;
 
+    // Prefer match-file Riot IDs over stored SoloQ account_name for unlinked UI
+    let file_names = riot_names_from_match_json(&match_json);
+
     // 4. Build the Reckon API configuration with token auth
     let config = reckon_api::apis::configuration::Configuration::prod().with_token(&token);
 
@@ -352,12 +469,23 @@ async fn reckon_upload_match(
             if let Some(scrims_data_api::UploadScrimGameError::Status400(err_body)) = resp.entity {
                 if let Some(ref accounts) = err_body.unlinked_accounts {
                     if !accounts.is_empty() {
-                        let accounts_json: Vec<serde_json::Value> = accounts.iter().map(|a| {
-                            serde_json::json!({
-                                "puuid": a.puuid,
-                                "accountName": a.account_name,
+                        let accounts_json: Vec<serde_json::Value> = accounts
+                            .iter()
+                            .map(|a| {
+                                let recorded = a.account_name.clone();
+                                let file_name = file_names.get(&a.puuid).cloned();
+                                let display = file_name
+                                    .clone()
+                                    .filter(|n| !n.trim().is_empty() && n != "#")
+                                    .unwrap_or_else(|| recorded.clone());
+                                serde_json::json!({
+                                    "puuid": a.puuid,
+                                    "accountName": display,
+                                    "recordedAccountName": recorded,
+                                    "fileAccountName": file_name,
+                                })
                             })
-                        }).collect();
+                            .collect();
 
                         return Ok(serde_json::json!({
                             "error": err_body.error,
@@ -380,14 +508,56 @@ async fn reckon_upload_match(
     }
 }
 
+/// Extract puuid → "gameName#tagLine" (or gameName) from a match-details JSON blob.
+fn riot_names_from_match_json(match_json: &str) -> std::collections::HashMap<String, String> {
+    let mut map = std::collections::HashMap::new();
+    let Ok(value) = serde_json::from_str::<serde_json::Value>(match_json) else {
+        return map;
+    };
+    let Some(players) = value.get("players").and_then(|p| p.as_array()) else {
+        return map;
+    };
+    for p in players {
+        let Some(puuid) = p.get("subject").and_then(|v| v.as_str()) else {
+            continue;
+        };
+        if puuid.is_empty() {
+            continue;
+        }
+        let game = p
+            .get("gameName")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .trim();
+        let tag = p
+            .get("tagLine")
+            .and_then(|v| v.as_str())
+            .unwrap_or("")
+            .trim();
+        if game.is_empty() {
+            continue;
+        }
+        let name = if tag.is_empty() {
+            game.to_string()
+        } else {
+            format!("{}#{}", game, tag)
+        };
+        map.insert(puuid.to_string(), name);
+    }
+    map
+}
+
 /// Link a Riot account to an existing Reckon Bolt player via
 /// `POST /Player/item/{player_id}/add_account`.
+/// When `account_name` is provided and differs from the stored name, also
+/// `PATCH /SoloQAccounts/item/{puuid}` to update it.
 #[tauri::command]
 async fn reckon_link_account(
     state: tauri::State<'_, Mutex<ReckonState>>,
     player_id: String,
     puuid: String,
     account_name: Option<String>,
+    recorded_account_name: Option<String>,
 ) -> Result<serde_json::Value, String> {
     let token = {
         let guard = state.lock().map_err(|_| "State lock poisoned".to_string())?;
@@ -396,8 +566,8 @@ async fn reckon_link_account(
 
     let config = reckon_api::apis::configuration::Configuration::prod().with_token(&token);
 
-    let mut body = reckon_api::models::AddAccount::new(puuid);
-    body.account_name = account_name;
+    let mut body = reckon_api::models::AddAccount::new(puuid.clone());
+    body.account_name = account_name.clone();
 
     match reckon_api::apis::add_account_api::add_player_account(
         &config,
@@ -406,16 +576,50 @@ async fn reckon_link_account(
     )
     .await
     {
-        Ok(result) => Ok(serde_json::json!({ "accounts": result })),
+        Ok(_) => {}
         Err(e) => {
             let err_str = e.to_string();
-            if err_str.contains("invalid type: map") || err_str.contains("expected a sequence") {
-                // Backend returned success but response is now an object, not array; link succeeded
-                return Ok(serde_json::json!({ "accounts": [] }));
+            if !(err_str.contains("invalid type: map") || err_str.contains("expected a sequence")) {
+                return Err(format!("Failed to link account: {}", e));
             }
-            Err(format!("Failed to link account: {}", e))
+            // Backend returned success but response shape changed; link succeeded
         }
     }
+
+    // Sync SoloQ account_name to the match-file Riot ID when it changed
+    if let Some(ref new_name) = account_name {
+        let new_trimmed = new_name.trim();
+        let recorded = recorded_account_name
+            .as_deref()
+            .unwrap_or("")
+            .trim();
+        if !new_trimmed.is_empty() && new_trimmed != recorded {
+            use reckon_api::apis::solo_q_accounts_api;
+            use reckon_api::models::PatchedSoloQAccounts;
+
+            let mut patch = PatchedSoloQAccounts::new();
+            patch.account_name = Some(new_trimmed.to_string());
+
+            if let Err(e) =
+                solo_q_accounts_api::solo_q_accounts_patch(&config, &puuid, Some(patch)).await
+            {
+                crate::journal::warn(
+                    "SoloQ",
+                    &format!(
+                        "Linked {} but failed to PATCH account_name to {}: {}",
+                        puuid, new_trimmed, e
+                    ),
+                );
+            } else {
+                crate::journal::info(
+                    "SoloQ",
+                    &format!("Updated account_name for {} → {}", puuid, new_trimmed),
+                );
+            }
+        }
+    }
+
+    Ok(serde_json::json!({ "success": true }))
 }
 
 /// Player ref for creating missing SoloQ accounts (puuid + display name).
@@ -426,10 +630,10 @@ struct PlayerRef {
     account_name: String,
 }
 
-/// Fetch SoloQAccount entries for the given PUUIDs (e.g. all players in a match).
-/// Uses additional_filters[puuid__in] on the SoloQAccounts list endpoint.
-/// If `server` and `players` are provided, any PUUID not returned by the list is created
-/// via POST SoloQAccounts/item/{puuid} with account_name and server from `players`.
+/// Fetch SoloQAccount entries for the given PUUIDs via GET /SoloQAccounts/list
+/// filtered on the `puuid` field (`additional_filters[puuid__in]`).
+/// If `server` and `players` are provided, any missing account is created
+/// via POST SoloQAccounts/item/{puuid} with account_name from `players`.
 #[tauri::command]
 async fn reckon_get_soloq_accounts(
     state: tauri::State<'_, Mutex<ReckonState>>,
@@ -449,7 +653,7 @@ async fn reckon_get_soloq_accounts(
     let config = reckon_api::apis::configuration::Configuration::prod().with_token(&token);
     let additional_filters = serde_json::json!({ "puuid__in": puuids });
 
-    use reckon_api::apis::solo_q_accounts_api;
+    use reckon_api::apis::{solo_q_accounts_api, Error as ApiError, ResponseContent};
     use reckon_api::models::SoloQAccounts;
 
     let mut accounts = solo_q_accounts_api::solo_q_accounts_list(
@@ -482,13 +686,11 @@ async fn reckon_get_soloq_accounts(
                 .cloned()
                 .unwrap_or_else(|| "Unknown".to_string());
 
-            // Generated client: POST /SoloQAccounts/item/new with puuid + account_name in body
             let body = SoloQAccounts::new(0, puuid.clone(), account_name);
 
             match solo_q_accounts_api::solo_q_accounts_create(&config, puuid, body).await {
                 Ok(created) => accounts.push(created),
                 Err(e) => {
-                    use reckon_api::apis::{Error as ApiError, ResponseContent};
                     let (msg, status, api_response) = match &e {
                         ApiError::ResponseError(ResponseContent { status, content, .. }) => (
                             format!("Failed to create SoloQ account for {}", puuid),
@@ -516,13 +718,14 @@ async fn reckon_get_soloq_accounts(
     let json: Vec<serde_json::Value> = accounts
         .into_iter()
         .map(|a| {
+            // Flatten Option<Option<T>> so the frontend always gets scalar | null
             serde_json::json!({
                 "id": a.id,
                 "puuid": a.puuid,
                 "accountName": a.account_name,
-                "rankTier": a.rank_tier,
-                "playerId": a.player,
-                "server": a.server,
+                "rankTier": a.rank_tier.flatten(),
+                "playerId": a.player.flatten(),
+                "server": a.server.flatten(),
             })
         })
         .collect();
@@ -728,12 +931,24 @@ async fn get_match_detail(match_id: String) -> Result<MatchDetailView, String> {
     )
     .await?;
 
+    // Match-details often omits gameName/tagLine; resolve via name-service.
+    let resolved_names = api::resolve_missing_match_names(
+        &client,
+        &details,
+        &entitlements.access_token,
+        &entitlements.token,
+        Some(&shard),
+        Some(&client_version),
+    )
+    .await;
+
     Ok(api::build_match_detail_view(
         &details,
         &entitlements.subject,
         &shard,
         &maps,
         &agents,
+        &resolved_names,
     ))
 }
 
@@ -802,27 +1017,84 @@ fn get_saved_match_json(app_handle: tauri::AppHandle, match_id: String) -> Resul
 
 /// Get a saved match as a MatchDetailView (same format as regular match details).
 /// Works even when Valorant is not running — player highlight and server info
-/// are best-effort.
+/// are best-effort. Requires Riot Client for name resolution when JSON names are blank.
 #[tauri::command]
 async fn get_saved_match_detail(app_handle: tauri::AppHandle, match_id: String) -> Result<MatchDetailView, String> {
     let raw_json = live::get_saved_match_json(&app_handle, &match_id)?;
-    let details: valorant::types::MatchDetailsResponse = serde_json::from_str(&raw_json)
+    let mut details: valorant::types::MatchDetailsResponse = serde_json::from_str(&raw_json)
         .map_err(|e| format!("Failed to parse saved match JSON: {}", e))?;
 
-    let (puuid, shard) = match lockfile::read_lockfile() {
+    let client = api::build_http_client()?;
+    let shard_from_match = api::shard_from_match_info(&details.match_info);
+
+    let (puuid, shard, resolved_names) = match lockfile::read_lockfile() {
         Ok(lf) => {
-            let c = api::build_http_client()?;
-            let ent = auth::get_entitlements(&c, &lf).await.ok();
-            let sess = api::get_session_info(&c, &lf).await.ok();
+            let ent = auth::get_entitlements(&client, &lf).await.ok();
+            let sess = api::get_session_info(&client, &lf).await.ok();
+            let puuid = ent.as_ref().map(|e| e.subject.clone()).unwrap_or_default();
+            let sess_shard = sess.as_ref().map(|(_, s, _)| s.clone());
+            let sess_version = sess.as_ref().map(|(_, _, v)| v.clone());
+            let shard = sess_shard
+                .clone()
+                .filter(|s| !s.is_empty())
+                .or_else(|| shard_from_match.clone())
+                .unwrap_or_default();
+
+            let names = if let Some(e) = ent.as_ref() {
+                api::resolve_missing_match_names(
+                    &client,
+                    &details,
+                    &e.access_token,
+                    &e.token,
+                    Some(&shard),
+                    sess_version.as_deref(),
+                )
+                .await
+            } else {
+                crate::journal::warn(
+                    "NameService",
+                    "Riot Client entitlements unavailable; cannot resolve player names",
+                );
+                std::collections::HashMap::new()
+            };
+
+            (puuid, shard, names)
+        }
+        Err(e) => {
+            crate::journal::warn(
+                "NameService",
+                &format!("No Riot Client lockfile ({}); names stay blank", e),
+            );
             (
-                ent.map(|e| e.subject).unwrap_or_default(),
-                sess.map(|(_, s, _)| s).unwrap_or_default(),
+                String::new(),
+                shard_from_match.unwrap_or_default(),
+                std::collections::HashMap::new(),
             )
         }
-        Err(_) => (String::new(), String::new()),
     };
 
-    let client = api::build_http_client()?;
+    // Persist resolved names into the saved file so later opens work offline.
+    if !resolved_names.is_empty() {
+        match api::apply_names_to_match_json(&raw_json, &resolved_names) {
+            Ok(enriched) => {
+                if let Err(e) = live::write_saved_match_json(&app_handle, &match_id, &enriched) {
+                    crate::journal::warn("NameService", &format!("Could not update saved match names: {}", e));
+                } else {
+                    // Keep in-memory details in sync with what we wrote
+                    for p in &mut details.players {
+                        if let Some(full) = resolved_names.get(&p.subject) {
+                            if let Some((game, tag)) = full.split_once('#') {
+                                p.game_name = game.to_string();
+                                p.tag_line = tag.to_string();
+                            }
+                        }
+                    }
+                }
+            }
+            Err(e) => crate::journal::warn("NameService", &format!("Failed to enrich match JSON: {}", e)),
+        }
+    }
+
     let agents = api::fetch_agents(&client).await.unwrap_or_default();
     let maps = api::fetch_maps(&client).await.unwrap_or_default();
 
@@ -832,6 +1104,7 @@ async fn get_saved_match_detail(app_handle: tauri::AppHandle, match_id: String) 
         &shard,
         &maps,
         &agents,
+        &resolved_names,
     ))
 }
 
@@ -1078,6 +1351,7 @@ pub fn run() {
             reckon_get_status,
             reckon_fetch_data,
             reckon_get_players,
+            reckon_lookup_players_by_names,
             reckon_get_teams,
             reckon_upload_match,
             reckon_link_account,
