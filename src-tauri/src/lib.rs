@@ -1009,6 +1009,117 @@ fn get_saved_matches(app_handle: tauri::AppHandle) -> live::SavedMatchIndex {
     live::get_saved_match_list(&app_handle)
 }
 
+/// Delete saved matches that aren't 5v5 custom bomb games. Returns count removed.
+#[tauri::command]
+fn discard_non_5v5_customs(app_handle: tauri::AppHandle) -> Result<u32, String> {
+    live::discard_non_5v5_custom_matches(&app_handle)
+}
+
+/// Whether a saved match is a 5v5 custom bomb game (eligible for idle auto-upload).
+#[tauri::command]
+fn is_5v5_custom_match(app_handle: tauri::AppHandle, match_id: String) -> Result<bool, String> {
+    let raw = live::get_saved_match_json(&app_handle, &match_id)?;
+    Ok(live::is_5v5_custom_match(&raw))
+}
+
+/// Check which of the given match IDs already exist on Reckon as ScrimGames.
+/// Uses GET /ScrimGames/list with id__in. Returns uploaded games with team ids.
+#[tauri::command]
+async fn reckon_check_uploaded_matches(
+    state: tauri::State<'_, Mutex<ReckonState>>,
+    match_ids: Vec<String>,
+) -> Result<Vec<serde_json::Value>, String> {
+    let token = {
+        let guard = state.lock().map_err(|_| "State lock poisoned".to_string())?;
+        match guard.token.clone() {
+            Some(t) => t,
+            None => return Ok(vec![]),
+        }
+    };
+
+    let mut unique: Vec<String> = Vec::new();
+    let mut seen = std::collections::HashSet::new();
+    for id in match_ids {
+        let trimmed = id.trim().to_string();
+        if trimmed.is_empty() {
+            continue;
+        }
+        if seen.insert(trimmed.clone()) {
+            unique.push(trimmed);
+        }
+    }
+    if unique.is_empty() {
+        return Ok(vec![]);
+    }
+
+    let config = reckon_api::apis::configuration::Configuration::prod().with_token(&token);
+    use reckon_api::apis::scrim_games_api;
+
+    fn game_summary(g: reckon_api::models::ScrimGames) -> serde_json::Value {
+        serde_json::json!({
+            "id": g.id,
+            "team1": g.team1,
+            "team2": g.team2,
+            "map": g.map,
+            "scoreTeam1": g.score_team1,
+            "scoreTeam2": g.score_team2,
+        })
+    }
+
+    match scrim_games_api::scrim_games_list(
+        &config,
+        Some(serde_json::json!({ "id__in": unique })),
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+        None,
+    )
+    .await
+    {
+        Ok(games) => Ok(games.into_iter().map(game_summary).collect()),
+        Err(e) => {
+            crate::journal::warn(
+                "ScrimGames",
+                &format!("id__in list failed, trying per-id: {}", e),
+            );
+            let mut found = Vec::new();
+            for id in &unique {
+                match scrim_games_api::scrim_games_list(
+                    &config,
+                    None,
+                    None,
+                    Some(id.as_str()),
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                    None,
+                )
+                .await
+                {
+                    Ok(games) => {
+                        for g in games {
+                            found.push(game_summary(g));
+                        }
+                    }
+                    Err(err) => {
+                        crate::journal::warn(
+                            "ScrimGames",
+                            &format!("list?id={} failed: {}", id, err),
+                        );
+                    }
+                }
+            }
+            Ok(found)
+        }
+    }
+}
+
 /// Get the full raw JSON of a saved match.
 #[tauri::command]
 fn get_saved_match_json(app_handle: tauri::AppHandle, match_id: String) -> Result<String, String> {
@@ -1358,6 +1469,9 @@ pub fn run() {
             reckon_get_soloq_accounts,
             get_live_game_state,
             get_saved_matches,
+            discard_non_5v5_customs,
+            is_5v5_custom_match,
+            reckon_check_uploaded_matches,
             get_saved_match_json,
             get_saved_match_detail,
             show_saved_match_file,

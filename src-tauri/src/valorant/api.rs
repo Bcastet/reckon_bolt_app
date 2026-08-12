@@ -681,7 +681,7 @@ pub fn queue_display_name(queue_id: &str, is_custom: bool) -> String {
         "premier" => "Premier",
         "newmap" => "New Map",
         "snowball" => "Snowball Fight",
-        "" => "Custom Game",
+        "" => "Unknown",
         other => other,
     }
     .to_string()

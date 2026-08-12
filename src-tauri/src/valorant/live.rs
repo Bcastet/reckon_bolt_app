@@ -444,6 +444,8 @@ pub struct SavedMatchEntry {
     pub match_id: String,
     pub map_name: Option<String>,
     pub queue_name: Option<String>,
+    #[serde(default)]
+    pub is_custom: bool,
     pub is_spectated: bool,
     pub timestamp: u64,
 }
@@ -482,19 +484,8 @@ pub fn import_match_from_path(app: &AppHandle, path: &str) -> Result<SavedMatchE
         .ok_or("matchInfo is missing matchId")?
         .to_string();
 
-    let map_id = match_info.get("mapId")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
-    let map_name = api::extract_map_fallback(map_id);
-
-    let queue_id = match_info.get("queueID")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
-    let provisioning = match_info.get("provisioningFlowID")
-        .and_then(|v| v.as_str())
-        .unwrap_or("");
-    let is_custom = provisioning == "CustomGame";
-    let queue_name = api::queue_display_name(queue_id, is_custom);
+    let (map_name, queue_name, is_custom) = metadata_from_match_json(&raw)
+        .unwrap_or_else(|| ("Unknown Map".to_string(), "Match".to_string(), false));
 
     let timestamp = match_info.get("gameStartMillis")
         .and_then(|v| v.as_u64())
@@ -516,6 +507,7 @@ pub fn import_match_from_path(app: &AppHandle, path: &str) -> Result<SavedMatchE
         match_id,
         map_name: Some(map_name),
         queue_name: Some(queue_name),
+        is_custom,
         is_spectated: false,
         timestamp,
     };
@@ -584,8 +576,141 @@ fn save_match_json(app: &AppHandle, match_id: &str, json: &str) -> Result<(), St
         .map_err(|e| format!("Write match JSON: {}", e))
 }
 
+/// Pull map / queue / custom flags from a raw match-details JSON blob.
+fn metadata_from_match_json(raw: &str) -> Option<(String, String, bool)> {
+    let parsed: serde_json::Value = serde_json::from_str(raw).ok()?;
+    let match_info = parsed.get("matchInfo")?;
+
+    let map_id = match_info.get("mapId").and_then(|v| v.as_str()).unwrap_or("");
+    let map_name = api::extract_map_fallback(map_id);
+
+    let queue_id = match_info.get("queueID").and_then(|v| v.as_str()).unwrap_or("");
+    let provisioning = match_info
+        .get("provisioningFlowID")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    let is_custom = provisioning == "CustomGame";
+    let queue_name = if provisioning == "ShootingRange" {
+        "Range".to_string()
+    } else {
+        api::queue_display_name(queue_id, is_custom)
+    };
+
+    Some((map_name, queue_name, is_custom))
+}
+
+/// True for standard bomb customs with exactly 5 players on Blue and Red.
+pub fn is_5v5_custom_match(raw: &str) -> bool {
+    let Ok(parsed) = serde_json::from_str::<serde_json::Value>(raw) else {
+        return false;
+    };
+    let Some(match_info) = parsed.get("matchInfo") else {
+        return false;
+    };
+
+    let provisioning = match_info
+        .get("provisioningFlowID")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    if provisioning != "CustomGame" {
+        return false;
+    }
+
+    let mode = match_info
+        .get("gameMode")
+        .and_then(|v| v.as_str())
+        .unwrap_or("");
+    if !mode.contains("BombGameMode") {
+        return false;
+    }
+
+    let mut blue = 0u32;
+    let mut red = 0u32;
+    if let Some(players) = parsed.get("players").and_then(|p| p.as_array()) {
+        for player in players {
+            match player.get("teamId").and_then(|t| t.as_str()) {
+                Some("Blue") => blue += 1,
+                Some("Red") => red += 1,
+                _ => {}
+            }
+        }
+    }
+
+    blue == 5 && red == 5
+}
+
+/// Delete saved matches that are not 5v5 custom bomb games. Returns how many were removed.
+pub fn discard_non_5v5_custom_matches(app: &AppHandle) -> Result<u32, String> {
+    let mut index = load_match_index(app);
+    let mut kept = Vec::with_capacity(index.matches.len());
+    let mut removed = 0u32;
+
+    for entry in index.matches.drain(..) {
+        let keep = get_saved_match_json(app, &entry.match_id)
+            .ok()
+            .map(|raw| is_5v5_custom_match(&raw))
+            .unwrap_or(false);
+
+        if keep {
+            kept.push(entry);
+            continue;
+        }
+
+        if let Ok(path) = get_saved_match_path(app, &entry.match_id) {
+            if let Err(e) = std::fs::remove_file(&path) {
+                crate::journal::warn(
+                    "SavedMatches",
+                    &format!("Failed to delete {}: {}", path.display(), e),
+                );
+            }
+        }
+        removed += 1;
+    }
+
+    index.matches = kept;
+    save_match_index(app, &index)?;
+    Ok(removed)
+}
+
+fn enrich_saved_match_index(app: &AppHandle, index: &mut SavedMatchIndex) -> bool {
+    let mut dirty = false;
+    for entry in &mut index.matches {
+        let Ok(raw) = get_saved_match_json(app, &entry.match_id) else {
+            continue;
+        };
+        let Some((map_name, queue_name, is_custom)) = metadata_from_match_json(&raw) else {
+            continue;
+        };
+
+        let map_blank = entry
+            .map_name
+            .as_ref()
+            .map(|m| m.is_empty() || m == "Unknown Map")
+            .unwrap_or(true);
+        if map_blank && entry.map_name.as_deref() != Some(map_name.as_str()) {
+            entry.map_name = Some(map_name);
+            dirty = true;
+        }
+
+        if entry.queue_name.as_deref() != Some(queue_name.as_str()) {
+            entry.queue_name = Some(queue_name);
+            dirty = true;
+        }
+
+        if entry.is_custom != is_custom {
+            entry.is_custom = is_custom;
+            dirty = true;
+        }
+    }
+    dirty
+}
+
 pub fn get_saved_match_list(app: &AppHandle) -> SavedMatchIndex {
-    load_match_index(app)
+    let mut index = load_match_index(app);
+    if enrich_saved_match_index(app, &mut index) {
+        let _ = save_match_index(app, &index);
+    }
+    index
 }
 
 pub fn get_saved_match_json(app: &AppHandle, match_id: &str) -> Result<String, String> {
@@ -640,10 +765,28 @@ async fn auto_save_match(
                     return;
                 }
 
+                let (json_map, json_queue, json_custom) =
+                    metadata_from_match_json(&raw_json).unwrap_or_else(|| {
+                        (
+                            live_state.map_name.clone().unwrap_or_default(),
+                            live_state
+                                .queue_name
+                                .clone()
+                                .unwrap_or_else(|| "Match".to_string()),
+                            live_state.is_custom,
+                        )
+                    });
+                let map_name = live_state
+                    .map_name
+                    .clone()
+                    .filter(|s| !s.is_empty())
+                    .unwrap_or(json_map);
+
                 let entry = SavedMatchEntry {
                     match_id: match_id.to_string(),
-                    map_name: live_state.map_name.clone(),
-                    queue_name: live_state.queue_name.clone(),
+                    map_name: Some(map_name.clone()),
+                    queue_name: Some(json_queue.clone()),
+                    is_custom: json_custom,
                     is_spectated: live_state.is_spectating,
                     timestamp: std::time::SystemTime::now()
                         .duration_since(std::time::UNIX_EPOCH)
@@ -659,8 +802,8 @@ async fn auto_save_match(
                     }
                 }
 
-                crate::journal::info("LiveAPI", &format!("Match saved on attempt {}: {} ({:?} on {:?})",
-                    attempt + 1, match_id, live_state.queue_name, live_state.map_name));
+                crate::journal::info("LiveAPI", &format!("Match saved on attempt {}: {} ({} on {:?})",
+                    attempt + 1, match_id, json_queue, map_name));
 
                 let _ = app.emit("match-saved", &entry);
                 return;
@@ -868,7 +1011,7 @@ fn queue_display_name(queue_id: &str, is_custom: bool) -> String {
         "swiftplay" => "Swiftplay",
         "premier" => "Premier",
         "newmap" => "New Map",
-        "" => "Custom",
+        "" => "Unknown",
         other => other,
     }
     .to_string()
@@ -1807,10 +1950,26 @@ pub fn start_live_poller(
                                         if let Err(e) = save_match_json(&app_handle, &mid, &raw_json) {
                                             crate::journal::info("LiveAPI", &format!("Failed to save probed match: {}", e));
                                         } else {
+                                            let (json_map, json_queue, json_custom) =
+                                                metadata_from_match_json(&raw_json).unwrap_or_else(|| {
+                                                    (
+                                                        ls.map_name.clone().unwrap_or_default(),
+                                                        ls.queue_name
+                                                            .clone()
+                                                            .unwrap_or_else(|| "Match".to_string()),
+                                                        ls.is_custom,
+                                                    )
+                                                });
+                                            let map_name = ls
+                                                .map_name
+                                                .clone()
+                                                .filter(|s| !s.is_empty())
+                                                .unwrap_or(json_map);
                                             let entry = SavedMatchEntry {
                                                 match_id: mid.clone(),
-                                                map_name: ls.map_name.clone(),
-                                                queue_name: ls.queue_name.clone(),
+                                                map_name: Some(map_name),
+                                                queue_name: Some(json_queue),
+                                                is_custom: json_custom,
                                                 is_spectated: ls.is_spectating,
                                                 timestamp: std::time::SystemTime::now()
                                                     .duration_since(std::time::UNIX_EPOCH)

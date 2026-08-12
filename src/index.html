@@ -17,6 +17,12 @@
           <div id="update-spinner" class="spinner-small hidden"></div>
         </button>
 
+        <!-- Idle mode: auto-upload 5v5 customs -->
+        <button id="idle-mode-btn" class="btn-idle" type="button" title="Idle mode: auto-upload new 5v5 custom games to Reckon Bolt" aria-pressed="false">
+          <span class="idle-dot"></span>
+          <span id="idle-mode-text">Idle</span>
+        </button>
+
         <!-- Reckon API connection -->
         <button id="reckon-connect-btn" class="btn-connect" title="Connect to Reckon Bolt">
           <span class="connect-dot disconnected"></span>
@@ -253,10 +259,23 @@
                 <path d="M2 5a2 2 0 0 1 2-2h3.172a2 2 0 0 1 1.414.586l1.828 1.828A2 2 0 0 0 11.828 6H16a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5z"/>
               </svg>
             </button>
+            <button class="btn-section-icon btn-section-danger" id="saved-matches-discard-btn" type="button" title="Discard games that aren't 5v5 customs">
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 6h12"/>
+                <path d="M8 6V4.5A1.5 1.5 0 0 1 9.5 3h1A1.5 1.5 0 0 1 12 4.5V6"/>
+                <path d="M6.5 6l.5 10h6l.5-10"/>
+                <path d="M8.5 9v5M11.5 9v5"/>
+              </svg>
+            </button>
             <span class="section-chevron" id="saved-matches-chevron">&#x25B2;</span>
           </div>
         </div>
         <div class="section-body" id="saved-matches-body">
+          <div class="saved-matches-filters" id="saved-matches-filters" role="tablist" aria-label="Filter saved matches">
+            <button type="button" class="saved-filter-chip active" data-filter="all">All</button>
+            <button type="button" class="saved-filter-chip" data-filter="custom">Custom</button>
+            <button type="button" class="saved-filter-chip" data-filter="other">Other</button>
+          </div>
           <div id="saved-match-list" class="match-list"></div>
         </div>
       </div>

@@ -385,7 +385,7 @@ async function toggleDetail(wrapper, matchId) {
 }
 
 // ─── Render the expanded scoreboard ───
-function renderDetailPanel(panel, detail, accounts = [], inferredByPuuid = new Map()) {
+function renderDetailPanel(panel, detail, accounts = [], inferredByPuuid = new Map(), options = {}) {
   const blueWon = detail.blueRoundsWon > detail.redRoundsWon;
   const redWon  = detail.redRoundsWon > detail.blueRoundsWon;
 
@@ -397,6 +397,9 @@ function renderDetailPanel(panel, detail, accounts = [], inferredByPuuid = new M
 
   // Check if this match is eligible for upload (competitive or custom game)
   const canUpload = reckonUser && (detail.isCustomGame || detail.isRanked);
+  const uploadedInfo = uploadedMatchesById.get(detail.matchId) || null;
+  const alreadyUploaded = !!uploadedInfo;
+  const preferredTeams = options.preferredTeams || null;
 
   panel.innerHTML = `
     <div class="scoreboard">
@@ -438,7 +441,7 @@ function renderDetailPanel(panel, detail, accounts = [], inferredByPuuid = new M
         </div>
       </div>
     </div>
-    ${canUpload ? renderUploadSection() : renderDownloadOnlySection()}
+    ${canUpload ? renderUploadSection(alreadyUploaded) : renderDownloadOnlySection()}
   `;
 
   // Click player name → copy Riot ID + PUUID
@@ -464,6 +467,8 @@ function renderDetailPanel(panel, detail, accounts = [], inferredByPuuid = new M
     });
   }
 
+  let uploadControls = null;
+
   // Mount team selectors into the slots if upload is available
   if (canUpload) {
     const blueSlot = panel.querySelector('.team-selector-slot[data-side="blue"]');
@@ -477,14 +482,22 @@ function renderDetailPanel(panel, detail, accounts = [], inferredByPuuid = new M
       placeholder: "Select red side team\u2026",
     });
 
-    // Auto-select side teams when 2+ known players share the same current_team
-    const blueTeamId = detectMajorityTeam(detail.teamBlue, accountByPuuid, inferredByPuuid);
-    const redTeamId = detectMajorityTeam(detail.teamRed, accountByPuuid, inferredByPuuid);
-    if (blueTeamId && redTeamId && blueTeamId === redTeamId) {
-      // Same team majority on both sides — leave unset rather than guess wrong
+    // Prefer explicit teams (idle attention), then ScrimGames, otherwise infer from roster
+    if (preferredTeams?.team1 || preferredTeams?.team2) {
+      if (preferredTeams.team1) blueSelector.setValue(preferredTeams.team1);
+      if (preferredTeams.team2) redSelector.setValue(preferredTeams.team2);
+    } else if (uploadedInfo?.team1 || uploadedInfo?.team2) {
+      if (uploadedInfo.team1) blueSelector.setValue(uploadedInfo.team1);
+      if (uploadedInfo.team2) redSelector.setValue(uploadedInfo.team2);
     } else {
-      if (blueTeamId) blueSelector.setValue(blueTeamId);
-      if (redTeamId) redSelector.setValue(redTeamId);
+      const blueTeamId = detectMajorityTeam(detail.teamBlue, accountByPuuid, inferredByPuuid);
+      const redTeamId = detectMajorityTeam(detail.teamRed, accountByPuuid, inferredByPuuid);
+      if (blueTeamId && redTeamId && blueTeamId === redTeamId) {
+        // Same team majority on both sides — leave unset rather than guess wrong
+      } else {
+        if (blueTeamId) blueSelector.setValue(blueTeamId);
+        if (redTeamId) redSelector.setValue(redTeamId);
+      }
     }
 
     // Wire up the upload button
@@ -506,7 +519,18 @@ function renderDetailPanel(panel, detail, accounts = [], inferredByPuuid = new M
         });
       });
     }
+
+    uploadControls = {
+      blueSelector,
+      redSelector,
+      uploadBtn,
+      uploadError,
+      uploadSuccess,
+      nameByPuuid: buildNameByPuuidFromDetail(detail),
+    };
   }
+
+  return uploadControls;
 }
 
 /** Map puuid → resolved Riot ID from the open match detail (name-service enriched). */
@@ -523,12 +547,12 @@ function buildNameByPuuidFromDetail(detail) {
 }
 
 // ─── Upload section HTML ───
-function renderUploadSection() {
+function renderUploadSection(alreadyUploaded = false) {
   return `
     <div class="upload-section">
       <div class="upload-body">
         <button class="upload-btn" type="button">
-          <span class="upload-btn-text">Upload to Reckon Bolt</span>
+          <span class="upload-btn-text">${alreadyUploaded ? "Re-upload to Reckon Bolt" : "Upload to Reckon Bolt"}</span>
           <div class="spinner-small upload-spinner hidden"></div>
         </button>
         <button class="download-replay-btn" type="button">
@@ -537,7 +561,7 @@ function renderUploadSection() {
         </button>
       </div>
       <p class="upload-error hidden"></p>
-      <p class="upload-success hidden"></p>
+      <p class="upload-success${alreadyUploaded ? "" : " hidden"}">${alreadyUploaded ? "Already uploaded to Reckon Bolt" : ""}</p>
       <div class="unlinked-accounts hidden"></div>
     </div>
   `;
@@ -660,6 +684,14 @@ async function handleUploadMatch({
     } else if (result && result.success) {
       uploadSuccess.textContent = "Match uploaded successfully!";
       uploadSuccess.classList.remove("hidden");
+      if (matchId) {
+        uploadedMatchesById.set(matchId, {
+          id: matchId,
+          team1: String(blueTeam.id),
+          team2: String(redTeam.id),
+        });
+        renderSavedMatches();
+      }
     } else if (result && result.error) {
       showToast(result.error, { title: "Upload failed" });
     }
@@ -1159,6 +1191,7 @@ async function handleLogin(e) {
     appendJournal("info", "UI", `Signed in as ${reckonUser.username}`);
     // Re-fetch data now that we have an auth token
     fetchReckonData();
+    refreshUploadedMatchStatus().then(() => renderSavedMatches());
   } catch (err) {
     console.error("Reckon login failed:", err);
     appendJournal("error", "UI", `Login failed: ${typeof err === "string" ? err : "Unknown error"}`);
@@ -1179,7 +1212,9 @@ async function handleReckonDisconnect() {
     console.error("Reckon logout error:", err);
   }
   reckonUser = null;
+  uploadedMatchesById = new Map();
   updateReckonUI();
+  renderSavedMatches();
 }
 
 function onConnectBtnClick() {
@@ -1196,6 +1231,8 @@ async function checkReckonStatus() {
     if (user) {
       reckonUser = user;
       updateReckonUI();
+      await refreshUploadedMatchStatus();
+      renderSavedMatches();
     }
   } catch (_) {
     // Not connected — that's fine
@@ -1568,8 +1605,10 @@ function createTeamSelector(container, opts = {}) {
 
     /** Programmatically select a team by id */
     setValue(teamId) {
+      if (teamId == null || teamId === "") return;
       const teams = getTeams();
-      const team = teams.find((t) => t.id === teamId);
+      const want = String(teamId);
+      const team = teams.find((t) => String(t.id) === want);
       if (team) {
         selectTeam(team);
       }
@@ -2631,14 +2670,34 @@ const historyBody = document.getElementById("history-body");
 const historyChevron = document.getElementById("history-chevron");
 
 let savedMatches = [];
+let savedMatchesFilter = "all";
+/** @type {Map<string, { id: string, team1?: string, team2?: string }>} */
+let uploadedMatchesById = new Map();
 
 async function loadSavedMatches() {
   try {
     const index = await invoke("get_saved_matches");
     savedMatches = index.matches || [];
+    await refreshUploadedMatchStatus();
     renderSavedMatches();
   } catch (e) {
     console.warn("Could not load saved matches:", e);
+  }
+}
+
+async function refreshUploadedMatchStatus() {
+  if (!reckonUser || savedMatches.length === 0) {
+    uploadedMatchesById = new Map();
+    return;
+  }
+  try {
+    const ids = savedMatches.map(m => m.matchId).filter(Boolean);
+    const uploaded = await invoke("reckon_check_uploaded_matches", { matchIds: ids });
+    uploadedMatchesById = new Map(
+      (uploaded || []).map((g) => [g.id, g])
+    );
+  } catch (e) {
+    console.warn("Could not check uploaded matches:", e);
   }
 }
 
@@ -2649,14 +2708,47 @@ function renderSavedMatches() {
     return;
   }
   savedMatchesSection.classList.remove("hidden");
+
+  const customCount = savedMatches.filter(m => m.isCustom).length;
+  const otherCount = savedMatches.length - customCount;
   savedMatchesCount.textContent = String(savedMatches.length);
 
-  for (const m of savedMatches) {
+  const filtersEl = document.getElementById("saved-matches-filters");
+  if (filtersEl) {
+    filtersEl.querySelectorAll(".saved-filter-chip").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.filter === savedMatchesFilter);
+      if (btn.dataset.filter === "custom") {
+        btn.textContent = customCount > 0 ? `Custom (${customCount})` : "Custom";
+      } else if (btn.dataset.filter === "other") {
+        btn.textContent = otherCount > 0 ? `Other (${otherCount})` : "Other";
+      } else {
+        btn.textContent = "All";
+      }
+    });
+  }
+
+  const visible = savedMatches.filter(m => {
+    if (savedMatchesFilter === "custom") return !!m.isCustom;
+    if (savedMatchesFilter === "other") return !m.isCustom;
+    return true;
+  });
+
+  if (visible.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "saved-matches-empty";
+    empty.textContent = savedMatchesFilter === "custom"
+      ? "No custom games saved yet."
+      : "No other matches in this filter.";
+    savedMatchList.appendChild(empty);
+    return;
+  }
+
+  for (const m of visible) {
     const wrapper = document.createElement("div");
     wrapper.className = "match-wrapper";
 
     const card = document.createElement("div");
-    card.className = "match-card saved-match-card";
+    card.className = "match-card saved-match-card" + (m.isCustom ? " saved-match-custom" : "");
     card.dataset.matchId = m.matchId;
 
     const date = new Date(m.timestamp);
@@ -2665,15 +2757,24 @@ function renderSavedMatches() {
     const badgeClass = m.isSpectated ? "badge-spectated" : "badge-queue";
     const badgeText = m.isSpectated ? "SPECTATED" : "PLAYED";
 
+    const queueLabel = m.queueName || (m.isCustom ? "Custom Game" : "Match");
+    let queueClass = "badge-queue";
+    if (m.isCustom) queueClass += " badge-custom";
+    else if (/competitive|premier/i.test(queueLabel)) queueClass += " badge-ranked";
+
+    const isUploaded = uploadedMatchesById.has(m.matchId);
+    const statusLabel = isUploaded ? "Uploaded" : "Saved";
+    const statusClass = isUploaded ? "saved-match-status uploaded" : "saved-match-status";
+
     card.innerHTML = `
       <div class="match-result">
         <span class="badge ${badgeClass}">${badgeText}</span>
       </div>
       <div class="match-info">
         <span class="match-map">${escapeHtml(m.mapName || "Unknown Map")}</span>
-        <span class="badge-queue">${escapeHtml(m.queueName || "Match")}</span>
+        <span class="${queueClass}">${escapeHtml(queueLabel)}</span>
       </div>
-      <div class="match-agent"><span>Saved</span></div>
+      <div class="match-agent"><span class="${statusClass}">${statusLabel}</span></div>
       <div class="match-kda"><span class="saved-match-id">${escapeHtml(m.matchId.substring(0, 8))}...</span></div>
       <div class="match-meta">
         <span class="match-time">${timeStr}</span>
@@ -2694,16 +2795,54 @@ async function toggleSavedDetail(wrapper, matchId) {
     return;
   }
 
+  await openSavedMatchDetail(matchId, { wrapper });
+}
+
+/**
+ * Open a saved match detail panel, optionally with preferred teams / unlinked UI.
+ * Used by click handlers and Idle mode attention flow.
+ */
+async function openSavedMatchDetail(matchId, options = {}) {
+  let wrapper = options.wrapper || null;
+
+  // Ensure Saved Matches is visible & expanded
+  savedMatchesSection.classList.remove("hidden");
+  savedMatchesBody.classList.remove("hidden");
+  savedMatchesChevron.classList.remove("collapsed");
+
+  if (!wrapper) {
+    // Make sure the match is visible in the current filter
+    const entry = savedMatches.find((m) => m.matchId === matchId);
+    if (entry && savedMatchesFilter === "other" && entry.isCustom) {
+      savedMatchesFilter = "custom";
+      renderSavedMatches();
+    } else if (entry && savedMatchesFilter === "custom" && !entry.isCustom) {
+      savedMatchesFilter = "all";
+      renderSavedMatches();
+    }
+
+    const card = savedMatchList.querySelector(`.match-card[data-match-id="${CSS.escape(matchId)}"]`);
+    wrapper = card?.closest(".match-wrapper") || null;
+  }
+
+  if (!wrapper) return null;
+
   // Close any other open panel in saved matches
   const prev = savedMatchList.querySelector(".detail-panel");
-  if (prev) {
-    prev.closest(".match-wrapper").querySelector(".match-card").classList.remove("expanded");
+  if (prev && prev.closest(".match-wrapper") !== wrapper) {
+    prev.closest(".match-wrapper").querySelector(".match-card")?.classList.remove("expanded");
     prev.remove();
   }
 
-  wrapper.querySelector(".match-card").classList.add("expanded");
+  // Already open on this wrapper — reuse / rebuild
+  let panel = wrapper.querySelector(".detail-panel");
+  if (panel) {
+    panel.remove();
+  }
 
-  const panel = document.createElement("div");
+  wrapper.querySelector(".match-card")?.classList.add("expanded");
+
+  panel = document.createElement("div");
   panel.className = "detail-panel";
   panel.innerHTML = `<div class="detail-loading"><div class="spinner"></div></div>`;
   wrapper.appendChild(panel);
@@ -2712,7 +2851,12 @@ async function toggleSavedDetail(wrapper, matchId) {
     const detail = await invoke("get_saved_match_detail", { matchId });
     const accounts = await fetchSoloqAccountsForDetail(detail);
     const inferredByPuuid = await fetchInferredPlayersForDetail(detail, accounts);
-    renderDetailPanel(panel, detail, accounts, inferredByPuuid);
+    const preferredTeams = (options.team1 || options.team2)
+      ? { team1: options.team1 || null, team2: options.team2 || null }
+      : null;
+    const uploadControls = renderDetailPanel(panel, detail, accounts, inferredByPuuid, {
+      preferredTeams,
+    });
 
     const showFileBtn = document.createElement("button");
     showFileBtn.className = "btn-show-file";
@@ -2733,16 +2877,232 @@ async function toggleSavedDetail(wrapper, matchId) {
       actionsBar.appendChild(showFileBtn);
       panel.appendChild(actionsBar);
     }
+
+    if (options.unlinkedAccounts?.length && uploadControls?.uploadBtn) {
+      const uploadSection = uploadControls.uploadBtn.closest(".upload-section");
+      const unlinkedContainer = uploadSection?.querySelector(".unlinked-accounts");
+      if (unlinkedContainer) {
+        await renderUnlinkedAccounts(
+          unlinkedContainer,
+          options.unlinkedAccounts,
+          options.unlinkedServer || detail.server || "",
+          {
+            matchId,
+            server: detail.server,
+            blueSelector: uploadControls.blueSelector,
+            redSelector: uploadControls.redSelector,
+            uploadBtn: uploadControls.uploadBtn,
+            uploadError: uploadControls.uploadError,
+            uploadSuccess: uploadControls.uploadSuccess,
+            nameByPuuid: uploadControls.nameByPuuid,
+          },
+        );
+      }
+    }
+
+    // Scroll the match into view so the user sees what needs attention
+    wrapper.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    return { panel, detail, uploadControls };
   } catch (err) {
     console.error("Failed to load saved match:", err);
     panel.innerHTML = `<p class="detail-error">Failed to load match details</p>`;
+    return null;
+  }
+}
+
+// ─── Idle mode ───
+
+const IDLE_MODE_STORAGE_KEY = "reckon.idleMode";
+const idleModeBtn = document.getElementById("idle-mode-btn");
+const idleModeText = document.getElementById("idle-mode-text");
+let idleModeEnabled = localStorage.getItem(IDLE_MODE_STORAGE_KEY) === "1";
+/** @type {Set<string>} */
+const idleUploadInFlight = new Set();
+
+function updateIdleModeUI() {
+  if (!idleModeBtn) return;
+  idleModeBtn.classList.toggle("is-active", idleModeEnabled);
+  idleModeBtn.setAttribute("aria-pressed", idleModeEnabled ? "true" : "false");
+  if (idleModeText) idleModeText.textContent = idleModeEnabled ? "Idle ON" : "Idle";
+  idleModeBtn.title = idleModeEnabled
+    ? "Idle mode ON — new 5v5 custom games auto-upload to Reckon Bolt (click to turn off)"
+    : "Idle mode: auto-upload new 5v5 custom games to Reckon Bolt";
+}
+
+function setIdleModeEnabled(enabled) {
+  idleModeEnabled = !!enabled;
+  localStorage.setItem(IDLE_MODE_STORAGE_KEY, idleModeEnabled ? "1" : "0");
+  updateIdleModeUI();
+  appendJournal("info", "Idle", idleModeEnabled ? "Idle mode enabled" : "Idle mode disabled");
+}
+
+/**
+ * Flash the taskbar / bring the window forward so the user notices incomplete upload data.
+ */
+async function requestAppAttention() {
+  const label = "main";
+  try {
+    await invoke("plugin:window|unminimize", { label });
+  } catch (_) {}
+  try {
+    // Critical: Windows flashes the taskbar until the app is focused
+    await invoke("plugin:window|request_user_attention", {
+      label,
+      value: { type: "Critical" },
+    });
+  } catch (err) {
+    console.warn("request_user_attention failed:", err);
+  }
+  try {
+    await invoke("plugin:window|set_focus", { label });
+  } catch (_) {}
+}
+
+async function notifyIdleNeedsAttention(matchId, message, openOptions = {}) {
+  await requestAppAttention();
+  await openSavedMatchDetail(matchId, openOptions);
+  showToast(message, { title: "Idle Mode" });
+}
+
+/** Detect blue/red Reckon team ids for a match detail using linked + inferred players.
+ * Returns null when either side cannot be determined confidently.
+ */
+function detectTeamsForDetail(detail, accounts, inferredByPuuid) {
+  const accountByPuuid = new Map();
+  for (const a of accounts) {
+    if (a.puuid) accountByPuuid.set(a.puuid, a);
+  }
+  const blueTeamId = detectMajorityTeam(detail.teamBlue, accountByPuuid, inferredByPuuid);
+  const redTeamId = detectMajorityTeam(detail.teamRed, accountByPuuid, inferredByPuuid);
+  if (!blueTeamId || !redTeamId || blueTeamId === redTeamId) {
+    return null;
+  }
+  return { team1: blueTeamId, team2: redTeamId };
+}
+
+async function handleIdleAutoUpload(entry) {
+  if (!idleModeEnabled || !entry?.matchId) return;
+  const matchId = entry.matchId;
+  if (idleUploadInFlight.has(matchId)) return;
+  if (uploadedMatchesById.has(matchId)) return;
+
+  idleUploadInFlight.add(matchId);
+  try {
+    let is5v5 = false;
+    try {
+      is5v5 = await invoke("is_5v5_custom_match", { matchId });
+    } catch (err) {
+      console.warn("is_5v5_custom_match failed:", err);
+      return;
+    }
+    if (!is5v5) return;
+
+    if (!reckonUser) {
+      await notifyIdleNeedsAttention(
+        matchId,
+        "Connect to Reckon Bolt to auto-upload this 5v5 custom.",
+      );
+      return;
+    }
+
+    appendJournal("info", "Idle", `Auto-uploading 5v5 custom ${matchId.substring(0, 8)}…`);
+
+    const detail = await invoke("get_saved_match_detail", { matchId });
+    const accounts = await fetchSoloqAccountsForDetail(detail);
+    const inferredByPuuid = await fetchInferredPlayersForDetail(detail, accounts);
+
+    const teams = detectTeamsForDetail(detail, accounts, inferredByPuuid);
+    if (!teams) {
+      await notifyIdleNeedsAttention(
+        matchId,
+        "Could not determine teams — select Blue/Red teams to upload.",
+      );
+      return;
+    }
+
+    try {
+      const result = await invoke("reckon_upload_match", {
+        team1: String(teams.team1),
+        team2: String(teams.team2),
+        matchId,
+        server: detail.server || "",
+      });
+
+      if (result && result.unlinkedAccounts && result.unlinkedAccounts.length > 0) {
+        await notifyIdleNeedsAttention(
+          matchId,
+          "Some players need linking before this match can upload.",
+          {
+            team1: teams.team1,
+            team2: teams.team2,
+            unlinkedAccounts: result.unlinkedAccounts,
+            unlinkedServer: result.server || detail.server || "",
+          },
+        );
+        return;
+      }
+
+      if (result && result.success) {
+        uploadedMatchesById.set(matchId, {
+          id: matchId,
+          team1: String(teams.team1),
+          team2: String(teams.team2),
+        });
+        renderSavedMatches();
+        appendJournal("info", "Idle", `Uploaded ${matchId.substring(0, 8)} successfully`);
+        showToast("5v5 custom uploaded to Reckon Bolt", { title: "Idle Mode" });
+        return;
+      }
+
+      if (result && result.error) {
+        await notifyIdleNeedsAttention(matchId, result.error, {
+          team1: teams.team1,
+          team2: teams.team2,
+        });
+        return;
+      }
+
+      await notifyIdleNeedsAttention(
+        matchId,
+        "Auto-upload failed — finish the upload manually.",
+        { team1: teams.team1, team2: teams.team2 },
+      );
+    } catch (err) {
+      console.error("Idle auto-upload failed:", err);
+      const raw = typeof err === "string" ? err : String(err);
+      let message = "Auto-upload failed — finish the upload manually.";
+      try {
+        const data = JSON.parse(raw);
+        if (data.uploadError && data.message) message = data.message;
+      } catch (_) {}
+      await notifyIdleNeedsAttention(matchId, message, {
+        team1: teams.team1,
+        team2: teams.team2,
+      });
+    }
+  } catch (err) {
+    console.error("Idle mode handler failed:", err);
+  } finally {
+    idleUploadInFlight.delete(matchId);
   }
 }
 
 // Listen for newly saved matches
 function initSavedMatchListeners() {
-  tauriListen("match-saved", (_e) => {
-    loadSavedMatches();
+  tauriListen("match-saved", (e) => {
+    const entry = e?.payload || null;
+    loadSavedMatches().then(() => {
+      if (idleModeEnabled) {
+        handleIdleAutoUpload(entry);
+      }
+    });
+  });
+}
+
+if (idleModeBtn) {
+  updateIdleModeUI();
+  idleModeBtn.addEventListener("click", () => {
+    setIdleModeEnabled(!idleModeEnabled);
   });
 }
 
@@ -2757,12 +3117,46 @@ document.getElementById("saved-matches-toggle").addEventListener("click", (e) =>
   toggleSection(savedMatchesBody, savedMatchesChevron);
 });
 
+document.getElementById("saved-matches-filters")?.addEventListener("click", (e) => {
+  const btn = e.target.closest(".saved-filter-chip");
+  if (!btn) return;
+  e.stopPropagation();
+  const next = btn.dataset.filter;
+  if (!next || next === savedMatchesFilter) return;
+  savedMatchesFilter = next;
+  renderSavedMatches();
+});
+
 document.getElementById("saved-matches-folder-btn").addEventListener("click", async (e) => {
   e.stopPropagation();
   try {
     await invoke("open_saved_matches_folder");
   } catch (err) {
     showToast(typeof err === "string" ? err : "Could not open folder", { title: "Error" });
+  }
+});
+
+document.getElementById("saved-matches-discard-btn").addEventListener("click", async (e) => {
+  e.stopPropagation();
+  const ok = window.confirm(
+    "Discard all saved games that aren't 5v5 custom matches?\n\nKeeps only custom bomb games with 5 players on each team. This deletes the match files."
+  );
+  if (!ok) return;
+  try {
+    const removed = await invoke("discard_non_5v5_customs");
+    await loadSavedMatches();
+    if (removed > 0) {
+      showToast(
+        `Discarded ${removed} match${removed > 1 ? "es" : ""}`,
+        { title: "Saved Matches" }
+      );
+    } else {
+      showToast("Nothing to discard — all saved matches are already 5v5 customs", {
+        title: "Saved Matches",
+      });
+    }
+  } catch (err) {
+    showToast(typeof err === "string" ? err : "Discard failed", { title: "Error" });
   }
 });
 
