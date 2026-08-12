@@ -2701,6 +2701,42 @@ async function refreshUploadedMatchStatus() {
   }
 }
 
+/** Team display name from Reckon id (`Name_123` → `Name`). */
+function teamNameFromId(teamId) {
+  if (!teamId) return "";
+  return String(teamId).split("_")[0];
+}
+
+/** Signed-in user's Reckon team id (`user.team` / userTeam). */
+function getUserTeam() {
+  if (!reckonUser) return "";
+  return String(reckonUser.team || reckonUser.user_team || reckonUser.userTeam || "");
+}
+
+/** Cloudinary teamsLogo URL used by Reckon Bolt web. */
+function teamCloudinaryLogoUrl(teamId, size = 40) {
+  const name = teamNameFromId(teamId);
+  if (!name) return null;
+  // f_png keeps alpha; c_fit avoids stretching irregular logos
+  return `https://res.cloudinary.com/xenesis/image/upload/f_png,c_fit,h_${size},w_${size}/teamsLogo/${encodeURIComponent(name)}.png`;
+}
+
+/**
+ * Opponent team id for an uploaded ScrimGame.
+ * Same rule as Reckon web: if userTeam is team1 → opponent is team2, else team1.
+ */
+function getOpponentTeamId(uploaded) {
+  if (!uploaded) return null;
+  const userTeam = getUserTeam();
+  const t1 = uploaded.team1 ? String(uploaded.team1) : "";
+  const t2 = uploaded.team2 ? String(uploaded.team2) : "";
+  if (!userTeam) return t1 || t2 || null;
+  if (t1 === userTeam) return t2 || null;
+  if (t2 === userTeam) return t1 || null;
+  // User team not in this game — still show a side if possible
+  return t1 || t2 || null;
+}
+
 function renderSavedMatches() {
   savedMatchList.innerHTML = "";
   if (savedMatches.length === 0) {
@@ -2762,9 +2798,17 @@ function renderSavedMatches() {
     if (m.isCustom) queueClass += " badge-custom";
     else if (/competitive|premier/i.test(queueLabel)) queueClass += " badge-ranked";
 
-    const isUploaded = uploadedMatchesById.has(m.matchId);
+    const uploadedInfo = uploadedMatchesById.get(m.matchId) || null;
+    const isUploaded = !!uploadedInfo;
+    const opponentId = isUploaded ? getOpponentTeamId(uploadedInfo) : null;
+    const opponentName = opponentId ? teamNameFromId(opponentId) : "";
+    const opponentLogo = opponentId ? teamCloudinaryLogoUrl(opponentId, 28) : null;
     const statusLabel = isUploaded ? "Uploaded" : "Saved";
     const statusClass = isUploaded ? "saved-match-status uploaded" : "saved-match-status";
+
+    const statusHtml = opponentLogo
+      ? `<img class="saved-opponent-logo" src="${escapeHtml(opponentLogo)}" alt="${escapeHtml(opponentName)}" title="${escapeHtml(opponentName)} (opponent)" loading="lazy" onerror="this.onerror=null;this.src='https://res.cloudinary.com/xenesis/image/upload/f_png,c_fit,h_28,w_28/teamsLogo/Boa.png'">`
+      : `<span class="${statusClass}">${statusLabel}</span>`;
 
     card.innerHTML = `
       <div class="match-result">
@@ -2774,7 +2818,7 @@ function renderSavedMatches() {
         <span class="match-map">${escapeHtml(m.mapName || "Unknown Map")}</span>
         <span class="${queueClass}">${escapeHtml(queueLabel)}</span>
       </div>
-      <div class="match-agent"><span class="${statusClass}">${statusLabel}</span></div>
+      <div class="match-agent">${statusHtml}</div>
       <div class="match-kda"><span class="saved-match-id">${escapeHtml(m.matchId.substring(0, 8))}...</span></div>
       <div class="match-meta">
         <span class="match-time">${timeStr}</span>

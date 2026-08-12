@@ -1413,6 +1413,22 @@ pub fn run() {
         .manage(lobby_auth.clone())
         .manage(injection_state.clone())
         .setup(move |app| {
+            #[cfg(desktop)]
+            {
+                use tauri_plugin_autostart::MacosLauncher;
+                use tauri_plugin_autostart::ManagerExt;
+
+                app.handle().plugin(tauri_plugin_autostart::init(
+                    MacosLauncher::LaunchAgent,
+                    None,
+                ))?;
+
+                // Enable launch at login by default
+                if let Err(e) = app.autolaunch().enable() {
+                    eprintln!("Failed to enable autostart: {}", e);
+                }
+            }
+
             // Initialize log journal (file + in-memory ring buffer)
             if let Err(e) = journal::init(&app.handle()) {
                 eprintln!("Failed to init journal: {}", e);

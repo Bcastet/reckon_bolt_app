@@ -1766,6 +1766,14 @@ body {
   font-weight: 600;
 }
 
+.saved-opponent-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  display: block;
+  background: transparent;
+}
+
 .saved-matches-filters {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));

@@ -1,6 +1,6 @@
 [package]
 name = "reckon-bolt-app"
-version = "1.1.0"
+version = "1.1.1"
 description = "Valorant scrims retrieval desktop app"
 authors = ["you"]
 edition = "2021"
@@ -23,3 +23,6 @@ tokio = { version = "1", features = ["rt-multi-thread", "macros", "time", "sync"
 dirs = "5"
 rfd = "0.15"
 chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+
+[target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
+tauri-plugin-autostart = "2"
