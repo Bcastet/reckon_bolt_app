@@ -60,6 +60,17 @@ pub struct LiveGameState {
     pub party: Option<PartyInfo>,
 }
 
+impl LiveGameState {
+    fn roster_puuids(&self) -> Vec<String> {
+        self.ally_team
+            .iter()
+            .chain(self.enemy_team.iter())
+            .map(|p| p.puuid.clone())
+            .filter(|id| !id.is_empty())
+            .collect()
+    }
+}
+
 // ─── Party types (serialized to frontend) ───────────────────────────────────
 
 #[derive(Debug, Clone, Serialize)]
@@ -792,6 +803,7 @@ fn spawn_auto_save_match(
     access_token: &str,
     entitlement_token: &str,
     client_version: &str,
+    viewer_puuid: &str,
     live_state: LiveGameState,
 ) {
     let Some(mid) = live_state.match_id.clone() else {
@@ -807,8 +819,12 @@ fn spawn_auto_save_match(
     let at = access_token.to_string();
     let et = entitlement_token.to_string();
     let cv = client_version.to_string();
+    let viewer = viewer_puuid.to_string();
     tauri::async_runtime::spawn(async move {
-        auto_save_match(&app_h, &client_c, &shard_c, &mid, &at, &et, &cv, &live_state).await;
+        auto_save_match(
+            &app_h, &client_c, &shard_c, &mid, &at, &et, &cv, &viewer, &live_state,
+        )
+        .await;
     });
 }
 
@@ -820,12 +836,14 @@ async fn auto_save_match(
     auth_token: &str,
     entitlement_token: &str,
     client_version: &str,
+    viewer_puuid: &str,
     live_state: &LiveGameState,
 ) {
     crate::journal::info("LiveAPI", &format!("Match ended — fetching details for {}", match_id));
 
-    // First attempt is immediate: spectators only have a short window while the
-    // end-game stats screen is up (Valorant fetches match-details then disassociates).
+    let roster = live_state.roster_puuids();
+    // First attempt is immediate. On NONSELF (spectator/coach) we switch to SUMMARY
+    // via roster players instead of retrying the forbidden PD endpoint.
     let delays_secs: &[u64] = &[0, 5, 10, 20, 30, 60];
 
     for (attempt, &delay) in delays_secs.iter().enumerate() {
@@ -836,9 +854,10 @@ async fn auto_save_match(
             return;
         }
 
-        match api::fetch_match_details_raw(
+        match api::fetch_match_json_any_source(
             client, shard, match_id,
             auth_token, entitlement_token, client_version,
+            viewer_puuid, &roster,
         ).await {
             Ok(raw_json) => {
                 let raw_json = enrich_match_json_names(
@@ -1972,6 +1991,7 @@ pub fn start_live_poller(
                                         &entitlements.access_token,
                                         &entitlements.token,
                                         &client_version,
+                                        &entitlements.subject,
                                         last_state,
                                     );
                                 }
@@ -2105,6 +2125,23 @@ pub fn start_live_poller(
                                 let hint = read_shooter_log_match_hint();
                                 fill_match_id_if_missing(&mut game_state, &last_ingame_state, &hint);
 
+                                // Stats screen clears the live roster; keep the last non-empty
+                                // one so observer SUMMARY fallback still has player PUUIDs.
+                                let incoming_empty = game_state.ally_team.is_empty()
+                                    && game_state.enemy_team.is_empty();
+                                let had_roster = last_ingame_state
+                                    .as_ref()
+                                    .map(|s| !s.ally_team.is_empty() || !s.enemy_team.is_empty())
+                                    .unwrap_or(false);
+                                if incoming_empty {
+                                    if let Some(prev) = &last_ingame_state {
+                                        if !prev.ally_team.is_empty() || !prev.enemy_team.is_empty() {
+                                            game_state.ally_team = prev.ally_team.clone();
+                                            game_state.enemy_team = prev.enemy_team.clone();
+                                        }
+                                    }
+                                }
+
                                 crate::journal::info("LiveAPI", &format!("Emitting InGame state: map={:?}, spectating={}, score={:?}:{:?}, ally={}, enemy={}, match_id={:?}",
                                     game_state.map_name, game_state.is_spectating,
                                     game_state.spectate_score_ally, game_state.spectate_score_enemy,
@@ -2117,18 +2154,27 @@ pub fn start_live_poller(
                                 }
                                 let _ = app_handle.emit("live-game-state", &game_state);
 
-                                // The end-game stats screen is MatchDetails 200 in ShooterGame.log.
-                                // Spectators often lose access after disassociate, so save immediately.
-                                if let Some(ready_id) = hint.stats_ready_id {
-                                    if game_state.match_id.as_ref() == Some(&ready_id)
-                                        && save_spawned_for.as_ref() != Some(&ready_id)
-                                        && !already_saved_match(&app_handle, &ready_id)
+                                let stats_screen = incoming_empty && had_roster;
+                                let ready_from_log = hint.stats_ready_id.filter(|ready_id| {
+                                    game_state.match_id.as_ref() == Some(ready_id)
+                                });
+                                if (stats_screen || ready_from_log.is_some())
+                                    && game_state.match_id.is_some()
+                                {
+                                    let mid = game_state.match_id.clone().unwrap();
+                                    if save_spawned_for.as_ref() != Some(&mid)
+                                        && !already_saved_match(&app_handle, &mid)
                                     {
                                         crate::journal::info(
                                             "LiveAPI",
-                                            &format!("Stats screen detected for {} — saving now", ready_id),
+                                            &format!(
+                                                "Match {} ending (stats_screen={}, log_ready={}) — saving now",
+                                                mid,
+                                                stats_screen,
+                                                ready_from_log.is_some()
+                                            ),
                                         );
-                                        save_spawned_for = Some(ready_id);
+                                        save_spawned_for = Some(mid);
                                         spawn_auto_save_match(
                                             &app_handle,
                                             &client,
@@ -2136,6 +2182,7 @@ pub fn start_live_poller(
                                             &entitlements.access_token,
                                             &entitlements.token,
                                             &client_version,
+                                            &entitlements.subject,
                                             game_state,
                                         );
                                     }
@@ -2155,37 +2202,36 @@ pub fn start_live_poller(
                             }
                         }
 
-                        // Probe match-details while in-game. Spectators get a shorter interval
-                        // because the stats-screen window is the only reliable fetch period.
+                        // Probe match-details while in-game (players only).
+                        // Observers get 403 NONSELF on this endpoint; they save via SUMMARY
+                        // when the stats screen appears or the match returns to menus.
                         let spectating = last_ingame_state.as_ref().map(|s| s.is_spectating).unwrap_or(false);
-                        let probe_secs = if spectating { 10 } else { 30 };
-                        if last_details_probe.elapsed() >= Duration::from_secs(probe_secs) {
+                        if !spectating && last_details_probe.elapsed() >= Duration::from_secs(30) {
                             last_details_probe = std::time::Instant::now();
-                            let probe_mid = last_ingame_state.as_ref()
-                                .and_then(|s| s.match_id.clone());
-                            if let Some(mid) = probe_mid {
-                                if save_spawned_for.as_ref() != Some(&mid)
-                                    && !already_saved_match(&app_handle, &mid)
-                                {
-                                    match api::fetch_match_details_raw(
-                                        &client, &shard, &mid,
-                                        &entitlements.access_token, &entitlements.token,
-                                        &client_version,
-                                    ).await {
-                                        Ok(raw_json) => {
-                                            crate::journal::info("LiveAPI", &format!("In-game probe succeeded — match {} details available, saving", mid));
-                                            save_spawned_for = Some(mid.clone());
-                                            let ls = last_ingame_state.clone().unwrap();
-                                            let raw_json = enrich_match_json_names(
-                                                &client, &shard,
-                                                &entitlements.access_token, &entitlements.token,
-                                                &client_version, &raw_json,
-                                            ).await;
-                                            if let Err(e) = commit_saved_match(&app_handle, &mid, &raw_json, &ls) {
-                                                crate::journal::info("LiveAPI", &format!("Failed to save probed match: {}", e));
+                            if let Some(ls) = last_ingame_state.clone() {
+                                if let Some(mid) = ls.match_id.clone() {
+                                    if save_spawned_for.as_ref() != Some(&mid)
+                                        && !already_saved_match(&app_handle, &mid)
+                                    {
+                                        match api::fetch_match_details_raw(
+                                            &client, &shard, &mid,
+                                            &entitlements.access_token, &entitlements.token,
+                                            &client_version,
+                                        ).await {
+                                            Ok(raw_json) => {
+                                                crate::journal::info("LiveAPI", &format!("In-game probe succeeded — match {} details available, saving", mid));
+                                                save_spawned_for = Some(mid.clone());
+                                                let raw_json = enrich_match_json_names(
+                                                    &client, &shard,
+                                                    &entitlements.access_token, &entitlements.token,
+                                                    &client_version, &raw_json,
+                                                ).await;
+                                                if let Err(e) = commit_saved_match(&app_handle, &mid, &raw_json, &ls) {
+                                                    crate::journal::info("LiveAPI", &format!("Failed to save probed match: {}", e));
+                                                }
                                             }
+                                            Err(_) => {} // expected — match still in progress
                                         }
-                                        Err(_) => {} // expected — match still in progress
                                     }
                                 }
                             }

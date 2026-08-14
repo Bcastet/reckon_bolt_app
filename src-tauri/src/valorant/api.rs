@@ -451,6 +451,165 @@ pub async fn fetch_match_details_raw(
         .map_err(|e| format!("Failed to read match details: {}", e))
 }
 
+fn sgp_cluster_from_shard(shard: &str) -> &'static str {
+    match shard {
+        "eu" => "euc1",
+        "na" | "pbe" => "usw2",
+        "kr" => "apne1",
+        _ => "apse1",
+    }
+}
+
+pub fn is_nonself_match_details_error(err: &str) -> bool {
+    err.contains("NONSELF_OPERATION")
+}
+
+/// Download match JSON via SGP SUMMARY using `subject_puuid`'s match history.
+/// Works for your own games, and for a friend's games (party members count).
+/// Spectators cannot use PD match-details (`NONSELF_OPERATION`); this is the fallback.
+pub async fn fetch_match_summary_json(
+    client: &Client,
+    shard: &str,
+    subject_puuid: &str,
+    match_id: &str,
+    auth_token: &str,
+    entitlement_token: &str,
+    client_version: &str,
+) -> Result<String, String> {
+    let cluster = sgp_cluster_from_shard(shard);
+    let url = format!(
+        "https://{}.pp.sgp.pvp.net/match-history-query/v3/products/valorant/players/{}/infoTypes/SUMMARY?id={}",
+        cluster, subject_puuid, match_id
+    );
+
+    let headers = build_riot_headers(auth_token, entitlement_token, client_version);
+    let mut req = client.get(&url);
+    for (name, value) in &headers {
+        req = req.header(*name, value);
+    }
+
+    let resp = req
+        .send()
+        .await
+        .map_err(|e| format!("SUMMARY request failed: {}", e))?;
+
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        return Err(format!(
+            "SUMMARY request failed with status {} | URL: {} | Body: {}",
+            status, url, body
+        ));
+    }
+
+    let parsed: serde_json::Value = resp
+        .json()
+        .await
+        .map_err(|e| format!("Failed to parse SUMMARY response: {}", e))?;
+
+    let urls = parsed
+        .get("matchFileUrlsMap")
+        .or_else(|| parsed.get("MatchFileUrlsMap"))
+        .and_then(|v| v.as_object())
+        .ok_or_else(|| format!("SUMMARY response missing matchFileUrlsMap: {}", parsed))?;
+
+    let lower_id = match_id.to_lowercase();
+    let file_url = urls
+        .iter()
+        .find(|(k, _)| k.to_lowercase() == lower_id)
+        .or_else(|| urls.iter().next())
+        .map(|(_, v)| v.as_str().unwrap_or(""))
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| format!("SUMMARY response had no file URL for {}", match_id))?;
+
+    let file_resp = client
+        .get(file_url)
+        .send()
+        .await
+        .map_err(|e| format!("SUMMARY file download failed: {}", e))?;
+
+    if !file_resp.status().is_success() {
+        let status = file_resp.status();
+        let body = file_resp.text().await.unwrap_or_default();
+        return Err(format!(
+            "SUMMARY file download failed with status {} | Body: {}",
+            status, body
+        ));
+    }
+
+    file_resp
+        .text()
+        .await
+        .map_err(|e| format!("Failed to read SUMMARY file: {}", e))
+}
+
+/// PD match-details for participants; SGP SUMMARY via self or roster players for observers.
+pub async fn fetch_match_json_any_source(
+    client: &Client,
+    shard: &str,
+    match_id: &str,
+    auth_token: &str,
+    entitlement_token: &str,
+    client_version: &str,
+    viewer_puuid: &str,
+    roster_puuids: &[String],
+) -> Result<String, String> {
+    match fetch_match_details_raw(
+        client, shard, match_id, auth_token, entitlement_token, client_version,
+    )
+    .await
+    {
+        Ok(json) => return Ok(json),
+        Err(e) if is_nonself_match_details_error(&e) => {
+            crate::journal::info(
+                "LiveAPI",
+                "Match-details returned NONSELF_OPERATION (observer) — trying SUMMARY via roster",
+            );
+        }
+        Err(e) => return Err(e),
+    }
+
+    let mut candidates = Vec::new();
+    if !viewer_puuid.is_empty() {
+        candidates.push(viewer_puuid.to_string());
+    }
+    for p in roster_puuids {
+        if !p.is_empty() && !candidates.iter().any(|c| c == p) {
+            candidates.push(p.clone());
+        }
+    }
+
+    let mut last_err = "No roster PUUIDs to try for SUMMARY".to_string();
+    for puuid in &candidates {
+        match fetch_match_summary_json(
+            client, shard, puuid, match_id, auth_token, entitlement_token, client_version,
+        )
+        .await
+        {
+            Ok(json) => {
+                crate::journal::info(
+                    "LiveAPI",
+                    &format!("SUMMARY OK via puuid {}…", &puuid[..8.min(puuid.len())]),
+                );
+                return Ok(json);
+            }
+            Err(e) => {
+                crate::journal::info(
+                    "LiveAPI",
+                    &format!(
+                        "SUMMARY failed via {}…: {}",
+                        &puuid[..8.min(puuid.len())],
+                        e
+                    ),
+                );
+                last_err = e;
+            }
+        }
+    }
+
+    Err(last_err)
+}
+
 // ─── Static data (maps & agents from valorant-api.com) ───
 
 pub async fn fetch_maps(client: &Client) -> Result<HashMap<String, String>, String> {
