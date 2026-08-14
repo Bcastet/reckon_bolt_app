@@ -734,6 +734,84 @@ pub fn get_saved_match_path(app: &AppHandle, match_id: &str) -> Result<PathBuf, 
     }
 }
 
+fn already_saved_match(app: &AppHandle, match_id: &str) -> bool {
+    load_match_index(app).matches.iter().any(|m| m.match_id == match_id)
+}
+
+fn commit_saved_match(
+    app: &AppHandle,
+    match_id: &str,
+    raw_json: &str,
+    live_state: &LiveGameState,
+) -> Result<SavedMatchEntry, String> {
+    save_match_json(app, match_id, raw_json)?;
+
+    let (json_map, json_queue, json_custom) =
+        metadata_from_match_json(raw_json).unwrap_or_else(|| {
+            (
+                live_state.map_name.clone().unwrap_or_default(),
+                live_state
+                    .queue_name
+                    .clone()
+                    .unwrap_or_else(|| "Match".to_string()),
+                live_state.is_custom,
+            )
+        });
+    let map_name = live_state
+        .map_name
+        .clone()
+        .filter(|s| !s.is_empty())
+        .unwrap_or(json_map);
+
+    let entry = SavedMatchEntry {
+        match_id: match_id.to_string(),
+        map_name: Some(map_name),
+        queue_name: Some(json_queue),
+        is_custom: json_custom,
+        is_spectated: live_state.is_spectating,
+        timestamp: std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map(|d| d.as_millis() as u64)
+            .unwrap_or(0),
+    };
+
+    let mut index = load_match_index(app);
+    if !index.matches.iter().any(|m| m.match_id == match_id) {
+        index.matches.insert(0, entry.clone());
+        save_match_index(app, &index)?;
+    }
+
+    let _ = app.emit("match-saved", &entry);
+    Ok(entry)
+}
+
+fn spawn_auto_save_match(
+    app_handle: &AppHandle,
+    client: &reqwest::Client,
+    shard: &str,
+    access_token: &str,
+    entitlement_token: &str,
+    client_version: &str,
+    live_state: LiveGameState,
+) {
+    let Some(mid) = live_state.match_id.clone() else {
+        crate::journal::info("LiveAPI", "Match ended but no match_id in last state");
+        return;
+    };
+    if already_saved_match(app_handle, &mid) {
+        return;
+    }
+    let app_h = app_handle.clone();
+    let client_c = client.clone();
+    let shard_c = shard.to_string();
+    let at = access_token.to_string();
+    let et = entitlement_token.to_string();
+    let cv = client_version.to_string();
+    tauri::async_runtime::spawn(async move {
+        auto_save_match(&app_h, &client_c, &shard_c, &mid, &at, &et, &cv, &live_state).await;
+    });
+}
+
 async fn auto_save_match(
     app: &AppHandle,
     client: &reqwest::Client,
@@ -746,10 +824,17 @@ async fn auto_save_match(
 ) {
     crate::journal::info("LiveAPI", &format!("Match ended — fetching details for {}", match_id));
 
-    let delays_secs: &[u64] = &[5, 10, 20, 30, 60];
+    // First attempt is immediate: spectators only have a short window while the
+    // end-game stats screen is up (Valorant fetches match-details then disassociates).
+    let delays_secs: &[u64] = &[0, 5, 10, 20, 30, 60];
 
     for (attempt, &delay) in delays_secs.iter().enumerate() {
-        tokio::time::sleep(Duration::from_secs(delay)).await;
+        if delay > 0 {
+            tokio::time::sleep(Duration::from_secs(delay)).await;
+        }
+        if already_saved_match(app, match_id) {
+            return;
+        }
 
         match api::fetch_match_details_raw(
             client, shard, match_id,
@@ -760,52 +845,19 @@ async fn auto_save_match(
                     client, shard, auth_token, entitlement_token, client_version, &raw_json,
                 ).await;
 
-                if let Err(e) = save_match_json(app, match_id, &raw_json) {
-                    crate::journal::info("LiveAPI", &format!("Failed to save match JSON: {}", e));
-                    return;
-                }
-
-                let (json_map, json_queue, json_custom) =
-                    metadata_from_match_json(&raw_json).unwrap_or_else(|| {
-                        (
-                            live_state.map_name.clone().unwrap_or_default(),
-                            live_state
-                                .queue_name
-                                .clone()
-                                .unwrap_or_else(|| "Match".to_string()),
-                            live_state.is_custom,
-                        )
-                    });
-                let map_name = live_state
-                    .map_name
-                    .clone()
-                    .filter(|s| !s.is_empty())
-                    .unwrap_or(json_map);
-
-                let entry = SavedMatchEntry {
-                    match_id: match_id.to_string(),
-                    map_name: Some(map_name.clone()),
-                    queue_name: Some(json_queue.clone()),
-                    is_custom: json_custom,
-                    is_spectated: live_state.is_spectating,
-                    timestamp: std::time::SystemTime::now()
-                        .duration_since(std::time::UNIX_EPOCH)
-                        .map(|d| d.as_millis() as u64)
-                        .unwrap_or(0),
-                };
-
-                let mut index = load_match_index(app);
-                if !index.matches.iter().any(|m| m.match_id == match_id) {
-                    index.matches.insert(0, entry.clone());
-                    if let Err(e) = save_match_index(app, &index) {
-                        crate::journal::info("LiveAPI", &format!("Failed to save index: {}", e));
+                match commit_saved_match(app, match_id, &raw_json, live_state) {
+                    Ok(entry) => {
+                        crate::journal::info("LiveAPI", &format!(
+                            "Match saved on attempt {}: {} ({} on {:?})",
+                            attempt + 1, match_id,
+                            entry.queue_name.as_deref().unwrap_or("Match"),
+                            entry.map_name,
+                        ));
+                    }
+                    Err(e) => {
+                        crate::journal::info("LiveAPI", &format!("Failed to save match JSON: {}", e));
                     }
                 }
-
-                crate::journal::info("LiveAPI", &format!("Match saved on attempt {}: {} ({} on {:?})",
-                    attempt + 1, match_id, json_queue, map_name));
-
-                let _ = app.emit("match-saved", &entry);
                 return;
             }
             Err(e) => {
@@ -816,6 +868,146 @@ async fn auto_save_match(
     }
 
     crate::journal::info("LiveAPI", &format!("All {} attempts exhausted for match {}", delays_secs.len(), match_id));
+}
+
+// ─── ShooterGame.log match-id recovery ──────────────────────────────────────
+//
+// Spectators often cannot query GLZ player endpoints, so `LiveGameState.match_id`
+// is missing. The Valorant client still fetches match-details for the end-game
+// stats screen and logs that URL — we read it back from ShooterGame.log.
+
+struct ShooterLogMatchHint {
+    any_id: Option<String>,
+    stats_ready_id: Option<String>,
+}
+
+fn shooter_game_log_path() -> Option<PathBuf> {
+    let local = std::env::var("LOCALAPPDATA").ok()?;
+    let path = PathBuf::from(local)
+        .join("VALORANT")
+        .join("Saved")
+        .join("Logs")
+        .join("ShooterGame.log");
+    path.exists().then_some(path)
+}
+
+fn shooter_log_tail(max_bytes: u64) -> Option<String> {
+    use std::io::{Read, Seek, SeekFrom};
+    let path = shooter_game_log_path()?;
+    let mut file = std::fs::File::open(path).ok()?;
+    let len = file.metadata().ok()?.len();
+    let start = len.saturating_sub(max_bytes);
+    file.seek(SeekFrom::Start(start)).ok()?;
+    let mut buf = Vec::new();
+    file.read_to_end(&mut buf).ok()?;
+    let text = String::from_utf8_lossy(&buf);
+    if start > 0 {
+        if let Some(i) = text.find('\n') {
+            return Some(text[i + 1..].to_string());
+        }
+    }
+    Some(text.into_owned())
+}
+
+fn is_match_uuid(s: &str) -> bool {
+    let b = s.as_bytes();
+    if b.len() != 36 {
+        return false;
+    }
+    for (i, c) in b.iter().enumerate() {
+        if i == 8 || i == 13 || i == 18 || i == 23 {
+            if *c != b'-' {
+                return false;
+            }
+        } else if !c.is_ascii_hexdigit() {
+            return false;
+        }
+    }
+    true
+}
+
+fn uuid_after(hay: &str, needle: &str) -> Option<String> {
+    let idx = hay.rfind(needle)?;
+    let rest = &hay[idx + needle.len()..];
+    if rest.len() < 36 {
+        return None;
+    }
+    let candidate = &rest[..36];
+    is_match_uuid(candidate).then(|| candidate.to_string())
+}
+
+fn read_shooter_log_match_hint() -> ShooterLogMatchHint {
+    let Some(tail) = shooter_log_tail(2 * 1024 * 1024) else {
+        return ShooterLogMatchHint {
+            any_id: None,
+            stats_ready_id: None,
+        };
+    };
+
+    let needles = [
+        "match-details/v1/matches/",
+        "core-game/v1/matches/",
+        "pregame/v1/matches/",
+    ];
+    let mut stats_ready_id = None;
+    let mut any_id = None;
+
+    for line in tail.lines().rev() {
+        if stats_ready_id.is_none()
+            && line.contains("MatchDetails_FetchMatchDetails")
+            && line.contains("Response Code: [200]")
+        {
+            stats_ready_id = uuid_after(line, "match-details/v1/matches/");
+        }
+        if any_id.is_none() {
+            for needle in needles {
+                if let Some(id) = uuid_after(line, needle) {
+                    any_id = Some(id);
+                    break;
+                }
+            }
+        }
+        if stats_ready_id.is_some() && any_id.is_some() {
+            break;
+        }
+    }
+
+    if any_id.is_none() {
+        any_id = stats_ready_id.clone();
+    }
+
+    ShooterLogMatchHint {
+        any_id,
+        stats_ready_id,
+    }
+}
+
+fn fill_match_id_if_missing(
+    gs: &mut LiveGameState,
+    last: &Option<LiveGameState>,
+    hint: &ShooterLogMatchHint,
+) {
+    if gs.match_id.is_some() {
+        return;
+    }
+    if let Some(prev) = last.as_ref().and_then(|s| s.match_id.clone()) {
+        gs.match_id = Some(prev);
+        return;
+    }
+    if let Some(id) = hint.any_id.clone() {
+        crate::journal::info(
+            "LiveAPI",
+            &format!("Recovered match_id from ShooterGame.log: {}", id),
+        );
+        gs.match_id = Some(id);
+    }
+}
+
+fn is_observer_team(team: &str) -> bool {
+    matches!(
+        team,
+        "TeamSpectate" | "TeamOneCoaches" | "TeamTwoCoaches"
+    )
 }
 
 // ─── Presence types ─────────────────────────────────────────────────────────
@@ -1084,7 +1276,7 @@ async fn fetch_presence(
 
     let is_spectating = private.party_presence_data.as_ref()
         .and_then(|p| p.custom_game_team.as_deref())
-        .map(|t| t == "TeamSpectate")
+        .map(is_observer_team)
         .unwrap_or(false);
 
     crate::journal::info("LiveAPI", &format!("sessionLoopState='{}', spectating={}, map={:?}",
@@ -1567,6 +1759,7 @@ pub fn start_live_poller(
         let mut prev_phase: Option<GamePhase> = None;
         let mut last_ingame_state: Option<LiveGameState> = None;
         let mut last_details_probe = std::time::Instant::now();
+        let mut save_spawned_for: Option<String> = None;
         let mut agents: HashMap<String, String> = HashMap::new();
         let mut maps: HashMap<String, String> = HashMap::new();
         let mut static_data_loaded = false;
@@ -1757,27 +1950,34 @@ pub fn start_live_poller(
                         // Check for a pending match to save regardless of what old_phase was,
                         // since lockfile errors can reset prev_phase to None and mask the
                         // InGame -> Menus transition.
-                        if let Some(ref last_state) = last_ingame_state {
+                        if let Some(mut last_state) = last_ingame_state.take() {
+                            if last_state.match_id.is_none() {
+                                let hint = read_shooter_log_match_hint();
+                                last_state.match_id = hint.stats_ready_id.or(hint.any_id);
+                                if let Some(ref mid) = last_state.match_id {
+                                    crate::journal::info(
+                                        "LiveAPI",
+                                        &format!("Match ended, recovered match_id from ShooterGame.log: {}", mid),
+                                    );
+                                }
+                            }
                             if let Some(ref mid) = last_state.match_id {
                                 crate::journal::info("LiveAPI", &format!("Match ended (old_phase={:?}), saving {}", old_phase, mid));
-                                let app_h = app_handle.clone();
-                                let client_c = client.clone();
-                                let shard_c = shard.clone();
-                                let mid_c = mid.clone();
-                                let at = entitlements.access_token.clone();
-                                let et = entitlements.token.clone();
-                                let cv = client_version.clone();
-                                let ls = last_state.clone();
-                                tauri::async_runtime::spawn(async move {
-                                    auto_save_match(
-                                        &app_h, &client_c, &shard_c, &mid_c,
-                                        &at, &et, &cv, &ls,
-                                    ).await;
-                                });
+                                if save_spawned_for.as_ref() != Some(mid) {
+                                    save_spawned_for = Some(mid.clone());
+                                    spawn_auto_save_match(
+                                        &app_handle,
+                                        &client,
+                                        &shard,
+                                        &entitlements.access_token,
+                                        &entitlements.token,
+                                        &client_version,
+                                        last_state,
+                                    );
+                                }
                             } else {
-                                crate::journal::info("LiveAPI", &format!("Match ended but no match_id in last state"));
+                                crate::journal::info("LiveAPI", "Match ended but no match_id in last state or ShooterGame.log");
                             }
-                            last_ingame_state = None;
                         }
 
                         if phase_changed {
@@ -1901,17 +2101,46 @@ pub fn start_live_poller(
                         };
 
                         match result {
-                            Ok(game_state) => {
-                                crate::journal::info("LiveAPI", &format!("Emitting InGame state: map={:?}, spectating={}, score={:?}:{:?}, ally={}, enemy={}",
+                            Ok(mut game_state) => {
+                                let hint = read_shooter_log_match_hint();
+                                fill_match_id_if_missing(&mut game_state, &last_ingame_state, &hint);
+
+                                crate::journal::info("LiveAPI", &format!("Emitting InGame state: map={:?}, spectating={}, score={:?}:{:?}, ally={}, enemy={}, match_id={:?}",
                                     game_state.map_name, game_state.is_spectating,
                                     game_state.spectate_score_ally, game_state.spectate_score_enemy,
-                                    game_state.ally_team.len(), game_state.enemy_team.len()));
+                                    game_state.ally_team.len(), game_state.enemy_team.len(),
+                                    game_state.match_id));
                                 last_ingame_state = Some(game_state.clone());
                                 {
                                     let mut s = state.lock().unwrap();
                                     *s = game_state.clone();
                                 }
                                 let _ = app_handle.emit("live-game-state", &game_state);
+
+                                // The end-game stats screen is MatchDetails 200 in ShooterGame.log.
+                                // Spectators often lose access after disassociate, so save immediately.
+                                if let Some(ready_id) = hint.stats_ready_id {
+                                    if game_state.match_id.as_ref() == Some(&ready_id)
+                                        && save_spawned_for.as_ref() != Some(&ready_id)
+                                        && !already_saved_match(&app_handle, &ready_id)
+                                    {
+                                        crate::journal::info(
+                                            "LiveAPI",
+                                            &format!("Stats screen detected for {} — saving now", ready_id),
+                                        );
+                                        save_spawned_for = Some(ready_id);
+                                        spawn_auto_save_match(
+                                            &app_handle,
+                                            &client,
+                                            &shard,
+                                            &entitlements.access_token,
+                                            &entitlements.token,
+                                            &client_version,
+                                            game_state,
+                                        );
+                                    }
+                                }
+
                                 if auth_refresh_needed {
                                     crate::journal::info("LiveAPI", "Auth failure — refreshing tokens");
                                     break;
@@ -1926,65 +2155,38 @@ pub fn start_live_poller(
                             }
                         }
 
-                        // Probe match-details every 30s while in-game.
-                        // If Riot returns the data, the game has ended server-side
-                        // even though presence still reports InGame.
-                        if last_details_probe.elapsed() >= Duration::from_secs(30) {
+                        // Probe match-details while in-game. Spectators get a shorter interval
+                        // because the stats-screen window is the only reliable fetch period.
+                        let spectating = last_ingame_state.as_ref().map(|s| s.is_spectating).unwrap_or(false);
+                        let probe_secs = if spectating { 10 } else { 30 };
+                        if last_details_probe.elapsed() >= Duration::from_secs(probe_secs) {
                             last_details_probe = std::time::Instant::now();
                             let probe_mid = last_ingame_state.as_ref()
                                 .and_then(|s| s.match_id.clone());
                             if let Some(mid) = probe_mid {
-                                match api::fetch_match_details_raw(
-                                    &client, &shard, &mid,
-                                    &entitlements.access_token, &entitlements.token,
-                                    &client_version,
-                                ).await {
-                                    Ok(raw_json) => {
-                                        crate::journal::info("LiveAPI", &format!("In-game probe succeeded — match {} details available, saving", mid));
-                                        let ls = last_ingame_state.take().unwrap();
-                                        let raw_json = enrich_match_json_names(
-                                            &client, &shard,
-                                            &entitlements.access_token, &entitlements.token,
-                                            &client_version, &raw_json,
-                                        ).await;
-                                        if let Err(e) = save_match_json(&app_handle, &mid, &raw_json) {
-                                            crate::journal::info("LiveAPI", &format!("Failed to save probed match: {}", e));
-                                        } else {
-                                            let (json_map, json_queue, json_custom) =
-                                                metadata_from_match_json(&raw_json).unwrap_or_else(|| {
-                                                    (
-                                                        ls.map_name.clone().unwrap_or_default(),
-                                                        ls.queue_name
-                                                            .clone()
-                                                            .unwrap_or_else(|| "Match".to_string()),
-                                                        ls.is_custom,
-                                                    )
-                                                });
-                                            let map_name = ls
-                                                .map_name
-                                                .clone()
-                                                .filter(|s| !s.is_empty())
-                                                .unwrap_or(json_map);
-                                            let entry = SavedMatchEntry {
-                                                match_id: mid.clone(),
-                                                map_name: Some(map_name),
-                                                queue_name: Some(json_queue),
-                                                is_custom: json_custom,
-                                                is_spectated: ls.is_spectating,
-                                                timestamp: std::time::SystemTime::now()
-                                                    .duration_since(std::time::UNIX_EPOCH)
-                                                    .map(|d| d.as_millis() as u64)
-                                                    .unwrap_or(0),
-                                            };
-                                            let mut index = load_match_index(&app_handle);
-                                            if !index.matches.iter().any(|m| m.match_id == mid) {
-                                                index.matches.insert(0, entry.clone());
-                                                let _ = save_match_index(&app_handle, &index);
+                                if save_spawned_for.as_ref() != Some(&mid)
+                                    && !already_saved_match(&app_handle, &mid)
+                                {
+                                    match api::fetch_match_details_raw(
+                                        &client, &shard, &mid,
+                                        &entitlements.access_token, &entitlements.token,
+                                        &client_version,
+                                    ).await {
+                                        Ok(raw_json) => {
+                                            crate::journal::info("LiveAPI", &format!("In-game probe succeeded — match {} details available, saving", mid));
+                                            save_spawned_for = Some(mid.clone());
+                                            let ls = last_ingame_state.clone().unwrap();
+                                            let raw_json = enrich_match_json_names(
+                                                &client, &shard,
+                                                &entitlements.access_token, &entitlements.token,
+                                                &client_version, &raw_json,
+                                            ).await;
+                                            if let Err(e) = commit_saved_match(&app_handle, &mid, &raw_json, &ls) {
+                                                crate::journal::info("LiveAPI", &format!("Failed to save probed match: {}", e));
                                             }
-                                            let _ = app_handle.emit("match-saved", &entry);
                                         }
+                                        Err(_) => {} // expected — match still in progress
                                     }
-                                    Err(_) => {} // expected — match still in progress
                                 }
                             }
                         }
