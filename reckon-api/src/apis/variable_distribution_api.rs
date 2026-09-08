@@ -15,6 +15,13 @@ use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
 
+/// struct for typed errors of method [`agent_variable_distribution`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum AgentVariableDistributionError {
+    UnknownValue(serde_json::Value),
+}
+
 /// struct for typed errors of method [`client_organization_variable_distribution`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -57,10 +64,24 @@ pub enum CompetitiveTeamRoundSummariesVariableDistributionError {
     UnknownValue(serde_json::Value),
 }
 
+/// struct for typed errors of method [`competitive_tiers_variable_distribution`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum CompetitiveTiersVariableDistributionError {
+    UnknownValue(serde_json::Value),
+}
+
 /// struct for typed errors of method [`game_metrics_variable_distribution`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GameMetricsVariableDistributionError {
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`gear_variable_distribution`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum GearVariableDistributionError {
     UnknownValue(serde_json::Value),
 }
 
@@ -113,10 +134,45 @@ pub enum ScrimTeamRoundSummariesVariableDistributionError {
     UnknownValue(serde_json::Value),
 }
 
+/// struct for typed errors of method [`seasons_variable_distribution`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SeasonsVariableDistributionError {
+    UnknownValue(serde_json::Value),
+}
+
 /// struct for typed errors of method [`solo_q_accounts_variable_distribution`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum SoloQAccountsVariableDistributionError {
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`solo_q_game_summaries_variable_distribution`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SoloQGameSummariesVariableDistributionError {
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`solo_q_games_variable_distribution`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SoloQGamesVariableDistributionError {
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`solo_q_round_summaries_variable_distribution`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SoloQRoundSummariesVariableDistributionError {
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`solo_q_team_round_summaries_variable_distribution`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SoloQTeamRoundSummariesVariableDistributionError {
     UnknownValue(serde_json::Value),
 }
 
@@ -134,8 +190,84 @@ pub enum UserVariableDistributionError {
     UnknownValue(serde_json::Value),
 }
 
+/// struct for typed errors of method [`weapons_variable_distribution`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum WeaponsVariableDistributionError {
+    UnknownValue(serde_json::Value),
+}
 
-pub async fn client_organization_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<ClientOrganizationVariableDistributionError>> {
+
+pub async fn agent_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, id: Option<&str>, role: Option<&str>, uuid: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<AgentVariableDistributionError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_query_bucket_size = bucket_size;
+    let p_query_max = max;
+    let p_query_metric = metric;
+    let p_query_min = min;
+    let p_query_additional_filters = additional_filters;
+    let p_query_id = id;
+    let p_query_role = role;
+    let p_query_uuid = uuid;
+
+    let uri_str = format!("{}/Agent/operations/variable-distribution", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref param_value) = p_query_additional_filters {
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
+    }
+    req_builder = req_builder.query(&[("bucket_size", &p_query_bucket_size.to_string())]);
+    if let Some(ref param_value) = p_query_id {
+        req_builder = req_builder.query(&[("id", &param_value.to_string())]);
+    }
+    req_builder = req_builder.query(&[("max", &p_query_max.to_string())]);
+    req_builder = req_builder.query(&[("metric", &p_query_metric.to_string())]);
+    req_builder = req_builder.query(&[("min", &p_query_min.to_string())]);
+    if let Some(ref param_value) = p_query_role {
+        req_builder = req_builder.query(&[("role", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_uuid {
+        req_builder = req_builder.query(&[("uuid", &param_value.to_string())]);
+    }
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<AgentVariableDistributionError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn client_organization_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<ClientOrganizationVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -182,8 +314,8 @@ pub async fn client_organization_variable_distribution(configuration: &configura
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;
@@ -192,7 +324,7 @@ pub async fn client_organization_variable_distribution(configuration: &configura
     }
 }
 
-pub async fn competitive_draft_slots_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, draft_action_id: Option<&str>, league: Option<&str>, map: Option<&str>, phase: Option<&str>, series: Option<i32>, split: Option<&str>, team1: Option<&str>, team2: Option<&str>, teams: Option<&str>, r#type: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<CompetitiveDraftSlotsVariableDistributionError>> {
+pub async fn competitive_draft_slots_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, draft_action_id: Option<&str>, league: Option<&str>, map: Option<&str>, phase: Option<&str>, series: Option<i32>, split: Option<&str>, team1: Option<&str>, team2: Option<&str>, teams: Option<&str>, r#type: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<CompetitiveDraftSlotsVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -279,8 +411,8 @@ pub async fn competitive_draft_slots_variable_distribution(configuration: &confi
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;
@@ -289,7 +421,7 @@ pub async fn competitive_draft_slots_variable_distribution(configuration: &confi
     }
 }
 
-pub async fn competitive_game_summaries_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, agent: Option<&str>, date: Option<String>, id: Option<&str>, league: Option<&str>, map: Option<&str>, patch: Option<&str>, player: Option<&str>, team1: Option<&str>, team2: Option<&str>, win: Option<bool>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<CompetitiveGameSummariesVariableDistributionError>> {
+pub async fn competitive_game_summaries_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, agent: Option<&str>, date: Option<String>, id: Option<&str>, league: Option<&str>, map: Option<&str>, patch: Option<&str>, player: Option<&str>, team1: Option<&str>, team2: Option<&str>, win: Option<bool>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<CompetitiveGameSummariesVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -376,8 +508,8 @@ pub async fn competitive_game_summaries_variable_distribution(configuration: &co
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;
@@ -386,7 +518,7 @@ pub async fn competitive_game_summaries_variable_distribution(configuration: &co
     }
 }
 
-pub async fn competitive_games_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, game_id: Option<&str>, id: Option<&str>, league: Option<&str>, map: Option<&str>, map_selection: Option<&str>, phase: Option<&str>, series_id: Option<i32>, smokes_yolonet_version: Option<&str>, split: Option<&str>, team1: Option<&str>, team2: Option<&str>, utils_yolonet_version: Option<&str>, winner: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<CompetitiveGamesVariableDistributionError>> {
+pub async fn competitive_games_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, game_id: Option<&str>, id: Option<&str>, league: Option<&str>, map: Option<&str>, map_selection: Option<&str>, phase: Option<&str>, series_id: Option<i32>, smokes_yolonet_version: Option<&str>, split: Option<&str>, team1: Option<&str>, team2: Option<&str>, utils_yolonet_version: Option<&str>, winner: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<CompetitiveGamesVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -485,8 +617,8 @@ pub async fn competitive_games_variable_distribution(configuration: &configurati
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;
@@ -495,7 +627,7 @@ pub async fn competitive_games_variable_distribution(configuration: &configurati
     }
 }
 
-pub async fn competitive_round_summaries_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, agent: Option<&str>, attack_pattern_full: Option<&str>, attack_pattern_short: Option<&str>, bomb_site: Option<&str>, callout_15s: Option<&str>, date: Option<String>, defense_pattern_full: Option<&str>, defense_pattern_short: Option<&str>, first_attack_site: Option<&str>, freeze_time_end_timestamp: Option<i32>, game: Option<&str>, league: Option<&str>, map: Option<&str>, patch: Option<&str>, plant_time: Option<i32>, player: Option<&str>, round_eco_type: Option<&str>, round_eco_type_no_bonus: Option<&str>, round_id: Option<&str>, round_index: Option<i32>, shield: Option<&str>, side: Option<&str>, start_time_seconds: Option<i32>, summary: Option<&str>, team1: Option<&str>, team2: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<CompetitiveRoundSummariesVariableDistributionError>> {
+pub async fn competitive_round_summaries_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, agent: Option<&str>, attack_pattern_full: Option<&str>, attack_pattern_short: Option<&str>, bomb_site: Option<&str>, callout_15s: Option<&str>, date: Option<String>, defense_pattern_full: Option<&str>, defense_pattern_short: Option<&str>, first_attack_site: Option<&str>, freeze_time_end_timestamp: Option<i32>, game: Option<&str>, league: Option<&str>, map: Option<&str>, patch: Option<&str>, plant_time: Option<i32>, player: Option<&str>, round_eco_type: Option<&str>, round_eco_type_no_bonus: Option<&str>, round_id: Option<&str>, round_index: Option<i32>, shield: Option<&str>, side: Option<&str>, start_time_seconds: Option<i32>, summary: Option<&str>, team1: Option<&str>, team2: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<CompetitiveRoundSummariesVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -646,8 +778,8 @@ pub async fn competitive_round_summaries_variable_distribution(configuration: &c
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;
@@ -656,7 +788,7 @@ pub async fn competitive_round_summaries_variable_distribution(configuration: &c
     }
 }
 
-pub async fn competitive_team_round_summaries_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, assists: Option<i32>, attack_pattern_full: Option<&str>, attack_pattern_short: Option<&str>, bomb_site: Option<&str>, combat_score: Option<i32>, damages: Option<i32>, date: Option<String>, deaths: Option<i32>, defense_pattern_full: Option<&str>, defense_pattern_short: Option<&str>, first_blood: Option<bool>, first_death: Option<bool>, first_true_blood: Option<bool>, first_true_death: Option<bool>, game: Option<&str>, id: Option<&str>, kast: Option<i32>, kills: Option<i32>, league: Option<&str>, map: Option<&str>, round_eco_type: Option<&str>, round_eco_type_no_bonus: Option<&str>, round_end: Option<&str>, round_index: Option<i32>, side: Option<&str>, team1: Option<&str>, team2: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<CompetitiveTeamRoundSummariesVariableDistributionError>> {
+pub async fn competitive_team_round_summaries_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, assists: Option<i32>, attack_pattern_full: Option<&str>, attack_pattern_short: Option<&str>, bomb_site: Option<&str>, combat_score: Option<i32>, damages: Option<i32>, date: Option<String>, deaths: Option<i32>, defense_pattern_full: Option<&str>, defense_pattern_short: Option<&str>, first_blood: Option<bool>, first_death: Option<bool>, first_true_blood: Option<bool>, first_true_death: Option<bool>, game: Option<&str>, id: Option<&str>, kast: Option<i32>, kills: Option<i32>, league: Option<&str>, map: Option<&str>, round_eco_type: Option<&str>, round_eco_type_no_bonus: Option<&str>, round_end: Option<&str>, round_index: Option<i32>, side: Option<&str>, team1: Option<&str>, team2: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<CompetitiveTeamRoundSummariesVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -811,8 +943,8 @@ pub async fn competitive_team_round_summaries_variable_distribution(configuratio
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;
@@ -821,7 +953,76 @@ pub async fn competitive_team_round_summaries_variable_distribution(configuratio
     }
 }
 
-pub async fn game_metrics_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, label: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<GameMetricsVariableDistributionError>> {
+pub async fn competitive_tiers_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, division: Option<&str>, id: Option<&str>, tier: Option<i32>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<CompetitiveTiersVariableDistributionError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_query_bucket_size = bucket_size;
+    let p_query_max = max;
+    let p_query_metric = metric;
+    let p_query_min = min;
+    let p_query_additional_filters = additional_filters;
+    let p_query_division = division;
+    let p_query_id = id;
+    let p_query_tier = tier;
+
+    let uri_str = format!("{}/CompetitiveTiers/operations/variable-distribution", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref param_value) = p_query_additional_filters {
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
+    }
+    req_builder = req_builder.query(&[("bucket_size", &p_query_bucket_size.to_string())]);
+    if let Some(ref param_value) = p_query_division {
+        req_builder = req_builder.query(&[("division", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_id {
+        req_builder = req_builder.query(&[("id", &param_value.to_string())]);
+    }
+    req_builder = req_builder.query(&[("max", &p_query_max.to_string())]);
+    req_builder = req_builder.query(&[("metric", &p_query_metric.to_string())]);
+    req_builder = req_builder.query(&[("min", &p_query_min.to_string())]);
+    if let Some(ref param_value) = p_query_tier {
+        req_builder = req_builder.query(&[("tier", &param_value.to_string())]);
+    }
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<CompetitiveTiersVariableDistributionError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn game_metrics_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, label: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<GameMetricsVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -872,8 +1073,8 @@ pub async fn game_metrics_variable_distribution(configuration: &configuration::C
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;
@@ -882,7 +1083,72 @@ pub async fn game_metrics_variable_distribution(configuration: &configuration::C
     }
 }
 
-pub async fn league_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, id: Option<&str>, league_group: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<LeagueVariableDistributionError>> {
+pub async fn gear_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, id: Option<&str>, uuid: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<GearVariableDistributionError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_query_bucket_size = bucket_size;
+    let p_query_max = max;
+    let p_query_metric = metric;
+    let p_query_min = min;
+    let p_query_additional_filters = additional_filters;
+    let p_query_id = id;
+    let p_query_uuid = uuid;
+
+    let uri_str = format!("{}/Gear/operations/variable-distribution", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref param_value) = p_query_additional_filters {
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
+    }
+    req_builder = req_builder.query(&[("bucket_size", &p_query_bucket_size.to_string())]);
+    if let Some(ref param_value) = p_query_id {
+        req_builder = req_builder.query(&[("id", &param_value.to_string())]);
+    }
+    req_builder = req_builder.query(&[("max", &p_query_max.to_string())]);
+    req_builder = req_builder.query(&[("metric", &p_query_metric.to_string())]);
+    req_builder = req_builder.query(&[("min", &p_query_min.to_string())]);
+    if let Some(ref param_value) = p_query_uuid {
+        req_builder = req_builder.query(&[("uuid", &param_value.to_string())]);
+    }
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<GearVariableDistributionError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn league_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, id: Option<&str>, league_group: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<LeagueVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -937,8 +1203,8 @@ pub async fn league_variable_distribution(configuration: &configuration::Configu
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;
@@ -947,7 +1213,7 @@ pub async fn league_variable_distribution(configuration: &configuration::Configu
     }
 }
 
-pub async fn maps_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, id: Option<&str>, uuid: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<MapsVariableDistributionError>> {
+pub async fn maps_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, id: Option<&str>, uuid: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<MapsVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -1002,8 +1268,8 @@ pub async fn maps_variable_distribution(configuration: &configuration::Configura
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;
@@ -1012,7 +1278,7 @@ pub async fn maps_variable_distribution(configuration: &configuration::Configura
     }
 }
 
-pub async fn player_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, birthdate: Option<String>, contract_expires: Option<String>, current_team: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, is_retired: Option<bool>, last_team: Option<&str>, nationality: Option<&str>, previous_names: Option<&str>, role: Option<&str>, soloq_tracked: Option<bool>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<PlayerVariableDistributionError>> {
+pub async fn player_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, birthdate: Option<String>, contract_expires: Option<String>, current_team: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, is_retired: Option<bool>, last_team: Option<&str>, nationality: Option<&str>, previous_names: Option<&str>, role: Option<&str>, soloq_tracked: Option<bool>, vlr_id: Option<i32>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<PlayerVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -1031,6 +1297,7 @@ pub async fn player_variable_distribution(configuration: &configuration::Configu
     let p_query_previous_names = previous_names;
     let p_query_role = role;
     let p_query_soloq_tracked = soloq_tracked;
+    let p_query_vlr_id = vlr_id;
 
     let uri_str = format!("{}/Player/operations/variable-distribution", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -1080,6 +1347,9 @@ pub async fn player_variable_distribution(configuration: &configuration::Configu
     if let Some(ref param_value) = p_query_soloq_tracked {
         req_builder = req_builder.query(&[("soloq_tracked", &param_value.to_string())]);
     }
+    if let Some(ref param_value) = p_query_vlr_id {
+        req_builder = req_builder.query(&[("vlr_id", &param_value.to_string())]);
+    }
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }
@@ -1107,8 +1377,8 @@ pub async fn player_variable_distribution(configuration: &configuration::Configu
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;
@@ -1117,7 +1387,7 @@ pub async fn player_variable_distribution(configuration: &configuration::Configu
     }
 }
 
-pub async fn scrim_game_summaries_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, agent: Option<&str>, date: Option<String>, id: Option<&str>, map: Option<&str>, patch: Option<&str>, player: Option<&str>, team1: Option<&str>, team2: Option<&str>, win: Option<bool>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<ScrimGameSummariesVariableDistributionError>> {
+pub async fn scrim_game_summaries_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, agent: Option<&str>, date: Option<String>, id: Option<&str>, map: Option<&str>, patch: Option<&str>, player: Option<&str>, team1: Option<&str>, team2: Option<&str>, win: Option<bool>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<ScrimGameSummariesVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -1200,8 +1470,8 @@ pub async fn scrim_game_summaries_variable_distribution(configuration: &configur
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;
@@ -1210,7 +1480,7 @@ pub async fn scrim_game_summaries_variable_distribution(configuration: &configur
     }
 }
 
-pub async fn scrim_games_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, id: Option<&str>, map: Option<&str>, team1: Option<&str>, team2: Option<&str>, winner: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<ScrimGamesVariableDistributionError>> {
+pub async fn scrim_games_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, id: Option<&str>, map: Option<&str>, team1: Option<&str>, team2: Option<&str>, winner: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<ScrimGamesVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -1277,8 +1547,8 @@ pub async fn scrim_games_variable_distribution(configuration: &configuration::Co
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;
@@ -1287,7 +1557,7 @@ pub async fn scrim_games_variable_distribution(configuration: &configuration::Co
     }
 }
 
-pub async fn scrim_round_summaries_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, agent: Option<&str>, attack_pattern_full: Option<&str>, attack_pattern_short: Option<&str>, bomb_site: Option<&str>, callout_15s: Option<&str>, date: Option<String>, defense_pattern_full: Option<&str>, defense_pattern_short: Option<&str>, first_attack_site: Option<&str>, freeze_time_end_timestamp: Option<i32>, game: Option<&str>, map: Option<&str>, patch: Option<&str>, plant_time: Option<i32>, player: Option<&str>, round_eco_type: Option<&str>, round_eco_type_no_bonus: Option<&str>, round_id: Option<&str>, round_index: Option<i32>, shield: Option<&str>, side: Option<&str>, start_time_seconds: Option<i32>, summary: Option<&str>, team1: Option<&str>, team2: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<ScrimRoundSummariesVariableDistributionError>> {
+pub async fn scrim_round_summaries_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, agent: Option<&str>, attack_pattern_full: Option<&str>, attack_pattern_short: Option<&str>, bomb_site: Option<&str>, callout_15s: Option<&str>, date: Option<String>, defense_pattern_full: Option<&str>, defense_pattern_short: Option<&str>, first_attack_site: Option<&str>, freeze_time_end_timestamp: Option<i32>, game: Option<&str>, map: Option<&str>, patch: Option<&str>, plant_time: Option<i32>, player: Option<&str>, round_eco_type: Option<&str>, round_eco_type_no_bonus: Option<&str>, round_id: Option<&str>, round_index: Option<i32>, shield: Option<&str>, side: Option<&str>, start_time_seconds: Option<i32>, summary: Option<&str>, team1: Option<&str>, team2: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<ScrimRoundSummariesVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -1434,8 +1704,8 @@ pub async fn scrim_round_summaries_variable_distribution(configuration: &configu
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;
@@ -1444,7 +1714,7 @@ pub async fn scrim_round_summaries_variable_distribution(configuration: &configu
     }
 }
 
-pub async fn scrim_team_round_summaries_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, assists: Option<i32>, attack_pattern_full: Option<&str>, attack_pattern_short: Option<&str>, bomb_site: Option<&str>, combat_score: Option<i32>, damages: Option<i32>, date: Option<String>, deaths: Option<i32>, defense_pattern_full: Option<&str>, defense_pattern_short: Option<&str>, first_blood: Option<bool>, first_death: Option<bool>, first_true_blood: Option<bool>, first_true_death: Option<bool>, game: Option<&str>, id: Option<&str>, kast: Option<i32>, kills: Option<i32>, map: Option<&str>, round_eco_type: Option<&str>, round_eco_type_no_bonus: Option<&str>, round_end: Option<&str>, round_index: Option<i32>, side: Option<&str>, team1: Option<&str>, team2: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<ScrimTeamRoundSummariesVariableDistributionError>> {
+pub async fn scrim_team_round_summaries_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, assists: Option<i32>, attack_pattern_full: Option<&str>, attack_pattern_short: Option<&str>, bomb_site: Option<&str>, combat_score: Option<i32>, damages: Option<i32>, date: Option<String>, deaths: Option<i32>, defense_pattern_full: Option<&str>, defense_pattern_short: Option<&str>, first_blood: Option<bool>, first_death: Option<bool>, first_true_blood: Option<bool>, first_true_death: Option<bool>, game: Option<&str>, id: Option<&str>, kast: Option<i32>, kills: Option<i32>, map: Option<&str>, round_eco_type: Option<&str>, round_eco_type_no_bonus: Option<&str>, round_end: Option<&str>, round_index: Option<i32>, side: Option<&str>, team1: Option<&str>, team2: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<ScrimTeamRoundSummariesVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -1595,8 +1865,8 @@ pub async fn scrim_team_round_summaries_variable_distribution(configuration: &co
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;
@@ -1605,13 +1875,95 @@ pub async fn scrim_team_round_summaries_variable_distribution(configuration: &co
     }
 }
 
-pub async fn solo_q_accounts_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, player: Option<&str>, puuid: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<SoloQAccountsVariableDistributionError>> {
+pub async fn seasons_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, display_name: Option<&str>, id: Option<&str>, is_active: Option<bool>, parent_uuid: Option<&str>, season_type: Option<&str>, start_time: Option<String>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<SeasonsVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
     let p_query_metric = metric;
     let p_query_min = min;
     let p_query_additional_filters = additional_filters;
+    let p_query_display_name = display_name;
+    let p_query_id = id;
+    let p_query_is_active = is_active;
+    let p_query_parent_uuid = parent_uuid;
+    let p_query_season_type = season_type;
+    let p_query_start_time = start_time;
+
+    let uri_str = format!("{}/Seasons/operations/variable-distribution", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref param_value) = p_query_additional_filters {
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
+    }
+    req_builder = req_builder.query(&[("bucket_size", &p_query_bucket_size.to_string())]);
+    if let Some(ref param_value) = p_query_display_name {
+        req_builder = req_builder.query(&[("display_name", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_id {
+        req_builder = req_builder.query(&[("id", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_is_active {
+        req_builder = req_builder.query(&[("is_active", &param_value.to_string())]);
+    }
+    req_builder = req_builder.query(&[("max", &p_query_max.to_string())]);
+    req_builder = req_builder.query(&[("metric", &p_query_metric.to_string())]);
+    req_builder = req_builder.query(&[("min", &p_query_min.to_string())]);
+    if let Some(ref param_value) = p_query_parent_uuid {
+        req_builder = req_builder.query(&[("parent_uuid", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_season_type {
+        req_builder = req_builder.query(&[("season_type", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_start_time {
+        req_builder = req_builder.query(&[("start_time", &param_value.to_string())]);
+    }
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<SeasonsVariableDistributionError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn solo_q_accounts_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, last_updated: Option<String>, player: Option<&str>, puuid: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<SoloQAccountsVariableDistributionError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_query_bucket_size = bucket_size;
+    let p_query_max = max;
+    let p_query_metric = metric;
+    let p_query_min = min;
+    let p_query_additional_filters = additional_filters;
+    let p_query_last_updated = last_updated;
     let p_query_player = player;
     let p_query_puuid = puuid;
 
@@ -1624,6 +1976,9 @@ pub async fn solo_q_accounts_variable_distribution(configuration: &configuration
         }
     }
     req_builder = req_builder.query(&[("bucket_size", &p_query_bucket_size.to_string())]);
+    if let Some(ref param_value) = p_query_last_updated {
+        req_builder = req_builder.query(&[("last_updated", &param_value.to_string())]);
+    }
     req_builder = req_builder.query(&[("max", &p_query_max.to_string())]);
     req_builder = req_builder.query(&[("metric", &p_query_metric.to_string())]);
     req_builder = req_builder.query(&[("min", &p_query_min.to_string())]);
@@ -1660,8 +2015,8 @@ pub async fn solo_q_accounts_variable_distribution(configuration: &configuration
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;
@@ -1670,7 +2025,499 @@ pub async fn solo_q_accounts_variable_distribution(configuration: &configuration
     }
 }
 
-pub async fn team_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, coaching_staff: Option<&str>, current_league: Option<&str>, current_main_players: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, name: Option<&str>, next_opponent: Option<&str>, players_list: Option<&str>, renamed_to: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<TeamVariableDistributionError>> {
+pub async fn solo_q_game_summaries_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, account: Option<i32>, additional_filters: Option<serde_json::Value>, agent: Option<&str>, competitive_player: Option<&str>, date: Option<String>, game_id: Option<&str>, ig_name: Option<&str>, map: Option<&str>, patch: Option<&str>, puuid: Option<&str>, rank_tier: Option<i32>, server: Option<&str>, team: Option<i32>, win: Option<bool>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<SoloQGameSummariesVariableDistributionError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_query_bucket_size = bucket_size;
+    let p_query_max = max;
+    let p_query_metric = metric;
+    let p_query_min = min;
+    let p_query_account = account;
+    let p_query_additional_filters = additional_filters;
+    let p_query_agent = agent;
+    let p_query_competitive_player = competitive_player;
+    let p_query_date = date;
+    let p_query_game_id = game_id;
+    let p_query_ig_name = ig_name;
+    let p_query_map = map;
+    let p_query_patch = patch;
+    let p_query_puuid = puuid;
+    let p_query_rank_tier = rank_tier;
+    let p_query_server = server;
+    let p_query_team = team;
+    let p_query_win = win;
+
+    let uri_str = format!("{}/SoloQGameSummaries/operations/variable-distribution", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref param_value) = p_query_account {
+        req_builder = req_builder.query(&[("account", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_additional_filters {
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
+    }
+    if let Some(ref param_value) = p_query_agent {
+        req_builder = req_builder.query(&[("agent", &param_value.to_string())]);
+    }
+    req_builder = req_builder.query(&[("bucket_size", &p_query_bucket_size.to_string())]);
+    if let Some(ref param_value) = p_query_competitive_player {
+        req_builder = req_builder.query(&[("competitive_player", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_date {
+        req_builder = req_builder.query(&[("date", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_game_id {
+        req_builder = req_builder.query(&[("game_id", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_ig_name {
+        req_builder = req_builder.query(&[("ig_name", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_map {
+        req_builder = req_builder.query(&[("map", &param_value.to_string())]);
+    }
+    req_builder = req_builder.query(&[("max", &p_query_max.to_string())]);
+    req_builder = req_builder.query(&[("metric", &p_query_metric.to_string())]);
+    req_builder = req_builder.query(&[("min", &p_query_min.to_string())]);
+    if let Some(ref param_value) = p_query_patch {
+        req_builder = req_builder.query(&[("patch", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_puuid {
+        req_builder = req_builder.query(&[("puuid", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_rank_tier {
+        req_builder = req_builder.query(&[("rank_tier", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_server {
+        req_builder = req_builder.query(&[("server", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_team {
+        req_builder = req_builder.query(&[("team", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_win {
+        req_builder = req_builder.query(&[("win", &param_value.to_string())]);
+    }
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<SoloQGameSummariesVariableDistributionError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn solo_q_games_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, date: Option<String>, id: Option<&str>, map: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<SoloQGamesVariableDistributionError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_query_bucket_size = bucket_size;
+    let p_query_max = max;
+    let p_query_metric = metric;
+    let p_query_min = min;
+    let p_query_additional_filters = additional_filters;
+    let p_query_date = date;
+    let p_query_id = id;
+    let p_query_map = map;
+
+    let uri_str = format!("{}/SoloQGames/operations/variable-distribution", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref param_value) = p_query_additional_filters {
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
+    }
+    req_builder = req_builder.query(&[("bucket_size", &p_query_bucket_size.to_string())]);
+    if let Some(ref param_value) = p_query_date {
+        req_builder = req_builder.query(&[("date", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_id {
+        req_builder = req_builder.query(&[("id", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_map {
+        req_builder = req_builder.query(&[("map", &param_value.to_string())]);
+    }
+    req_builder = req_builder.query(&[("max", &p_query_max.to_string())]);
+    req_builder = req_builder.query(&[("metric", &p_query_metric.to_string())]);
+    req_builder = req_builder.query(&[("min", &p_query_min.to_string())]);
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<SoloQGamesVariableDistributionError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn solo_q_round_summaries_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, account: Option<i32>, additional_filters: Option<serde_json::Value>, agent: Option<&str>, attack_pattern_full: Option<&str>, attack_pattern_short: Option<&str>, bomb_site: Option<&str>, callout_15s: Option<&str>, competitive_player: Option<&str>, date: Option<String>, defense_pattern_full: Option<&str>, defense_pattern_short: Option<&str>, first_attack_site: Option<&str>, freeze_time_end_timestamp: Option<i32>, game_id: Option<&str>, map: Option<&str>, patch: Option<&str>, plant_time: Option<i32>, puuid: Option<&str>, rank_tier: Option<i32>, round_eco_type: Option<&str>, round_eco_type_no_bonus: Option<&str>, round_id: Option<&str>, round_index: Option<i32>, shield: Option<&str>, side: Option<&str>, start_time_seconds: Option<i32>, team: Option<i32>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<SoloQRoundSummariesVariableDistributionError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_query_bucket_size = bucket_size;
+    let p_query_max = max;
+    let p_query_metric = metric;
+    let p_query_min = min;
+    let p_query_account = account;
+    let p_query_additional_filters = additional_filters;
+    let p_query_agent = agent;
+    let p_query_attack_pattern_full = attack_pattern_full;
+    let p_query_attack_pattern_short = attack_pattern_short;
+    let p_query_bomb_site = bomb_site;
+    let p_query_callout_15s = callout_15s;
+    let p_query_competitive_player = competitive_player;
+    let p_query_date = date;
+    let p_query_defense_pattern_full = defense_pattern_full;
+    let p_query_defense_pattern_short = defense_pattern_short;
+    let p_query_first_attack_site = first_attack_site;
+    let p_query_freeze_time_end_timestamp = freeze_time_end_timestamp;
+    let p_query_game_id = game_id;
+    let p_query_map = map;
+    let p_query_patch = patch;
+    let p_query_plant_time = plant_time;
+    let p_query_puuid = puuid;
+    let p_query_rank_tier = rank_tier;
+    let p_query_round_eco_type = round_eco_type;
+    let p_query_round_eco_type_no_bonus = round_eco_type_no_bonus;
+    let p_query_round_id = round_id;
+    let p_query_round_index = round_index;
+    let p_query_shield = shield;
+    let p_query_side = side;
+    let p_query_start_time_seconds = start_time_seconds;
+    let p_query_team = team;
+
+    let uri_str = format!("{}/SoloQRoundSummaries/operations/variable-distribution", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref param_value) = p_query_account {
+        req_builder = req_builder.query(&[("account", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_additional_filters {
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
+    }
+    if let Some(ref param_value) = p_query_agent {
+        req_builder = req_builder.query(&[("agent", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_attack_pattern_full {
+        req_builder = req_builder.query(&[("attack_pattern_full", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_attack_pattern_short {
+        req_builder = req_builder.query(&[("attack_pattern_short", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_bomb_site {
+        req_builder = req_builder.query(&[("bomb_site", &param_value.to_string())]);
+    }
+    req_builder = req_builder.query(&[("bucket_size", &p_query_bucket_size.to_string())]);
+    if let Some(ref param_value) = p_query_callout_15s {
+        req_builder = req_builder.query(&[("callout_15s", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_competitive_player {
+        req_builder = req_builder.query(&[("competitive_player", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_date {
+        req_builder = req_builder.query(&[("date", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_defense_pattern_full {
+        req_builder = req_builder.query(&[("defense_pattern_full", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_defense_pattern_short {
+        req_builder = req_builder.query(&[("defense_pattern_short", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_first_attack_site {
+        req_builder = req_builder.query(&[("first_attack_site", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_freeze_time_end_timestamp {
+        req_builder = req_builder.query(&[("freeze_time_end_timestamp", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_game_id {
+        req_builder = req_builder.query(&[("game_id", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_map {
+        req_builder = req_builder.query(&[("map", &param_value.to_string())]);
+    }
+    req_builder = req_builder.query(&[("max", &p_query_max.to_string())]);
+    req_builder = req_builder.query(&[("metric", &p_query_metric.to_string())]);
+    req_builder = req_builder.query(&[("min", &p_query_min.to_string())]);
+    if let Some(ref param_value) = p_query_patch {
+        req_builder = req_builder.query(&[("patch", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_plant_time {
+        req_builder = req_builder.query(&[("plant_time", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_puuid {
+        req_builder = req_builder.query(&[("puuid", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_rank_tier {
+        req_builder = req_builder.query(&[("rank_tier", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_round_eco_type {
+        req_builder = req_builder.query(&[("round_eco_type", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_round_eco_type_no_bonus {
+        req_builder = req_builder.query(&[("round_eco_type_no_bonus", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_round_id {
+        req_builder = req_builder.query(&[("round_id", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_round_index {
+        req_builder = req_builder.query(&[("round_index", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_shield {
+        req_builder = req_builder.query(&[("shield", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_side {
+        req_builder = req_builder.query(&[("side", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_start_time_seconds {
+        req_builder = req_builder.query(&[("start_time_seconds", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_team {
+        req_builder = req_builder.query(&[("team", &param_value.to_string())]);
+    }
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<SoloQRoundSummariesVariableDistributionError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn solo_q_team_round_summaries_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, assists: Option<i32>, attack_pattern_full: Option<&str>, attack_pattern_short: Option<&str>, bomb_site: Option<&str>, combat_score: Option<i32>, damages: Option<i32>, date: Option<String>, deaths: Option<i32>, defense_pattern_full: Option<&str>, defense_pattern_short: Option<&str>, first_blood: Option<bool>, first_death: Option<bool>, first_true_blood: Option<bool>, first_true_death: Option<bool>, game: Option<&str>, id: Option<&str>, kast: Option<i32>, kills: Option<i32>, map: Option<&str>, round_eco_type: Option<&str>, round_eco_type_no_bonus: Option<&str>, round_end: Option<&str>, round_index: Option<i32>, side: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<SoloQTeamRoundSummariesVariableDistributionError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_query_bucket_size = bucket_size;
+    let p_query_max = max;
+    let p_query_metric = metric;
+    let p_query_min = min;
+    let p_query_additional_filters = additional_filters;
+    let p_query_assists = assists;
+    let p_query_attack_pattern_full = attack_pattern_full;
+    let p_query_attack_pattern_short = attack_pattern_short;
+    let p_query_bomb_site = bomb_site;
+    let p_query_combat_score = combat_score;
+    let p_query_damages = damages;
+    let p_query_date = date;
+    let p_query_deaths = deaths;
+    let p_query_defense_pattern_full = defense_pattern_full;
+    let p_query_defense_pattern_short = defense_pattern_short;
+    let p_query_first_blood = first_blood;
+    let p_query_first_death = first_death;
+    let p_query_first_true_blood = first_true_blood;
+    let p_query_first_true_death = first_true_death;
+    let p_query_game = game;
+    let p_query_id = id;
+    let p_query_kast = kast;
+    let p_query_kills = kills;
+    let p_query_map = map;
+    let p_query_round_eco_type = round_eco_type;
+    let p_query_round_eco_type_no_bonus = round_eco_type_no_bonus;
+    let p_query_round_end = round_end;
+    let p_query_round_index = round_index;
+    let p_query_side = side;
+
+    let uri_str = format!("{}/SoloQTeamRoundSummaries/operations/variable-distribution", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref param_value) = p_query_additional_filters {
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
+    }
+    if let Some(ref param_value) = p_query_assists {
+        req_builder = req_builder.query(&[("assists", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_attack_pattern_full {
+        req_builder = req_builder.query(&[("attack_pattern_full", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_attack_pattern_short {
+        req_builder = req_builder.query(&[("attack_pattern_short", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_bomb_site {
+        req_builder = req_builder.query(&[("bomb_site", &param_value.to_string())]);
+    }
+    req_builder = req_builder.query(&[("bucket_size", &p_query_bucket_size.to_string())]);
+    if let Some(ref param_value) = p_query_combat_score {
+        req_builder = req_builder.query(&[("combat_score", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_damages {
+        req_builder = req_builder.query(&[("damages", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_date {
+        req_builder = req_builder.query(&[("date", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_deaths {
+        req_builder = req_builder.query(&[("deaths", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_defense_pattern_full {
+        req_builder = req_builder.query(&[("defense_pattern_full", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_defense_pattern_short {
+        req_builder = req_builder.query(&[("defense_pattern_short", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_first_blood {
+        req_builder = req_builder.query(&[("first_blood", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_first_death {
+        req_builder = req_builder.query(&[("first_death", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_first_true_blood {
+        req_builder = req_builder.query(&[("first_true_blood", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_first_true_death {
+        req_builder = req_builder.query(&[("first_true_death", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_game {
+        req_builder = req_builder.query(&[("game", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_id {
+        req_builder = req_builder.query(&[("id", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_kast {
+        req_builder = req_builder.query(&[("kast", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_kills {
+        req_builder = req_builder.query(&[("kills", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_map {
+        req_builder = req_builder.query(&[("map", &param_value.to_string())]);
+    }
+    req_builder = req_builder.query(&[("max", &p_query_max.to_string())]);
+    req_builder = req_builder.query(&[("metric", &p_query_metric.to_string())]);
+    req_builder = req_builder.query(&[("min", &p_query_min.to_string())]);
+    if let Some(ref param_value) = p_query_round_eco_type {
+        req_builder = req_builder.query(&[("round_eco_type", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_round_eco_type_no_bonus {
+        req_builder = req_builder.query(&[("round_eco_type_no_bonus", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_round_end {
+        req_builder = req_builder.query(&[("round_end", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_round_index {
+        req_builder = req_builder.query(&[("round_index", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_side {
+        req_builder = req_builder.query(&[("side", &param_value.to_string())]);
+    }
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<SoloQTeamRoundSummariesVariableDistributionError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn team_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, coaching_staff: Option<&str>, current_league: Option<&str>, current_main_players: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, name: Option<&str>, next_opponent: Option<&str>, players_list: Option<&str>, renamed_to: Option<&str>, vlr_id: Option<i32>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<TeamVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -1687,6 +2534,7 @@ pub async fn team_variable_distribution(configuration: &configuration::Configura
     let p_query_next_opponent = next_opponent;
     let p_query_players_list = players_list;
     let p_query_renamed_to = renamed_to;
+    let p_query_vlr_id = vlr_id;
 
     let uri_str = format!("{}/Team/operations/variable-distribution", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -1730,6 +2578,9 @@ pub async fn team_variable_distribution(configuration: &configuration::Configura
     if let Some(ref param_value) = p_query_renamed_to {
         req_builder = req_builder.query(&[("renamed_to", &param_value.to_string())]);
     }
+    if let Some(ref param_value) = p_query_vlr_id {
+        req_builder = req_builder.query(&[("vlr_id", &param_value.to_string())]);
+    }
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }
@@ -1757,8 +2608,8 @@ pub async fn team_variable_distribution(configuration: &configuration::Configura
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;
@@ -1767,7 +2618,7 @@ pub async fn team_variable_distribution(configuration: &configuration::Configura
     }
 }
 
-pub async fn user_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, organization: Option<&str>, team: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<UserVariableDistributionError>> {
+pub async fn user_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, organization: Option<&str>, team: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<UserVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -1822,12 +2673,81 @@ pub async fn user_variable_distribution(configuration: &configuration::Configura
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;
         let entity: Option<UserVariableDistributionError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn weapons_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, category: Option<&str>, id: Option<&str>, uuid: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<WeaponsVariableDistributionError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_query_bucket_size = bucket_size;
+    let p_query_max = max;
+    let p_query_metric = metric;
+    let p_query_min = min;
+    let p_query_additional_filters = additional_filters;
+    let p_query_category = category;
+    let p_query_id = id;
+    let p_query_uuid = uuid;
+
+    let uri_str = format!("{}/Weapons/operations/variable-distribution", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref param_value) = p_query_additional_filters {
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
+    }
+    req_builder = req_builder.query(&[("bucket_size", &p_query_bucket_size.to_string())]);
+    if let Some(ref param_value) = p_query_category {
+        req_builder = req_builder.query(&[("category", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_id {
+        req_builder = req_builder.query(&[("id", &param_value.to_string())]);
+    }
+    req_builder = req_builder.query(&[("max", &p_query_max.to_string())]);
+    req_builder = req_builder.query(&[("metric", &p_query_metric.to_string())]);
+    req_builder = req_builder.query(&[("min", &p_query_min.to_string())]);
+    if let Some(ref param_value) = p_query_uuid {
+        req_builder = req_builder.query(&[("uuid", &param_value.to_string())]);
+    }
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<WeaponsVariableDistributionError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

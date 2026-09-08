@@ -4,13 +4,16 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**agent_get**](GetApi.md#agent_get) | **GET** /Agent/item/{id} | 
 [**client_organization_get**](GetApi.md#client_organization_get) | **GET** /ClientOrganization/item/{id} | 
 [**competitive_draft_slots_get**](GetApi.md#competitive_draft_slots_get) | **GET** /CompetitiveDraftSlots/item/{id} | 
 [**competitive_game_summaries_get**](GetApi.md#competitive_game_summaries_get) | **GET** /CompetitiveGameSummaries/item/{id} | 
 [**competitive_games_get**](GetApi.md#competitive_games_get) | **GET** /CompetitiveGames/item/{id} | 
 [**competitive_round_summaries_get**](GetApi.md#competitive_round_summaries_get) | **GET** /CompetitiveRoundSummaries/item/{id} | 
 [**competitive_team_round_summaries_get**](GetApi.md#competitive_team_round_summaries_get) | **GET** /CompetitiveTeamRoundSummaries/item/{id} | 
+[**competitive_tiers_get**](GetApi.md#competitive_tiers_get) | **GET** /CompetitiveTiers/item/{id} | 
 [**game_metrics_get**](GetApi.md#game_metrics_get) | **GET** /GameMetrics/item/{id} | 
+[**gear_get**](GetApi.md#gear_get) | **GET** /Gear/item/{id} | 
 [**league_get**](GetApi.md#league_get) | **GET** /League/item/{id} | 
 [**login_create**](GetApi.md#login_create) | **POST** /Login | 
 [**maps_get**](GetApi.md#maps_get) | **GET** /Maps/item/{id} | 
@@ -19,10 +22,44 @@ Method | HTTP request | Description
 [**scrim_games_get**](GetApi.md#scrim_games_get) | **GET** /ScrimGames/item/{id} | 
 [**scrim_round_summaries_get**](GetApi.md#scrim_round_summaries_get) | **GET** /ScrimRoundSummaries/item/{id} | 
 [**scrim_team_round_summaries_get**](GetApi.md#scrim_team_round_summaries_get) | **GET** /ScrimTeamRoundSummaries/item/{id} | 
+[**seasons_get**](GetApi.md#seasons_get) | **GET** /Seasons/item/{id} | 
 [**solo_q_accounts_get**](GetApi.md#solo_q_accounts_get) | **GET** /SoloQAccounts/item/{id} | 
+[**solo_q_game_summaries_get**](GetApi.md#solo_q_game_summaries_get) | **GET** /SoloQGameSummaries/item/{id} | 
+[**solo_q_games_get**](GetApi.md#solo_q_games_get) | **GET** /SoloQGames/item/{id} | 
+[**solo_q_round_summaries_get**](GetApi.md#solo_q_round_summaries_get) | **GET** /SoloQRoundSummaries/item/{id} | 
+[**solo_q_team_round_summaries_get**](GetApi.md#solo_q_team_round_summaries_get) | **GET** /SoloQTeamRoundSummaries/item/{id} | 
 [**team_get**](GetApi.md#team_get) | **GET** /Team/item/{id} | 
 [**user_get**](GetApi.md#user_get) | **GET** /User/item/{id} | 
+[**weapons_get**](GetApi.md#weapons_get) | **GET** /Weapons/item/{id} | 
 
+
+
+## agent_get
+
+> models::Agent agent_get(id)
+
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**id** | **String** |  | [required] |
+
+### Return type
+
+[**models::Agent**](Agent.md)
+
+### Authorization
+
+[tokenAuth](../README.md#tokenAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
 ## client_organization_get
@@ -193,6 +230,34 @@ Name | Type | Description  | Required | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
+## competitive_tiers_get
+
+> models::CompetitiveTiers competitive_tiers_get(id)
+
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**id** | **String** |  | [required] |
+
+### Return type
+
+[**models::CompetitiveTiers**](CompetitiveTiers.md)
+
+### Authorization
+
+[tokenAuth](../README.md#tokenAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
 ## game_metrics_get
 
 > models::GameMetrics game_metrics_get(id)
@@ -208,6 +273,34 @@ Name | Type | Description  | Required | Notes
 ### Return type
 
 [**models::GameMetrics**](GameMetrics.md)
+
+### Authorization
+
+[tokenAuth](../README.md#tokenAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## gear_get
+
+> models::Gear gear_get(id)
+
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**id** | **String** |  | [required] |
+
+### Return type
+
+[**models::Gear**](Gear.md)
 
 ### Authorization
 
@@ -447,6 +540,34 @@ Name | Type | Description  | Required | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 
+## seasons_get
+
+> models::Seasons seasons_get(id)
+
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**id** | **String** |  | [required] |
+
+### Return type
+
+[**models::Seasons**](Seasons.md)
+
+### Authorization
+
+[tokenAuth](../README.md#tokenAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
 ## solo_q_accounts_get
 
 > models::SoloQAccounts solo_q_accounts_get(id)
@@ -462,6 +583,118 @@ Name | Type | Description  | Required | Notes
 ### Return type
 
 [**models::SoloQAccounts**](SoloQAccounts.md)
+
+### Authorization
+
+[tokenAuth](../README.md#tokenAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## solo_q_game_summaries_get
+
+> models::SoloQGameSummaries solo_q_game_summaries_get(id)
+
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**id** | **String** |  | [required] |
+
+### Return type
+
+[**models::SoloQGameSummaries**](SoloQGameSummaries.md)
+
+### Authorization
+
+[tokenAuth](../README.md#tokenAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## solo_q_games_get
+
+> models::SoloQGames solo_q_games_get(id)
+
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**id** | **String** |  | [required] |
+
+### Return type
+
+[**models::SoloQGames**](SoloQGames.md)
+
+### Authorization
+
+[tokenAuth](../README.md#tokenAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## solo_q_round_summaries_get
+
+> models::SoloQRoundSummaries solo_q_round_summaries_get(id)
+
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**id** | **String** |  | [required] |
+
+### Return type
+
+[**models::SoloQRoundSummaries**](SoloQRoundSummaries.md)
+
+### Authorization
+
+[tokenAuth](../README.md#tokenAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## solo_q_team_round_summaries_get
+
+> models::SoloQTeamRoundSummaries solo_q_team_round_summaries_get(id)
+
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**id** | **String** |  | [required] |
+
+### Return type
+
+[**models::SoloQTeamRoundSummaries**](SoloQTeamRoundSummaries.md)
 
 ### Authorization
 
@@ -518,6 +751,34 @@ Name | Type | Description  | Required | Notes
 ### Return type
 
 [**models::User**](User.md)
+
+### Authorization
+
+[tokenAuth](../README.md#tokenAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## weapons_get
+
+> models::Weapons weapons_get(id)
+
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**id** | **String** |  | [required] |
+
+### Return type
+
+[**models::Weapons**](Weapons.md)
 
 ### Authorization
 

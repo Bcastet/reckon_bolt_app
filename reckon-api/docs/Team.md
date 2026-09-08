@@ -14,6 +14,7 @@ Name | Type | Description | Notes
 **coaching_staff** | Option<**String**> |  | [optional]
 **manager_discord** | Option<**String**> |  | [optional]
 **grid_id** | Option<**i64**> |  | [optional]
+**vlr_id** | Option<**i64**> |  | [optional]
 **domestic_league** | Option<**String**> |  | [optional]
 **current_league** | Option<**String**> |  | [optional]
 **next_opponent** | Option<**String**> |  | [optional]

@@ -19,14 +19,17 @@ pub struct CompetitiveRoundSummariesDeathEventInnerAssistantsInner {
     pub player: String,
     #[serde(rename = "weapon")]
     pub weapon: String,
+    #[serde(rename = "position")]
+    pub position: Box<models::CompetitiveRoundSummariesDeathEventInnerKillerLocation>,
 }
 
 impl CompetitiveRoundSummariesDeathEventInnerAssistantsInner {
-    pub fn new(agent: String, player: String, weapon: String) -> CompetitiveRoundSummariesDeathEventInnerAssistantsInner {
+    pub fn new(agent: String, player: String, weapon: String, position: models::CompetitiveRoundSummariesDeathEventInnerKillerLocation) -> CompetitiveRoundSummariesDeathEventInnerAssistantsInner {
         CompetitiveRoundSummariesDeathEventInnerAssistantsInner {
             agent,
             player,
             weapon,
+            position: Box::new(position),
         }
     }
 }

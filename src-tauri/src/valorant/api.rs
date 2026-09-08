@@ -464,6 +464,50 @@ pub fn is_nonself_match_details_error(err: &str) -> bool {
     err.contains("NONSELF_OPERATION")
 }
 
+/// Best-effort Riot `errorCode` (or HTTP status class) from a PD/SUMMARY error string.
+pub fn riot_error_code(err: &str) -> &'static str {
+    for key in [
+        "NONSELF_OPERATION",
+        "BAD_CLAIMS",
+        "RESOURCE_NOT_FOUND",
+        "ACCESS_DENIED",
+        "UNAUTHORIZED",
+    ] {
+        if err.contains(key) {
+            return key;
+        }
+    }
+    if err.contains("404") {
+        return "HTTP_404";
+    }
+    if err.contains("403") {
+        return "HTTP_403";
+    }
+    if err.contains("400") {
+        return "HTTP_400";
+    }
+    "OTHER"
+}
+
+pub fn is_match_auth_error(err: &str) -> bool {
+    matches!(
+        riot_error_code(err),
+        "BAD_CLAIMS" | "UNAUTHORIZED" | "ACCESS_DENIED"
+    ) || err.contains("401 Unauthorized")
+}
+
+fn truncate_for_log(s: &str, max: usize) -> String {
+    let one_line: String = s
+        .chars()
+        .map(|c| if c == '\n' || c == '\r' { ' ' } else { c })
+        .collect();
+    if one_line.chars().count() <= max {
+        one_line
+    } else {
+        format!("{}…", one_line.chars().take(max).collect::<String>())
+    }
+}
+
 /// Download match JSON via SGP SUMMARY using `subject_puuid`'s match history.
 /// Works for your own games, and for a friend's games (party members count).
 /// Spectators cannot use PD match-details (`NONSELF_OPERATION`); this is the fallback.
@@ -488,6 +532,15 @@ pub async fn fetch_match_summary_json(
         req = req.header(*name, value);
     }
 
+    crate::journal::info(
+        "LiveAPI",
+        &format!(
+            "SUMMARY GET {} (subject={}…)",
+            url,
+            &subject_puuid[..8.min(subject_puuid.len())]
+        ),
+    );
+
     let resp = req
         .send()
         .await
@@ -496,6 +549,16 @@ pub async fn fetch_match_summary_json(
     if !resp.status().is_success() {
         let status = resp.status();
         let body = resp.text().await.unwrap_or_default();
+        crate::journal::info(
+            "LiveAPI",
+            &format!(
+                "SUMMARY errorCode={} status={} subject={}… body={}",
+                riot_error_code(&body),
+                status,
+                &subject_puuid[..8.min(subject_puuid.len())],
+                truncate_for_log(&body, 400)
+            ),
+        );
         return Err(format!(
             "SUMMARY request failed with status {} | URL: {} | Body: {}",
             status, url, body
@@ -506,6 +569,19 @@ pub async fn fetch_match_summary_json(
         .json()
         .await
         .map_err(|e| format!("Failed to parse SUMMARY response: {}", e))?;
+
+    let url_keys: Vec<String> = parsed
+        .as_object()
+        .map(|o| o.keys().cloned().collect())
+        .unwrap_or_default();
+    crate::journal::info(
+        "LiveAPI",
+        &format!(
+            "SUMMARY 200 keys=[{}] for {}",
+            url_keys.join(","),
+            match_id
+        ),
+    );
 
     let urls = parsed
         .get("matchFileUrlsMap")
@@ -522,6 +598,16 @@ pub async fn fetch_match_summary_json(
         .filter(|s| !s.is_empty())
         .ok_or_else(|| format!("SUMMARY response had no file URL for {}", match_id))?;
 
+    crate::journal::info(
+        "LiveAPI",
+        &format!(
+            "SUMMARY file URL for {} (map keys={}): {}",
+            match_id,
+            urls.keys().cloned().collect::<Vec<_>>().join(","),
+            file_url.split('?').next().unwrap_or(file_url)
+        ),
+    );
+
     let file_resp = client
         .get(file_url)
         .send()
@@ -531,6 +617,14 @@ pub async fn fetch_match_summary_json(
     if !file_resp.status().is_success() {
         let status = file_resp.status();
         let body = file_resp.text().await.unwrap_or_default();
+        crate::journal::info(
+            "LiveAPI",
+            &format!(
+                "SUMMARY file download failed status={} body={}",
+                status,
+                truncate_for_log(&body, 300)
+            ),
+        );
         return Err(format!(
             "SUMMARY file download failed with status {} | Body: {}",
             status, body
@@ -543,7 +637,11 @@ pub async fn fetch_match_summary_json(
         .map_err(|e| format!("Failed to read SUMMARY file: {}", e))
 }
 
-/// PD match-details for participants; SGP SUMMARY via self or roster players for observers.
+/// PD match-details for participants; SGP SUMMARY via self, roster, or party for observers.
+///
+/// Auth errors (`BAD_CLAIMS`) are returned immediately so the caller can refresh
+/// tokens. Every other PD failure (including `NONSELF_OPERATION` and 404) falls
+/// through to SUMMARY — observers never get a usable PD body.
 pub async fn fetch_match_json_any_source(
     client: &Client,
     shard: &str,
@@ -554,19 +652,52 @@ pub async fn fetch_match_json_any_source(
     viewer_puuid: &str,
     roster_puuids: &[String],
 ) -> Result<String, String> {
+    let viewer_prefix = if viewer_puuid.len() >= 8 {
+        &viewer_puuid[..8]
+    } else {
+        viewer_puuid
+    };
+    crate::journal::info(
+        "LiveAPI",
+        &format!(
+            "PD match-details GET https://pd.{}.a.pvp.net/match-details/v1/matches/{} viewer={}… roster={}",
+            shard, match_id, viewer_prefix, roster_puuids.len()
+        ),
+    );
+
     match fetch_match_details_raw(
         client, shard, match_id, auth_token, entitlement_token, client_version,
     )
     .await
     {
-        Ok(json) => return Ok(json),
-        Err(e) if is_nonself_match_details_error(&e) => {
+        Ok(json) => {
             crate::journal::info(
                 "LiveAPI",
-                "Match-details returned NONSELF_OPERATION (observer) — trying SUMMARY via roster",
+                &format!("PD match-details OK ({} bytes) for {}", json.len(), match_id),
             );
+            return Ok(json);
         }
-        Err(e) => return Err(e),
+        Err(e) => {
+            let code = riot_error_code(&e);
+            crate::journal::info(
+                "LiveAPI",
+                &format!(
+                    "PD match-details errorCode={} for {}: {}",
+                    code,
+                    match_id,
+                    truncate_for_log(&e, 500)
+                ),
+            );
+            if is_nonself_match_details_error(&e) {
+                crate::journal::info(
+                    "LiveAPI",
+                    "PD returned NONSELF_OPERATION — viewer is not a participant; trying SUMMARY",
+                );
+            }
+            if is_match_auth_error(&e) {
+                return Err(e);
+            }
+        }
     }
 
     let mut candidates = Vec::new();
@@ -579,7 +710,20 @@ pub async fn fetch_match_json_any_source(
         }
     }
 
-    let mut last_err = "No roster PUUIDs to try for SUMMARY".to_string();
+    crate::journal::info(
+        "LiveAPI",
+        &format!(
+            "Trying SUMMARY via {} PUUID(s) for {} (first={}…)",
+            candidates.len(),
+            match_id,
+            candidates
+                .first()
+                .map(|p| &p[..8.min(p.len())])
+                .unwrap_or("-"),
+        ),
+    );
+
+    let mut last_err = "No roster/party PUUIDs to try for SUMMARY".to_string();
     for puuid in &candidates {
         match fetch_match_summary_json(
             client, shard, puuid, match_id, auth_token, entitlement_token, client_version,
@@ -589,7 +733,11 @@ pub async fn fetch_match_json_any_source(
             Ok(json) => {
                 crate::journal::info(
                     "LiveAPI",
-                    &format!("SUMMARY OK via puuid {}…", &puuid[..8.min(puuid.len())]),
+                    &format!(
+                        "SUMMARY OK via puuid {}… ({} bytes)",
+                        &puuid[..8.min(puuid.len())],
+                        json.len()
+                    ),
                 );
                 return Ok(json);
             }
@@ -597,9 +745,10 @@ pub async fn fetch_match_json_any_source(
                 crate::journal::info(
                     "LiveAPI",
                     &format!(
-                        "SUMMARY failed via {}…: {}",
+                        "SUMMARY failed via {}… errorCode={}: {}",
                         &puuid[..8.min(puuid.len())],
-                        e
+                        riot_error_code(&e),
+                        truncate_for_log(&e, 400)
                     ),
                 );
                 last_err = e;

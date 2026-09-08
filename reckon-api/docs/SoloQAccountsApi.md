@@ -16,7 +16,7 @@ Method | HTTP request | Description
 
 ## solo_q_accounts_aggregate
 
-> Vec<models::SoloQAccountsAggregate> solo_q_accounts_aggregate(groupby, ordering, additional_filters, aggregates, having, index_on, metrics, player, puuid)
+> Vec<models::SoloQAccountsAggregate> solo_q_accounts_aggregate(groupby, ordering, additional_filters, aggregates, having, index_on, last_updated, metrics, player, puuid)
 
 
 ### Parameters
@@ -30,6 +30,7 @@ Name | Type | Description  | Required | Notes
 **aggregates** | Option<[**Vec<String>**](String.md)> | Expressions to compute |  |
 **having** | Option<[**serde_json::Value**](SerdeJson__Value.md)> | Other filters using lookups |  |
 **index_on** | Option<**String**> | Index results on a column |  |
+**last_updated** | Option<**String**> |  |  |
 **metrics** | Option<[**Vec<String>**](String.md)> | Metrics to compute |  |
 **player** | Option<**String**> |  |  |
 **puuid** | Option<**String**> |  |  |
@@ -81,7 +82,7 @@ Name | Type | Description  | Required | Notes
 
 ## solo_q_accounts_field_values
 
-> Vec<String> solo_q_accounts_field_values(field, ordering, additional_filters, player, puuid)
+> Vec<String> solo_q_accounts_field_values(field, ordering, additional_filters, last_updated, player, puuid)
 
 
 ### Parameters
@@ -92,6 +93,7 @@ Name | Type | Description  | Required | Notes
 **field** | **String** | Field to retrieve the unique values from | [required] |
 **ordering** | [**Vec<String>**](String.md) | Order by | [required] |
 **additional_filters** | Option<[**serde_json::Value**](SerdeJson__Value.md)> | Other filters using lookups |  |
+**last_updated** | Option<**String**> |  |  |
 **player** | Option<**String**> |  |  |
 **puuid** | Option<**String**> |  |  |
 
@@ -141,7 +143,7 @@ Name | Type | Description  | Required | Notes
 
 ## solo_q_accounts_list
 
-> Vec<models::SoloQAccounts> solo_q_accounts_list(additional_filters, annotations, only_values, ordering, player, puuid)
+> Vec<models::SoloQAccounts> solo_q_accounts_list(additional_filters, annotations, last_updated, only_values, ordering, player, puuid)
 
 
 ### Parameters
@@ -151,6 +153,7 @@ Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 **additional_filters** | Option<[**serde_json::Value**](SerdeJson__Value.md)> | Other filters using lookups |  |
 **annotations** | Option<[**Vec<String>**](String.md)> | Additional fiedls (joins,...) |  |
+**last_updated** | Option<**String**> |  |  |
 **only_values** | Option<[**Vec<String>**](String.md)> | Only get the specified fields |  |
 **ordering** | Option<[**Vec<String>**](String.md)> | Order by |  |
 **player** | Option<**String**> |  |  |
@@ -203,7 +206,7 @@ Name | Type | Description  | Required | Notes
 
 ## solo_q_accounts_variable_distribution
 
-> Vec<models::ClientOrganizationVariableDistribution200ResponseInner> solo_q_accounts_variable_distribution(bucket_size, max, metric, min, additional_filters, player, puuid)
+> Vec<models::AgentVariableDistribution200ResponseInner> solo_q_accounts_variable_distribution(bucket_size, max, metric, min, additional_filters, last_updated, player, puuid)
 
 
 ### Parameters
@@ -216,12 +219,13 @@ Name | Type | Description  | Required | Notes
 **metric** | **String** | Metric to get distribution from | [required] |
 **min** | **i32** | Min threshold | [required] |
 **additional_filters** | Option<[**serde_json::Value**](SerdeJson__Value.md)> | Other filters using lookups |  |
+**last_updated** | Option<**String**> |  |  |
 **player** | Option<**String**> |  |  |
 **puuid** | Option<**String**> |  |  |
 
 ### Return type
 
-[**Vec<models::ClientOrganizationVariableDistribution200ResponseInner>**](ClientOrganization_variable_distribution_200_response_inner.md)
+[**Vec<models::AgentVariableDistribution200ResponseInner>**](Agent_variable_distribution_200_response_inner.md)
 
 ### Authorization
 

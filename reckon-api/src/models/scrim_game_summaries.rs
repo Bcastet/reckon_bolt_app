@@ -25,8 +25,6 @@ pub struct ScrimGameSummaries {
     pub deaths: i32,
     #[serde(rename = "assists")]
     pub assists: i32,
-    #[serde(rename = "agent")]
-    pub agent: String,
     #[serde(rename = "kpr", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub kpr: Option<Option<f64>>,
     #[serde(rename = "dpr", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
@@ -39,6 +37,8 @@ pub struct ScrimGameSummaries {
     pub kast: Option<Option<f64>>,
     #[serde(rename = "rating_hltv", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub rating_hltv: Option<Option<f64>>,
+    #[serde(rename = "rating_vlr", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
+    pub rating_vlr: Option<Option<f64>>,
     #[serde(rename = "combat_score", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub combat_score: Option<Option<f64>>,
     #[serde(rename = "win")]
@@ -67,6 +67,8 @@ pub struct ScrimGameSummaries {
     pub game_id: String,
     #[serde(rename = "ig_name")]
     pub ig_name: String,
+    #[serde(rename = "agent")]
+    pub agent: String,
     #[serde(rename = "player")]
     pub player: String,
     #[serde(rename = "team1")]
@@ -78,7 +80,7 @@ pub struct ScrimGameSummaries {
 }
 
 impl ScrimGameSummaries {
-    pub fn new(id: String, date: String, patch: String, kills: i32, deaths: i32, assists: i32, agent: String, win: bool, game_id: String, ig_name: String, player: String, team1: String, team2: String, map: String) -> ScrimGameSummaries {
+    pub fn new(id: String, date: String, patch: String, kills: i32, deaths: i32, assists: i32, win: bool, game_id: String, ig_name: String, agent: String, player: String, team1: String, team2: String, map: String) -> ScrimGameSummaries {
         ScrimGameSummaries {
             id,
             date,
@@ -86,13 +88,13 @@ impl ScrimGameSummaries {
             kills,
             deaths,
             assists,
-            agent,
             kpr: None,
             dpr: None,
             impact: None,
             adr: None,
             kast: None,
             rating_hltv: None,
+            rating_vlr: None,
             combat_score: None,
             win,
             participant_id: None,
@@ -107,6 +109,7 @@ impl ScrimGameSummaries {
             rounds_lost: None,
             game_id,
             ig_name,
+            agent,
             player,
             team1,
             team2,

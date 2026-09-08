@@ -24,7 +24,7 @@ pub enum UploadScrimGameError {
 }
 
 
-/// Upload a scrim game via **multipart/form-data**.  **Fields**: `team1` (team ID), `team2` (team ID)  **Files**: `agnostic_match_history` (Riot match history JSON)  SoloQAccount entries are auto-created for unknown PUUIDs, but each account must have a `player_id` linked before the upload can proceed.
+/// Upload a scrim game via **multipart/form-data**.  **Fields**: `team1` (team ID), `team2` (team ID)  **Files**: `agnostic_match_history` (Riot match history JSON)  SoloQAccount entries are auto-created for unknown PUUIDs, but each account must have a `player_id` linked before the upload can proceed.  Live-client PUUIDs are translated to production-key PUUIDs via Account-v1 (`gameName#tagLine`) before accounts are created or matched.
 pub async fn upload_scrim_game(configuration: &configuration::Configuration, id: &str, upload_scrim_game_request: models::UploadScrimGameRequest) -> Result<models::UploadScrimGameSuccess, Error<UploadScrimGameError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_path_id = id;

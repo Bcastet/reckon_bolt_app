@@ -47,6 +47,10 @@ pub struct Player {
     pub stream: Option<Option<String>>,
     #[serde(rename = "soloq_tracked", skip_serializing_if = "Option::is_none")]
     pub soloq_tracked: Option<bool>,
+    #[serde(rename = "vlr_id", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
+    pub vlr_id: Option<Option<i64>>,
+    #[serde(rename = "other_teams", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
+    pub other_teams: Option<Option<String>>,
     #[serde(rename = "current_team", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub current_team: Option<Option<String>>,
     #[serde(rename = "domestic_league", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
@@ -75,6 +79,8 @@ impl Player {
             discord: None,
             stream: None,
             soloq_tracked: None,
+            vlr_id: None,
+            other_teams: None,
             current_team: None,
             domestic_league: None,
             last_team: None,

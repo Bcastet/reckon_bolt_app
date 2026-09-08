@@ -614,7 +614,7 @@ pub async fn competitive_round_summaries_list(configuration: &configuration::Con
     }
 }
 
-pub async fn competitive_round_summaries_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, agent: Option<&str>, attack_pattern_full: Option<&str>, attack_pattern_short: Option<&str>, bomb_site: Option<&str>, callout_15s: Option<&str>, date: Option<String>, defense_pattern_full: Option<&str>, defense_pattern_short: Option<&str>, first_attack_site: Option<&str>, freeze_time_end_timestamp: Option<i32>, game: Option<&str>, league: Option<&str>, map: Option<&str>, patch: Option<&str>, plant_time: Option<i32>, player: Option<&str>, round_eco_type: Option<&str>, round_eco_type_no_bonus: Option<&str>, round_id: Option<&str>, round_index: Option<i32>, shield: Option<&str>, side: Option<&str>, start_time_seconds: Option<i32>, summary: Option<&str>, team1: Option<&str>, team2: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<CompetitiveRoundSummariesVariableDistributionError>> {
+pub async fn competitive_round_summaries_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, agent: Option<&str>, attack_pattern_full: Option<&str>, attack_pattern_short: Option<&str>, bomb_site: Option<&str>, callout_15s: Option<&str>, date: Option<String>, defense_pattern_full: Option<&str>, defense_pattern_short: Option<&str>, first_attack_site: Option<&str>, freeze_time_end_timestamp: Option<i32>, game: Option<&str>, league: Option<&str>, map: Option<&str>, patch: Option<&str>, plant_time: Option<i32>, player: Option<&str>, round_eco_type: Option<&str>, round_eco_type_no_bonus: Option<&str>, round_id: Option<&str>, round_index: Option<i32>, shield: Option<&str>, side: Option<&str>, start_time_seconds: Option<i32>, summary: Option<&str>, team1: Option<&str>, team2: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<CompetitiveRoundSummariesVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -765,8 +765,8 @@ pub async fn competitive_round_summaries_variable_distribution(configuration: &c
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;

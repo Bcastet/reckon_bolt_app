@@ -152,7 +152,7 @@ Name | Type | Description  | Required | Notes
 
 ## scrim_games_variable_distribution
 
-> Vec<models::ClientOrganizationVariableDistribution200ResponseInner> scrim_games_variable_distribution(bucket_size, max, metric, min, additional_filters, id, map, team1, team2, winner)
+> Vec<models::AgentVariableDistribution200ResponseInner> scrim_games_variable_distribution(bucket_size, max, metric, min, additional_filters, id, map, team1, team2, winner)
 
 
 ### Parameters
@@ -173,7 +173,7 @@ Name | Type | Description  | Required | Notes
 
 ### Return type
 
-[**Vec<models::ClientOrganizationVariableDistribution200ResponseInner>**](ClientOrganization_variable_distribution_200_response_inner.md)
+[**Vec<models::AgentVariableDistribution200ResponseInner>**](Agent_variable_distribution_200_response_inner.md)
 
 ### Authorization
 

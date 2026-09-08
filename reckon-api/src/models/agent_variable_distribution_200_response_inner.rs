@@ -11,9 +11,9 @@
 use crate::models;
 use serde::{Deserialize, Serialize};
 
-/// ClientOrganizationVariableDistribution200ResponseInner : Successful response
+/// AgentVariableDistribution200ResponseInner : Successful response
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct ClientOrganizationVariableDistribution200ResponseInner {
+pub struct AgentVariableDistribution200ResponseInner {
     #[serde(rename = "bucket", skip_serializing_if = "Option::is_none")]
     pub bucket: Option<i32>,
     #[serde(rename = "count", skip_serializing_if = "Option::is_none")]
@@ -22,10 +22,10 @@ pub struct ClientOrganizationVariableDistribution200ResponseInner {
     pub proportion: Option<f64>,
 }
 
-impl ClientOrganizationVariableDistribution200ResponseInner {
+impl AgentVariableDistribution200ResponseInner {
     /// Successful response
-    pub fn new() -> ClientOrganizationVariableDistribution200ResponseInner {
-        ClientOrganizationVariableDistribution200ResponseInner {
+    pub fn new() -> AgentVariableDistribution200ResponseInner {
+        AgentVariableDistribution200ResponseInner {
             bucket: None,
             count: None,
             proportion: None,

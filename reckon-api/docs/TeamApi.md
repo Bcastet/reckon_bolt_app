@@ -15,7 +15,7 @@ Method | HTTP request | Description
 
 ## team_aggregate
 
-> Vec<models::TeamAggregate> team_aggregate(groupby, ordering, additional_filters, aggregates, coaching_staff, current_league, current_main_players, domestic_league, grid_id, having, id, index_on, metrics, name, next_opponent, players_list, renamed_to)
+> Vec<models::TeamAggregate> team_aggregate(groupby, ordering, additional_filters, aggregates, coaching_staff, current_league, current_main_players, domestic_league, grid_id, having, id, index_on, metrics, name, next_opponent, players_list, renamed_to, vlr_id)
 
 
 ### Parameters
@@ -40,6 +40,7 @@ Name | Type | Description  | Required | Notes
 **next_opponent** | Option<**String**> |  |  |
 **players_list** | Option<**String**> |  |  |
 **renamed_to** | Option<**String**> |  |  |
+**vlr_id** | Option<**i32**> |  |  |
 
 ### Return type
 
@@ -59,7 +60,7 @@ Name | Type | Description  | Required | Notes
 
 ## team_field_values
 
-> Vec<String> team_field_values(field, ordering, additional_filters, coaching_staff, current_league, current_main_players, domestic_league, grid_id, id, name, next_opponent, players_list, renamed_to)
+> Vec<String> team_field_values(field, ordering, additional_filters, coaching_staff, current_league, current_main_players, domestic_league, grid_id, id, name, next_opponent, players_list, renamed_to, vlr_id)
 
 
 ### Parameters
@@ -80,6 +81,7 @@ Name | Type | Description  | Required | Notes
 **next_opponent** | Option<**String**> |  |  |
 **players_list** | Option<**String**> |  |  |
 **renamed_to** | Option<**String**> |  |  |
+**vlr_id** | Option<**i32**> |  |  |
 
 ### Return type
 
@@ -127,7 +129,7 @@ Name | Type | Description  | Required | Notes
 
 ## team_list
 
-> Vec<models::Team> team_list(additional_filters, annotations, coaching_staff, current_league, current_main_players, domestic_league, grid_id, id, name, next_opponent, only_values, ordering, players_list, renamed_to)
+> Vec<models::Team> team_list(additional_filters, annotations, coaching_staff, current_league, current_main_players, domestic_league, grid_id, id, name, next_opponent, only_values, ordering, players_list, renamed_to, vlr_id)
 
 
 ### Parameters
@@ -149,6 +151,7 @@ Name | Type | Description  | Required | Notes
 **ordering** | Option<[**Vec<String>**](String.md)> | Order by |  |
 **players_list** | Option<**String**> |  |  |
 **renamed_to** | Option<**String**> |  |  |
+**vlr_id** | Option<**i32**> |  |  |
 
 ### Return type
 
@@ -197,7 +200,7 @@ Name | Type | Description  | Required | Notes
 
 ## team_variable_distribution
 
-> Vec<models::ClientOrganizationVariableDistribution200ResponseInner> team_variable_distribution(bucket_size, max, metric, min, additional_filters, coaching_staff, current_league, current_main_players, domestic_league, grid_id, id, name, next_opponent, players_list, renamed_to)
+> Vec<models::AgentVariableDistribution200ResponseInner> team_variable_distribution(bucket_size, max, metric, min, additional_filters, coaching_staff, current_league, current_main_players, domestic_league, grid_id, id, name, next_opponent, players_list, renamed_to, vlr_id)
 
 
 ### Parameters
@@ -220,10 +223,11 @@ Name | Type | Description  | Required | Notes
 **next_opponent** | Option<**String**> |  |  |
 **players_list** | Option<**String**> |  |  |
 **renamed_to** | Option<**String**> |  |  |
+**vlr_id** | Option<**i32**> |  |  |
 
 ### Return type
 
-[**Vec<models::ClientOrganizationVariableDistribution200ResponseInner>**](ClientOrganization_variable_distribution_200_response_inner.md)
+[**Vec<models::AgentVariableDistribution200ResponseInner>**](Agent_variable_distribution_200_response_inner.md)
 
 ### Authorization
 

@@ -15,6 +15,13 @@ use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
 
+/// struct for typed errors of method [`agent_list`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum AgentListError {
+    UnknownValue(serde_json::Value),
+}
+
 /// struct for typed errors of method [`client_organization_list`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -57,10 +64,24 @@ pub enum CompetitiveTeamRoundSummariesListError {
     UnknownValue(serde_json::Value),
 }
 
+/// struct for typed errors of method [`competitive_tiers_list`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum CompetitiveTiersListError {
+    UnknownValue(serde_json::Value),
+}
+
 /// struct for typed errors of method [`game_metrics_list`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GameMetricsListError {
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`gear_list`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum GearListError {
     UnknownValue(serde_json::Value),
 }
 
@@ -113,10 +134,45 @@ pub enum ScrimTeamRoundSummariesListError {
     UnknownValue(serde_json::Value),
 }
 
+/// struct for typed errors of method [`seasons_list`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SeasonsListError {
+    UnknownValue(serde_json::Value),
+}
+
 /// struct for typed errors of method [`solo_q_accounts_list`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum SoloQAccountsListError {
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`solo_q_game_summaries_list`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SoloQGameSummariesListError {
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`solo_q_games_list`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SoloQGamesListError {
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`solo_q_round_summaries_list`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SoloQRoundSummariesListError {
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`solo_q_team_round_summaries_list`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SoloQTeamRoundSummariesListError {
     UnknownValue(serde_json::Value),
 }
 
@@ -134,6 +190,95 @@ pub enum UserListError {
     UnknownValue(serde_json::Value),
 }
 
+/// struct for typed errors of method [`weapons_list`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum WeaponsListError {
+    UnknownValue(serde_json::Value),
+}
+
+
+pub async fn agent_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, id: Option<&str>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, role: Option<&str>, uuid: Option<&str>) -> Result<Vec<models::Agent>, Error<AgentListError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_query_additional_filters = additional_filters;
+    let p_query_annotations = annotations;
+    let p_query_id = id;
+    let p_query_only_values = only_values;
+    let p_query_ordering = ordering;
+    let p_query_role = role;
+    let p_query_uuid = uuid;
+
+    let uri_str = format!("{}/Agent/list", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref param_value) = p_query_additional_filters {
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
+    }
+    if let Some(ref param_value) = p_query_annotations {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("annotations".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("annotations", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_id {
+        req_builder = req_builder.query(&[("id", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_only_values {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("only_values".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("only_values", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_ordering {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("ordering".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("ordering", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_role {
+        req_builder = req_builder.query(&[("role", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_uuid {
+        req_builder = req_builder.query(&[("uuid", &param_value.to_string())]);
+    }
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::Agent&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::Agent&gt;`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<AgentListError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
 
 pub async fn client_organization_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>) -> Result<Vec<models::ClientOrganization>, Error<ClientOrganizationListError>> {
     // add a prefix to parameters to efficiently prevent name collisions
@@ -899,6 +1044,88 @@ pub async fn competitive_team_round_summaries_list(configuration: &configuration
     }
 }
 
+pub async fn competitive_tiers_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, division: Option<&str>, id: Option<&str>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, tier: Option<i32>) -> Result<Vec<models::CompetitiveTiers>, Error<CompetitiveTiersListError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_query_additional_filters = additional_filters;
+    let p_query_annotations = annotations;
+    let p_query_division = division;
+    let p_query_id = id;
+    let p_query_only_values = only_values;
+    let p_query_ordering = ordering;
+    let p_query_tier = tier;
+
+    let uri_str = format!("{}/CompetitiveTiers/list", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref param_value) = p_query_additional_filters {
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
+    }
+    if let Some(ref param_value) = p_query_annotations {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("annotations".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("annotations", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_division {
+        req_builder = req_builder.query(&[("division", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_id {
+        req_builder = req_builder.query(&[("id", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_only_values {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("only_values".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("only_values", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_ordering {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("ordering".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("ordering", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_tier {
+        req_builder = req_builder.query(&[("tier", &param_value.to_string())]);
+    }
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::CompetitiveTiers&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::CompetitiveTiers&gt;`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<CompetitiveTiersListError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
 pub async fn game_metrics_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, label: Option<&str>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>) -> Result<Vec<models::GameMetrics>, Error<GameMetricsListError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_additional_filters = additional_filters;
@@ -969,6 +1196,84 @@ pub async fn game_metrics_list(configuration: &configuration::Configuration, add
     } else {
         let content = resp.text().await?;
         let entity: Option<GameMetricsListError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn gear_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, id: Option<&str>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, uuid: Option<&str>) -> Result<Vec<models::Gear>, Error<GearListError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_query_additional_filters = additional_filters;
+    let p_query_annotations = annotations;
+    let p_query_id = id;
+    let p_query_only_values = only_values;
+    let p_query_ordering = ordering;
+    let p_query_uuid = uuid;
+
+    let uri_str = format!("{}/Gear/list", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref param_value) = p_query_additional_filters {
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
+    }
+    if let Some(ref param_value) = p_query_annotations {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("annotations".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("annotations", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_id {
+        req_builder = req_builder.query(&[("id", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_only_values {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("only_values".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("only_values", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_ordering {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("ordering".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("ordering", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_uuid {
+        req_builder = req_builder.query(&[("uuid", &param_value.to_string())]);
+    }
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::Gear&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::Gear&gt;`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<GearListError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
@@ -1129,7 +1434,7 @@ pub async fn maps_list(configuration: &configuration::Configuration, additional_
     }
 }
 
-pub async fn player_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, birthdate: Option<String>, contract_expires: Option<String>, current_team: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, is_retired: Option<bool>, last_team: Option<&str>, nationality: Option<&str>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, previous_names: Option<&str>, role: Option<&str>, soloq_tracked: Option<bool>) -> Result<Vec<models::Player>, Error<PlayerListError>> {
+pub async fn player_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, birthdate: Option<String>, contract_expires: Option<String>, current_team: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, is_retired: Option<bool>, last_team: Option<&str>, nationality: Option<&str>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, previous_names: Option<&str>, role: Option<&str>, soloq_tracked: Option<bool>, vlr_id: Option<i32>) -> Result<Vec<models::Player>, Error<PlayerListError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_additional_filters = additional_filters;
     let p_query_annotations = annotations;
@@ -1147,6 +1452,7 @@ pub async fn player_list(configuration: &configuration::Configuration, additiona
     let p_query_previous_names = previous_names;
     let p_query_role = role;
     let p_query_soloq_tracked = soloq_tracked;
+    let p_query_vlr_id = vlr_id;
 
     let uri_str = format!("{}/Player/list", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -1209,6 +1515,9 @@ pub async fn player_list(configuration: &configuration::Configuration, additiona
     }
     if let Some(ref param_value) = p_query_soloq_tracked {
         req_builder = req_builder.query(&[("soloq_tracked", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_vlr_id {
+        req_builder = req_builder.query(&[("vlr_id", &param_value.to_string())]);
     }
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
@@ -1787,10 +2096,105 @@ pub async fn scrim_team_round_summaries_list(configuration: &configuration::Conf
     }
 }
 
-pub async fn solo_q_accounts_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, player: Option<&str>, puuid: Option<&str>) -> Result<Vec<models::SoloQAccounts>, Error<SoloQAccountsListError>> {
+pub async fn seasons_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, display_name: Option<&str>, id: Option<&str>, is_active: Option<bool>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, parent_uuid: Option<&str>, season_type: Option<&str>, start_time: Option<String>) -> Result<Vec<models::Seasons>, Error<SeasonsListError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_additional_filters = additional_filters;
     let p_query_annotations = annotations;
+    let p_query_display_name = display_name;
+    let p_query_id = id;
+    let p_query_is_active = is_active;
+    let p_query_only_values = only_values;
+    let p_query_ordering = ordering;
+    let p_query_parent_uuid = parent_uuid;
+    let p_query_season_type = season_type;
+    let p_query_start_time = start_time;
+
+    let uri_str = format!("{}/Seasons/list", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref param_value) = p_query_additional_filters {
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
+    }
+    if let Some(ref param_value) = p_query_annotations {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("annotations".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("annotations", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_display_name {
+        req_builder = req_builder.query(&[("display_name", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_id {
+        req_builder = req_builder.query(&[("id", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_is_active {
+        req_builder = req_builder.query(&[("is_active", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_only_values {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("only_values".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("only_values", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_ordering {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("ordering".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("ordering", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_parent_uuid {
+        req_builder = req_builder.query(&[("parent_uuid", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_season_type {
+        req_builder = req_builder.query(&[("season_type", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_start_time {
+        req_builder = req_builder.query(&[("start_time", &param_value.to_string())]);
+    }
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::Seasons&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::Seasons&gt;`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<SeasonsListError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn solo_q_accounts_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, last_updated: Option<String>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, player: Option<&str>, puuid: Option<&str>) -> Result<Vec<models::SoloQAccounts>, Error<SoloQAccountsListError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_query_additional_filters = additional_filters;
+    let p_query_annotations = annotations;
+    let p_query_last_updated = last_updated;
     let p_query_only_values = only_values;
     let p_query_ordering = ordering;
     let p_query_player = player;
@@ -1809,6 +2213,9 @@ pub async fn solo_q_accounts_list(configuration: &configuration::Configuration, 
             "multi" => req_builder.query(&param_value.into_iter().map(|p| ("annotations".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
             _ => req_builder.query(&[("annotations", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
         };
+    }
+    if let Some(ref param_value) = p_query_last_updated {
+        req_builder = req_builder.query(&[("last_updated", &param_value.to_string())]);
     }
     if let Some(ref param_value) = p_query_only_values {
         req_builder = match "multi" {
@@ -1865,7 +2272,551 @@ pub async fn solo_q_accounts_list(configuration: &configuration::Configuration, 
     }
 }
 
-pub async fn team_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, coaching_staff: Option<&str>, current_league: Option<&str>, current_main_players: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, name: Option<&str>, next_opponent: Option<&str>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, players_list: Option<&str>, renamed_to: Option<&str>) -> Result<Vec<models::Team>, Error<TeamListError>> {
+pub async fn solo_q_game_summaries_list(configuration: &configuration::Configuration, account: Option<i32>, additional_filters: Option<serde_json::Value>, agent: Option<&str>, annotations: Option<Vec<String>>, competitive_player: Option<&str>, date: Option<String>, game_id: Option<&str>, ig_name: Option<&str>, map: Option<&str>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, patch: Option<&str>, puuid: Option<&str>, rank_tier: Option<i32>, server: Option<&str>, team: Option<i32>, win: Option<bool>) -> Result<Vec<models::SoloQGameSummaries>, Error<SoloQGameSummariesListError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_query_account = account;
+    let p_query_additional_filters = additional_filters;
+    let p_query_agent = agent;
+    let p_query_annotations = annotations;
+    let p_query_competitive_player = competitive_player;
+    let p_query_date = date;
+    let p_query_game_id = game_id;
+    let p_query_ig_name = ig_name;
+    let p_query_map = map;
+    let p_query_only_values = only_values;
+    let p_query_ordering = ordering;
+    let p_query_patch = patch;
+    let p_query_puuid = puuid;
+    let p_query_rank_tier = rank_tier;
+    let p_query_server = server;
+    let p_query_team = team;
+    let p_query_win = win;
+
+    let uri_str = format!("{}/SoloQGameSummaries/list", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref param_value) = p_query_account {
+        req_builder = req_builder.query(&[("account", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_additional_filters {
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
+    }
+    if let Some(ref param_value) = p_query_agent {
+        req_builder = req_builder.query(&[("agent", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_annotations {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("annotations".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("annotations", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_competitive_player {
+        req_builder = req_builder.query(&[("competitive_player", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_date {
+        req_builder = req_builder.query(&[("date", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_game_id {
+        req_builder = req_builder.query(&[("game_id", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_ig_name {
+        req_builder = req_builder.query(&[("ig_name", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_map {
+        req_builder = req_builder.query(&[("map", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_only_values {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("only_values".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("only_values", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_ordering {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("ordering".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("ordering", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_patch {
+        req_builder = req_builder.query(&[("patch", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_puuid {
+        req_builder = req_builder.query(&[("puuid", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_rank_tier {
+        req_builder = req_builder.query(&[("rank_tier", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_server {
+        req_builder = req_builder.query(&[("server", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_team {
+        req_builder = req_builder.query(&[("team", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_win {
+        req_builder = req_builder.query(&[("win", &param_value.to_string())]);
+    }
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::SoloQGameSummaries&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::SoloQGameSummaries&gt;`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<SoloQGameSummariesListError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn solo_q_games_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, date: Option<String>, id: Option<&str>, map: Option<&str>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>) -> Result<Vec<models::SoloQGames>, Error<SoloQGamesListError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_query_additional_filters = additional_filters;
+    let p_query_annotations = annotations;
+    let p_query_date = date;
+    let p_query_id = id;
+    let p_query_map = map;
+    let p_query_only_values = only_values;
+    let p_query_ordering = ordering;
+
+    let uri_str = format!("{}/SoloQGames/list", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref param_value) = p_query_additional_filters {
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
+    }
+    if let Some(ref param_value) = p_query_annotations {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("annotations".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("annotations", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_date {
+        req_builder = req_builder.query(&[("date", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_id {
+        req_builder = req_builder.query(&[("id", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_map {
+        req_builder = req_builder.query(&[("map", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_only_values {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("only_values".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("only_values", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_ordering {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("ordering".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("ordering", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::SoloQGames&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::SoloQGames&gt;`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<SoloQGamesListError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn solo_q_round_summaries_list(configuration: &configuration::Configuration, account: Option<i32>, additional_filters: Option<serde_json::Value>, agent: Option<&str>, annotations: Option<Vec<String>>, attack_pattern_full: Option<&str>, attack_pattern_short: Option<&str>, bomb_site: Option<&str>, callout_15s: Option<&str>, competitive_player: Option<&str>, date: Option<String>, defense_pattern_full: Option<&str>, defense_pattern_short: Option<&str>, first_attack_site: Option<&str>, freeze_time_end_timestamp: Option<i32>, game_id: Option<&str>, map: Option<&str>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, patch: Option<&str>, plant_time: Option<i32>, puuid: Option<&str>, rank_tier: Option<i32>, round_eco_type: Option<&str>, round_eco_type_no_bonus: Option<&str>, round_id: Option<&str>, round_index: Option<i32>, shield: Option<&str>, side: Option<&str>, start_time_seconds: Option<i32>, team: Option<i32>) -> Result<Vec<models::SoloQRoundSummaries>, Error<SoloQRoundSummariesListError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_query_account = account;
+    let p_query_additional_filters = additional_filters;
+    let p_query_agent = agent;
+    let p_query_annotations = annotations;
+    let p_query_attack_pattern_full = attack_pattern_full;
+    let p_query_attack_pattern_short = attack_pattern_short;
+    let p_query_bomb_site = bomb_site;
+    let p_query_callout_15s = callout_15s;
+    let p_query_competitive_player = competitive_player;
+    let p_query_date = date;
+    let p_query_defense_pattern_full = defense_pattern_full;
+    let p_query_defense_pattern_short = defense_pattern_short;
+    let p_query_first_attack_site = first_attack_site;
+    let p_query_freeze_time_end_timestamp = freeze_time_end_timestamp;
+    let p_query_game_id = game_id;
+    let p_query_map = map;
+    let p_query_only_values = only_values;
+    let p_query_ordering = ordering;
+    let p_query_patch = patch;
+    let p_query_plant_time = plant_time;
+    let p_query_puuid = puuid;
+    let p_query_rank_tier = rank_tier;
+    let p_query_round_eco_type = round_eco_type;
+    let p_query_round_eco_type_no_bonus = round_eco_type_no_bonus;
+    let p_query_round_id = round_id;
+    let p_query_round_index = round_index;
+    let p_query_shield = shield;
+    let p_query_side = side;
+    let p_query_start_time_seconds = start_time_seconds;
+    let p_query_team = team;
+
+    let uri_str = format!("{}/SoloQRoundSummaries/list", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref param_value) = p_query_account {
+        req_builder = req_builder.query(&[("account", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_additional_filters {
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
+    }
+    if let Some(ref param_value) = p_query_agent {
+        req_builder = req_builder.query(&[("agent", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_annotations {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("annotations".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("annotations", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_attack_pattern_full {
+        req_builder = req_builder.query(&[("attack_pattern_full", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_attack_pattern_short {
+        req_builder = req_builder.query(&[("attack_pattern_short", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_bomb_site {
+        req_builder = req_builder.query(&[("bomb_site", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_callout_15s {
+        req_builder = req_builder.query(&[("callout_15s", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_competitive_player {
+        req_builder = req_builder.query(&[("competitive_player", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_date {
+        req_builder = req_builder.query(&[("date", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_defense_pattern_full {
+        req_builder = req_builder.query(&[("defense_pattern_full", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_defense_pattern_short {
+        req_builder = req_builder.query(&[("defense_pattern_short", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_first_attack_site {
+        req_builder = req_builder.query(&[("first_attack_site", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_freeze_time_end_timestamp {
+        req_builder = req_builder.query(&[("freeze_time_end_timestamp", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_game_id {
+        req_builder = req_builder.query(&[("game_id", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_map {
+        req_builder = req_builder.query(&[("map", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_only_values {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("only_values".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("only_values", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_ordering {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("ordering".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("ordering", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_patch {
+        req_builder = req_builder.query(&[("patch", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_plant_time {
+        req_builder = req_builder.query(&[("plant_time", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_puuid {
+        req_builder = req_builder.query(&[("puuid", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_rank_tier {
+        req_builder = req_builder.query(&[("rank_tier", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_round_eco_type {
+        req_builder = req_builder.query(&[("round_eco_type", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_round_eco_type_no_bonus {
+        req_builder = req_builder.query(&[("round_eco_type_no_bonus", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_round_id {
+        req_builder = req_builder.query(&[("round_id", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_round_index {
+        req_builder = req_builder.query(&[("round_index", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_shield {
+        req_builder = req_builder.query(&[("shield", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_side {
+        req_builder = req_builder.query(&[("side", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_start_time_seconds {
+        req_builder = req_builder.query(&[("start_time_seconds", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_team {
+        req_builder = req_builder.query(&[("team", &param_value.to_string())]);
+    }
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::SoloQRoundSummaries&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::SoloQRoundSummaries&gt;`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<SoloQRoundSummariesListError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn solo_q_team_round_summaries_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, assists: Option<i32>, attack_pattern_full: Option<&str>, attack_pattern_short: Option<&str>, bomb_site: Option<&str>, combat_score: Option<i32>, damages: Option<i32>, date: Option<String>, deaths: Option<i32>, defense_pattern_full: Option<&str>, defense_pattern_short: Option<&str>, first_blood: Option<bool>, first_death: Option<bool>, first_true_blood: Option<bool>, first_true_death: Option<bool>, game: Option<&str>, id: Option<&str>, kast: Option<i32>, kills: Option<i32>, map: Option<&str>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, round_eco_type: Option<&str>, round_eco_type_no_bonus: Option<&str>, round_end: Option<&str>, round_index: Option<i32>, side: Option<&str>) -> Result<Vec<models::SoloQTeamRoundSummaries>, Error<SoloQTeamRoundSummariesListError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_query_additional_filters = additional_filters;
+    let p_query_annotations = annotations;
+    let p_query_assists = assists;
+    let p_query_attack_pattern_full = attack_pattern_full;
+    let p_query_attack_pattern_short = attack_pattern_short;
+    let p_query_bomb_site = bomb_site;
+    let p_query_combat_score = combat_score;
+    let p_query_damages = damages;
+    let p_query_date = date;
+    let p_query_deaths = deaths;
+    let p_query_defense_pattern_full = defense_pattern_full;
+    let p_query_defense_pattern_short = defense_pattern_short;
+    let p_query_first_blood = first_blood;
+    let p_query_first_death = first_death;
+    let p_query_first_true_blood = first_true_blood;
+    let p_query_first_true_death = first_true_death;
+    let p_query_game = game;
+    let p_query_id = id;
+    let p_query_kast = kast;
+    let p_query_kills = kills;
+    let p_query_map = map;
+    let p_query_only_values = only_values;
+    let p_query_ordering = ordering;
+    let p_query_round_eco_type = round_eco_type;
+    let p_query_round_eco_type_no_bonus = round_eco_type_no_bonus;
+    let p_query_round_end = round_end;
+    let p_query_round_index = round_index;
+    let p_query_side = side;
+
+    let uri_str = format!("{}/SoloQTeamRoundSummaries/list", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref param_value) = p_query_additional_filters {
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
+    }
+    if let Some(ref param_value) = p_query_annotations {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("annotations".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("annotations", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_assists {
+        req_builder = req_builder.query(&[("assists", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_attack_pattern_full {
+        req_builder = req_builder.query(&[("attack_pattern_full", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_attack_pattern_short {
+        req_builder = req_builder.query(&[("attack_pattern_short", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_bomb_site {
+        req_builder = req_builder.query(&[("bomb_site", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_combat_score {
+        req_builder = req_builder.query(&[("combat_score", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_damages {
+        req_builder = req_builder.query(&[("damages", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_date {
+        req_builder = req_builder.query(&[("date", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_deaths {
+        req_builder = req_builder.query(&[("deaths", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_defense_pattern_full {
+        req_builder = req_builder.query(&[("defense_pattern_full", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_defense_pattern_short {
+        req_builder = req_builder.query(&[("defense_pattern_short", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_first_blood {
+        req_builder = req_builder.query(&[("first_blood", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_first_death {
+        req_builder = req_builder.query(&[("first_death", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_first_true_blood {
+        req_builder = req_builder.query(&[("first_true_blood", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_first_true_death {
+        req_builder = req_builder.query(&[("first_true_death", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_game {
+        req_builder = req_builder.query(&[("game", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_id {
+        req_builder = req_builder.query(&[("id", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_kast {
+        req_builder = req_builder.query(&[("kast", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_kills {
+        req_builder = req_builder.query(&[("kills", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_map {
+        req_builder = req_builder.query(&[("map", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_only_values {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("only_values".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("only_values", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_ordering {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("ordering".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("ordering", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_round_eco_type {
+        req_builder = req_builder.query(&[("round_eco_type", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_round_eco_type_no_bonus {
+        req_builder = req_builder.query(&[("round_eco_type_no_bonus", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_round_end {
+        req_builder = req_builder.query(&[("round_end", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_round_index {
+        req_builder = req_builder.query(&[("round_index", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_side {
+        req_builder = req_builder.query(&[("side", &param_value.to_string())]);
+    }
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::SoloQTeamRoundSummaries&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::SoloQTeamRoundSummaries&gt;`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<SoloQTeamRoundSummariesListError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn team_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, coaching_staff: Option<&str>, current_league: Option<&str>, current_main_players: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, name: Option<&str>, next_opponent: Option<&str>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, players_list: Option<&str>, renamed_to: Option<&str>, vlr_id: Option<i32>) -> Result<Vec<models::Team>, Error<TeamListError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_additional_filters = additional_filters;
     let p_query_annotations = annotations;
@@ -1881,6 +2832,7 @@ pub async fn team_list(configuration: &configuration::Configuration, additional_
     let p_query_ordering = ordering;
     let p_query_players_list = players_list;
     let p_query_renamed_to = renamed_to;
+    let p_query_vlr_id = vlr_id;
 
     let uri_str = format!("{}/Team/list", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -1937,6 +2889,9 @@ pub async fn team_list(configuration: &configuration::Configuration, additional_
     }
     if let Some(ref param_value) = p_query_renamed_to {
         req_builder = req_builder.query(&[("renamed_to", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_vlr_id {
+        req_builder = req_builder.query(&[("vlr_id", &param_value.to_string())]);
     }
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
@@ -2049,6 +3004,88 @@ pub async fn user_list(configuration: &configuration::Configuration, additional_
     } else {
         let content = resp.text().await?;
         let entity: Option<UserListError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn weapons_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, category: Option<&str>, id: Option<&str>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, uuid: Option<&str>) -> Result<Vec<models::Weapons>, Error<WeaponsListError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_query_additional_filters = additional_filters;
+    let p_query_annotations = annotations;
+    let p_query_category = category;
+    let p_query_id = id;
+    let p_query_only_values = only_values;
+    let p_query_ordering = ordering;
+    let p_query_uuid = uuid;
+
+    let uri_str = format!("{}/Weapons/list", configuration.base_path);
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref param_value) = p_query_additional_filters {
+        for (k, v) in crate::apis::additional_filters_query_pairs(param_value) {
+            req_builder = req_builder.query(&[(k.as_str(), v.as_str())]);
+        }
+    }
+    if let Some(ref param_value) = p_query_annotations {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("annotations".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("annotations", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_category {
+        req_builder = req_builder.query(&[("category", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_id {
+        req_builder = req_builder.query(&[("id", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_only_values {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("only_values".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("only_values", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_ordering {
+        req_builder = match "multi" {
+            "multi" => req_builder.query(&param_value.into_iter().map(|p| ("ordering".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
+            _ => req_builder.query(&[("ordering", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
+        };
+    }
+    if let Some(ref param_value) = p_query_uuid {
+        req_builder = req_builder.query(&[("uuid", &param_value.to_string())]);
+    }
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::Weapons&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::Weapons&gt;`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<WeaponsListError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

@@ -26,7 +26,7 @@ Method | HTTP request | Description
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 **id** | **String** |  | [required] |
-**add_account** | [**AddAccount**](AddAccount.md) |  | [required] |
+**add_account** | Option<[**AddAccount**](AddAccount.md)> |  |  |
 
 ### Return type
 
@@ -46,7 +46,7 @@ Name | Type | Description  | Required | Notes
 
 ## player_aggregate
 
-> Vec<models::PlayerAggregate> player_aggregate(groupby, ordering, additional_filters, aggregates, birthdate, contract_expires, current_team, domestic_league, grid_id, having, id, index_on, is_retired, last_team, metrics, nationality, previous_names, role, soloq_tracked)
+> Vec<models::PlayerAggregate> player_aggregate(groupby, ordering, additional_filters, aggregates, birthdate, contract_expires, current_team, domestic_league, grid_id, having, id, index_on, is_retired, last_team, metrics, nationality, previous_names, role, soloq_tracked, vlr_id)
 
 
 ### Parameters
@@ -73,6 +73,7 @@ Name | Type | Description  | Required | Notes
 **previous_names** | Option<**String**> |  |  |
 **role** | Option<**String**> |  |  |
 **soloq_tracked** | Option<**bool**> |  |  |
+**vlr_id** | Option<**i32**> |  |  |
 
 ### Return type
 
@@ -121,7 +122,7 @@ Name | Type | Description  | Required | Notes
 
 ## player_field_values
 
-> Vec<String> player_field_values(field, ordering, additional_filters, birthdate, contract_expires, current_team, domestic_league, grid_id, id, is_retired, last_team, nationality, previous_names, role, soloq_tracked)
+> Vec<String> player_field_values(field, ordering, additional_filters, birthdate, contract_expires, current_team, domestic_league, grid_id, id, is_retired, last_team, nationality, previous_names, role, soloq_tracked, vlr_id)
 
 
 ### Parameters
@@ -144,6 +145,7 @@ Name | Type | Description  | Required | Notes
 **previous_names** | Option<**String**> |  |  |
 **role** | Option<**String**> |  |  |
 **soloq_tracked** | Option<**bool**> |  |  |
+**vlr_id** | Option<**i32**> |  |  |
 
 ### Return type
 
@@ -191,7 +193,7 @@ Name | Type | Description  | Required | Notes
 
 ## player_list
 
-> Vec<models::Player> player_list(additional_filters, annotations, birthdate, contract_expires, current_team, domestic_league, grid_id, id, is_retired, last_team, nationality, only_values, ordering, previous_names, role, soloq_tracked)
+> Vec<models::Player> player_list(additional_filters, annotations, birthdate, contract_expires, current_team, domestic_league, grid_id, id, is_retired, last_team, nationality, only_values, ordering, previous_names, role, soloq_tracked, vlr_id)
 
 
 ### Parameters
@@ -215,6 +217,7 @@ Name | Type | Description  | Required | Notes
 **previous_names** | Option<**String**> |  |  |
 **role** | Option<**String**> |  |  |
 **soloq_tracked** | Option<**bool**> |  |  |
+**vlr_id** | Option<**i32**> |  |  |
 
 ### Return type
 
@@ -263,7 +266,7 @@ Name | Type | Description  | Required | Notes
 
 ## player_variable_distribution
 
-> Vec<models::ClientOrganizationVariableDistribution200ResponseInner> player_variable_distribution(bucket_size, max, metric, min, additional_filters, birthdate, contract_expires, current_team, domestic_league, grid_id, id, is_retired, last_team, nationality, previous_names, role, soloq_tracked)
+> Vec<models::AgentVariableDistribution200ResponseInner> player_variable_distribution(bucket_size, max, metric, min, additional_filters, birthdate, contract_expires, current_team, domestic_league, grid_id, id, is_retired, last_team, nationality, previous_names, role, soloq_tracked, vlr_id)
 
 
 ### Parameters
@@ -288,10 +291,11 @@ Name | Type | Description  | Required | Notes
 **previous_names** | Option<**String**> |  |  |
 **role** | Option<**String**> |  |  |
 **soloq_tracked** | Option<**bool**> |  |  |
+**vlr_id** | Option<**i32**> |  |  |
 
 ### Return type
 
-[**Vec<models::ClientOrganizationVariableDistribution200ResponseInner>**](ClientOrganization_variable_distribution_200_response_inner.md)
+[**Vec<models::AgentVariableDistribution200ResponseInner>**](Agent_variable_distribution_200_response_inner.md)
 
 ### Authorization
 

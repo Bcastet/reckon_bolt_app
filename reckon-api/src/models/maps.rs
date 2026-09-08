@@ -35,6 +35,14 @@ pub struct Maps {
     pub y_scalar_to_add: Option<Option<f64>>,
     #[serde(rename = "uuid", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub uuid: Option<Option<String>>,
+    #[serde(rename = "splash", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
+    pub splash: Option<Option<String>>,
+    #[serde(rename = "list_view_icon", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
+    pub list_view_icon: Option<Option<String>>,
+    #[serde(rename = "coordinates", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
+    pub coordinates: Option<Option<String>>,
+    #[serde(rename = "tactical_description", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
+    pub tactical_description: Option<Option<String>>,
 }
 
 impl Maps {
@@ -51,6 +59,10 @@ impl Maps {
             x_scalar_to_add: None,
             y_scalar_to_add: None,
             uuid: None,
+            splash: None,
+            list_view_icon: None,
+            coordinates: None,
+            tactical_description: None,
         }
     }
 }

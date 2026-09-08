@@ -19,7 +19,7 @@ Method | HTTP request | Description
 Name | Type | Description  | Required | Notes
 ------------- | ------------- | ------------- | ------------- | -------------
 **id** | **String** |  | [required] |
-**add_account** | [**AddAccount**](AddAccount.md) |  | [required] |
+**add_account** | Option<[**AddAccount**](AddAccount.md)> |  |  |
 
 ### Return type
 

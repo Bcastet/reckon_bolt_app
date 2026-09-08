@@ -14,13 +14,13 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CompetitiveRoundSummariesOtherAbilitiesInner {
     #[serde(rename = "cast_position")]
-    pub cast_position: Box<models::CompetitiveRoundSummariesSmokeAbilitiesInnerCastPosition>,
+    pub cast_position: Box<models::CompetitiveRoundSummariesDeathEventInnerKillerLocation>,
     #[serde(rename = "slot")]
     pub slot: String,
 }
 
 impl CompetitiveRoundSummariesOtherAbilitiesInner {
-    pub fn new(cast_position: models::CompetitiveRoundSummariesSmokeAbilitiesInnerCastPosition, slot: String) -> CompetitiveRoundSummariesOtherAbilitiesInner {
+    pub fn new(cast_position: models::CompetitiveRoundSummariesDeathEventInnerKillerLocation, slot: String) -> CompetitiveRoundSummariesOtherAbilitiesInner {
         CompetitiveRoundSummariesOtherAbilitiesInner {
             cast_position: Box::new(cast_position),
             slot,

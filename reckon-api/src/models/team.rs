@@ -33,6 +33,8 @@ pub struct Team {
     pub manager_discord: Option<Option<String>>,
     #[serde(rename = "grid_id", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub grid_id: Option<Option<i64>>,
+    #[serde(rename = "vlr_id", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
+    pub vlr_id: Option<Option<i64>>,
     #[serde(rename = "domestic_league", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub domestic_league: Option<Option<String>>,
     #[serde(rename = "current_league", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
@@ -56,6 +58,7 @@ impl Team {
             coaching_staff: None,
             manager_discord: None,
             grid_id: None,
+            vlr_id: None,
             domestic_league: None,
             current_league: None,
             next_opponent: None,

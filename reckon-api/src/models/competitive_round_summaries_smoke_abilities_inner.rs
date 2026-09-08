@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct CompetitiveRoundSummariesSmokeAbilitiesInner {
     #[serde(rename = "cast_position")]
-    pub cast_position: Box<models::CompetitiveRoundSummariesSmokeAbilitiesInnerCastPosition>,
+    pub cast_position: Box<models::CompetitiveRoundSummariesDeathEventInnerKillerLocation>,
     #[serde(rename = "duration")]
     pub duration: f64,
     #[serde(rename = "landing_point")]
@@ -26,7 +26,7 @@ pub struct CompetitiveRoundSummariesSmokeAbilitiesInner {
 }
 
 impl CompetitiveRoundSummariesSmokeAbilitiesInner {
-    pub fn new(cast_position: models::CompetitiveRoundSummariesSmokeAbilitiesInnerCastPosition, duration: f64, landing_point: models::CompetitiveRoundSummariesSmokeAbilitiesInnerLandingPoint, is_inferred: bool, slot: String) -> CompetitiveRoundSummariesSmokeAbilitiesInner {
+    pub fn new(cast_position: models::CompetitiveRoundSummariesDeathEventInnerKillerLocation, duration: f64, landing_point: models::CompetitiveRoundSummariesSmokeAbilitiesInnerLandingPoint, is_inferred: bool, slot: String) -> CompetitiveRoundSummariesSmokeAbilitiesInner {
         CompetitiveRoundSummariesSmokeAbilitiesInner {
             cast_position: Box::new(cast_position),
             duration,

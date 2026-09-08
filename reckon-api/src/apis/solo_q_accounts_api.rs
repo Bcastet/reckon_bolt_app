@@ -65,7 +65,7 @@ pub enum SoloQAccountsVariableDistributionError {
 }
 
 
-pub async fn solo_q_accounts_aggregate(configuration: &configuration::Configuration, groupby: Vec<String>, ordering: Vec<String>, additional_filters: Option<serde_json::Value>, aggregates: Option<Vec<String>>, having: Option<serde_json::Value>, index_on: Option<&str>, metrics: Option<Vec<String>>, player: Option<&str>, puuid: Option<&str>) -> Result<Vec<models::SoloQAccountsAggregate>, Error<SoloQAccountsAggregateError>> {
+pub async fn solo_q_accounts_aggregate(configuration: &configuration::Configuration, groupby: Vec<String>, ordering: Vec<String>, additional_filters: Option<serde_json::Value>, aggregates: Option<Vec<String>>, having: Option<serde_json::Value>, index_on: Option<&str>, last_updated: Option<String>, metrics: Option<Vec<String>>, player: Option<&str>, puuid: Option<&str>) -> Result<Vec<models::SoloQAccountsAggregate>, Error<SoloQAccountsAggregateError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_groupby = groupby;
     let p_query_ordering = ordering;
@@ -73,6 +73,7 @@ pub async fn solo_q_accounts_aggregate(configuration: &configuration::Configurat
     let p_query_aggregates = aggregates;
     let p_query_having = having;
     let p_query_index_on = index_on;
+    let p_query_last_updated = last_updated;
     let p_query_metrics = metrics;
     let p_query_player = player;
     let p_query_puuid = puuid;
@@ -100,6 +101,9 @@ pub async fn solo_q_accounts_aggregate(configuration: &configuration::Configurat
     }
     if let Some(ref param_value) = p_query_index_on {
         req_builder = req_builder.query(&[("index_on", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_last_updated {
+        req_builder = req_builder.query(&[("last_updated", &param_value.to_string())]);
     }
     if let Some(ref param_value) = p_query_metrics {
         req_builder = match "multi" {
@@ -200,11 +204,12 @@ pub async fn solo_q_accounts_create(configuration: &configuration::Configuration
     }
 }
 
-pub async fn solo_q_accounts_field_values(configuration: &configuration::Configuration, field: &str, ordering: Vec<String>, additional_filters: Option<serde_json::Value>, player: Option<&str>, puuid: Option<&str>) -> Result<Vec<String>, Error<SoloQAccountsFieldValuesError>> {
+pub async fn solo_q_accounts_field_values(configuration: &configuration::Configuration, field: &str, ordering: Vec<String>, additional_filters: Option<serde_json::Value>, last_updated: Option<String>, player: Option<&str>, puuid: Option<&str>) -> Result<Vec<String>, Error<SoloQAccountsFieldValuesError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_field = field;
     let p_query_ordering = ordering;
     let p_query_additional_filters = additional_filters;
+    let p_query_last_updated = last_updated;
     let p_query_player = player;
     let p_query_puuid = puuid;
 
@@ -217,6 +222,9 @@ pub async fn solo_q_accounts_field_values(configuration: &configuration::Configu
         }
     }
     req_builder = req_builder.query(&[("field", &p_query_field.to_string())]);
+    if let Some(ref param_value) = p_query_last_updated {
+        req_builder = req_builder.query(&[("last_updated", &param_value.to_string())]);
+    }
     req_builder = match "multi" {
         "multi" => req_builder.query(&p_query_ordering.into_iter().map(|p| ("ordering".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
         _ => req_builder.query(&[("ordering", &p_query_ordering.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
@@ -308,10 +316,11 @@ pub async fn solo_q_accounts_get(configuration: &configuration::Configuration, i
     }
 }
 
-pub async fn solo_q_accounts_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, player: Option<&str>, puuid: Option<&str>) -> Result<Vec<models::SoloQAccounts>, Error<SoloQAccountsListError>> {
+pub async fn solo_q_accounts_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, last_updated: Option<String>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, player: Option<&str>, puuid: Option<&str>) -> Result<Vec<models::SoloQAccounts>, Error<SoloQAccountsListError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_additional_filters = additional_filters;
     let p_query_annotations = annotations;
+    let p_query_last_updated = last_updated;
     let p_query_only_values = only_values;
     let p_query_ordering = ordering;
     let p_query_player = player;
@@ -330,6 +339,9 @@ pub async fn solo_q_accounts_list(configuration: &configuration::Configuration, 
             "multi" => req_builder.query(&param_value.into_iter().map(|p| ("annotations".to_owned(), p.to_string())).collect::<Vec<(std::string::String, std::string::String)>>()),
             _ => req_builder.query(&[("annotations", &param_value.into_iter().map(|p| p.to_string()).collect::<Vec<String>>().join(",").to_string())]),
         };
+    }
+    if let Some(ref param_value) = p_query_last_updated {
+        req_builder = req_builder.query(&[("last_updated", &param_value.to_string())]);
     }
     if let Some(ref param_value) = p_query_only_values {
         req_builder = match "multi" {
@@ -432,13 +444,14 @@ pub async fn solo_q_accounts_patch(configuration: &configuration::Configuration,
     }
 }
 
-pub async fn solo_q_accounts_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, player: Option<&str>, puuid: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<SoloQAccountsVariableDistributionError>> {
+pub async fn solo_q_accounts_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, last_updated: Option<String>, player: Option<&str>, puuid: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<SoloQAccountsVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
     let p_query_metric = metric;
     let p_query_min = min;
     let p_query_additional_filters = additional_filters;
+    let p_query_last_updated = last_updated;
     let p_query_player = player;
     let p_query_puuid = puuid;
 
@@ -451,6 +464,9 @@ pub async fn solo_q_accounts_variable_distribution(configuration: &configuration
         }
     }
     req_builder = req_builder.query(&[("bucket_size", &p_query_bucket_size.to_string())]);
+    if let Some(ref param_value) = p_query_last_updated {
+        req_builder = req_builder.query(&[("last_updated", &param_value.to_string())]);
+    }
     req_builder = req_builder.query(&[("max", &p_query_max.to_string())]);
     req_builder = req_builder.query(&[("metric", &p_query_metric.to_string())]);
     req_builder = req_builder.query(&[("min", &p_query_min.to_string())]);
@@ -487,8 +503,8 @@ pub async fn solo_q_accounts_variable_distribution(configuration: &configuration
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;

@@ -1,12 +1,14 @@
-# ClientOrganizationVariableDistribution200ResponseInner
+# GearAggregate
 
 ## Properties
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**bucket** | Option<**i32**> |  | [optional]
-**count** | Option<**i32**> |  | [optional]
-**proportion** | Option<**f64**> |  | [optional]
+**id** | **String** |  | 
+**uuid** | **String** |  | 
+**description** | Option<**String**> |  | [optional]
+**cost** | Option<**i32**> |  | [optional]
+**display_icon** | Option<**String**> |  | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

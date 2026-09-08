@@ -136,6 +136,7 @@ impl From<&str> for ContentType {
 }
 
 pub mod add_account_api;
+pub mod agent_api;
 pub mod aggregate_api;
 pub mod app_api;
 pub mod change_password_api;
@@ -145,11 +146,13 @@ pub mod competitive_game_summaries_api;
 pub mod competitive_games_api;
 pub mod competitive_round_summaries_api;
 pub mod competitive_team_round_summaries_api;
+pub mod competitive_tiers_api;
 pub mod create_api;
 pub mod delete_api;
 pub mod download_api;
 pub mod field_values_api;
 pub mod game_metrics_api;
+pub mod gear_api;
 pub mod get_api;
 pub mod league_api;
 pub mod list_api;
@@ -166,10 +169,16 @@ pub mod scrim_games_api;
 pub mod scrim_round_summaries_api;
 pub mod scrim_team_round_summaries_api;
 pub mod scrims_data_api;
+pub mod seasons_api;
 pub mod solo_q_accounts_api;
+pub mod solo_q_game_summaries_api;
+pub mod solo_q_games_api;
+pub mod solo_q_round_summaries_api;
+pub mod solo_q_team_round_summaries_api;
 pub mod team_api;
 pub mod upload_api;
 pub mod user_api;
 pub mod variable_distribution_api;
+pub mod weapons_api;
 
 pub mod configuration;

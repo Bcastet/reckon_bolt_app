@@ -15,6 +15,10 @@ Name | Type | Description | Notes
 **x_scalar_to_add** | Option<**f64**> |  | [optional]
 **y_scalar_to_add** | Option<**f64**> |  | [optional]
 **uuid** | Option<**String**> |  | [optional]
+**splash** | Option<**String**> |  | [optional]
+**list_view_icon** | Option<**String**> |  | [optional]
+**coordinates** | Option<**String**> |  | [optional]
+**tactical_description** | Option<**String**> |  | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

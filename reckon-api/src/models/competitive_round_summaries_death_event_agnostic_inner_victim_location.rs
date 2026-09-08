@@ -12,16 +12,16 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct CompetitiveRoundSummariesUtilityAbilitiesInnerLandingPoint {
+pub struct CompetitiveRoundSummariesDeathEventAgnosticInnerVictimLocation {
     #[serde(rename = "x")]
     pub x: f64,
     #[serde(rename = "y")]
     pub y: f64,
 }
 
-impl CompetitiveRoundSummariesUtilityAbilitiesInnerLandingPoint {
-    pub fn new(x: f64, y: f64) -> CompetitiveRoundSummariesUtilityAbilitiesInnerLandingPoint {
-        CompetitiveRoundSummariesUtilityAbilitiesInnerLandingPoint {
+impl CompetitiveRoundSummariesDeathEventAgnosticInnerVictimLocation {
+    pub fn new(x: f64, y: f64) -> CompetitiveRoundSummariesDeathEventAgnosticInnerVictimLocation {
+        CompetitiveRoundSummariesDeathEventAgnosticInnerVictimLocation {
             x,
             y,
         }

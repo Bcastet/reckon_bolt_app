@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
@@ -68,6 +68,20 @@ impl LiveGameState {
             .map(|p| p.puuid.clone())
             .filter(|id| !id.is_empty())
             .collect()
+    }
+
+    /// Roster first, then party members — SUMMARY can use a player's PUUID
+    /// even when the viewer is an observer.
+    fn save_candidate_puuids(&self) -> Vec<String> {
+        let mut ids = self.roster_puuids();
+        if let Some(party) = &self.party {
+            for m in &party.members {
+                if !m.puuid.is_empty() && !ids.iter().any(|id| id == &m.puuid) {
+                    ids.push(m.puuid.clone());
+                }
+            }
+        }
+        ids
     }
 }
 
@@ -805,13 +819,29 @@ fn spawn_auto_save_match(
     client_version: &str,
     viewer_puuid: &str,
     live_state: LiveGameState,
+    in_flight: &Arc<Mutex<HashSet<String>>>,
 ) {
     let Some(mid) = live_state.match_id.clone() else {
         crate::journal::info("LiveAPI", "Match ended but no match_id in last state");
         return;
     };
     if already_saved_match(app_handle, &mid) {
+        crate::journal::info(
+            "LiveAPI",
+            &format!("Skip save for {}: already on disk", mid),
+        );
         return;
+    }
+    {
+        let mut g = in_flight.lock().unwrap();
+        if g.contains(&mid) {
+            crate::journal::info(
+                "LiveAPI",
+                &format!("Skip save for {}: already in flight", mid),
+            );
+            return;
+        }
+        g.insert(mid.clone());
     }
     let app_h = app_handle.clone();
     let client_c = client.clone();
@@ -820,12 +850,23 @@ fn spawn_auto_save_match(
     let et = entitlement_token.to_string();
     let cv = client_version.to_string();
     let viewer = viewer_puuid.to_string();
+    let in_flight_c = in_flight.clone();
     tauri::async_runtime::spawn(async move {
         auto_save_match(
             &app_h, &client_c, &shard_c, &mid, &at, &et, &cv, &viewer, &live_state,
         )
         .await;
+        in_flight_c.lock().unwrap().remove(&mid);
+        crate::journal::info("LiveAPI", &format!("Save task finished for {}", mid));
     });
+}
+
+async fn refresh_save_tokens(
+    client: &reqwest::Client,
+) -> Result<(String, String, String), String> {
+    let lockfile = lockfile::read_lockfile()?;
+    let e = auth::get_entitlements(client, &lockfile).await?;
+    Ok((e.access_token, e.token, e.subject))
 }
 
 async fn auto_save_match(
@@ -839,11 +880,25 @@ async fn auto_save_match(
     viewer_puuid: &str,
     live_state: &LiveGameState,
 ) {
-    crate::journal::info("LiveAPI", &format!("Match ended — fetching details for {}", match_id));
+    let roster = live_state.save_candidate_puuids();
+    crate::journal::info(
+        "LiveAPI",
+        &format!(
+            "Match ended — fetching details for {} spectating={} roster={} party={} score={:?}:{:?} map={:?}",
+            match_id,
+            live_state.is_spectating,
+            roster.len(),
+            live_state.party.as_ref().map(|p| p.members.len()).unwrap_or(0),
+            live_state.spectate_score_ally,
+            live_state.spectate_score_enemy,
+            live_state.map_name,
+        ),
+    );
+    log_shooter_match_details_activity();
 
-    let roster = live_state.roster_puuids();
-    // First attempt is immediate. On NONSELF (spectator/coach) we switch to SUMMARY
-    // via roster players instead of retrying the forbidden PD endpoint.
+    let mut access = auth_token.to_string();
+    let mut entitlement = entitlement_token.to_string();
+    let mut viewer = viewer_puuid.to_string();
     let delays_secs: &[u64] = &[0, 5, 10, 20, 30, 60];
 
     for (attempt, &delay) in delays_secs.iter().enumerate() {
@@ -851,17 +906,49 @@ async fn auto_save_match(
             tokio::time::sleep(Duration::from_secs(delay)).await;
         }
         if already_saved_match(app, match_id) {
+            crate::journal::info(
+                "LiveAPI",
+                &format!("Match {} already saved during retries — stopping", match_id),
+            );
             return;
+        }
+
+        match refresh_save_tokens(client).await {
+            Ok((a, e, sub)) => {
+                access = a;
+                entitlement = e;
+                viewer = sub;
+                crate::journal::info(
+                    "LiveAPI",
+                    &format!(
+                        "Save tokens refreshed for attempt {}/{} (viewer={}…)",
+                        attempt + 1,
+                        delays_secs.len(),
+                        &viewer[..8.min(viewer.len())]
+                    ),
+                );
+            }
+            Err(e) => {
+                crate::journal::info(
+                    "LiveAPI",
+                    &format!(
+                        "Save token refresh failed on attempt {}/{}: {} — using previous tokens",
+                        attempt + 1,
+                        delays_secs.len(),
+                        e
+                    ),
+                );
+            }
         }
 
         match api::fetch_match_json_any_source(
             client, shard, match_id,
-            auth_token, entitlement_token, client_version,
-            viewer_puuid, &roster,
+            &access, &entitlement, client_version,
+            &viewer, &roster,
         ).await {
             Ok(raw_json) => {
                 let raw_json = enrich_match_json_names(
-                    client, shard, auth_token, entitlement_token, client_version, &raw_json,
+                    client, shard, &access, &entitlement, client_version, &raw_json,
                 ).await;
 
                 match commit_saved_match(app, match_id, &raw_json, live_state) {
@@ -880,8 +967,11 @@ async fn auto_save_match(
                 return;
             }
             Err(e) => {
-                crate::journal::info("LiveAPI", &format!("Attempt {}/{} failed for {}: {}",
-                    attempt + 1, delays_secs.len(), match_id, e));
+                crate::journal::info("LiveAPI", &format!(
+                    "Attempt {}/{} failed for {} errorCode={}: {}",
+                    attempt + 1, delays_secs.len(), match_id,
+                    api::riot_error_code(&e), e
+                ));
             }
         }
     }
@@ -998,6 +1088,44 @@ fn read_shooter_log_match_hint() -> ShooterLogMatchHint {
     ShooterLogMatchHint {
         any_id,
         stats_ready_id,
+    }
+}
+
+fn log_shooter_match_details_activity() {
+    let Some(tail) = shooter_log_tail(2 * 1024 * 1024) else {
+        crate::journal::info("ShooterLog", "ShooterGame.log not found or unreadable");
+        return;
+    };
+
+    let hits: Vec<&str> = tail
+        .lines()
+        .filter(|l| {
+            l.contains("MatchDetails_FetchMatchDetails") || l.contains("match-details/v1/matches/")
+        })
+        .rev()
+        .take(8)
+        .collect();
+
+    if hits.is_empty() {
+        crate::journal::info(
+            "ShooterLog",
+            "No match-details lines in last 2MB of ShooterGame.log",
+        );
+        return;
+    }
+
+    crate::journal::info(
+        "ShooterLog",
+        &format!("Last {} match-details line(s) from ShooterGame.log:", hits.len()),
+    );
+    for line in hits.into_iter().rev() {
+        let one_line = line.trim().replace('\t', " ");
+        let clipped: String = if one_line.chars().count() > 500 {
+            format!("{}…", one_line.chars().take(500).collect::<String>())
+        } else {
+            one_line
+        };
+        crate::journal::info("ShooterLog", &clipped);
     }
 }
 
@@ -1778,7 +1906,8 @@ pub fn start_live_poller(
         let mut prev_phase: Option<GamePhase> = None;
         let mut last_ingame_state: Option<LiveGameState> = None;
         let mut last_details_probe = std::time::Instant::now();
-        let mut save_spawned_for: Option<String> = None;
+        let saves_in_flight: Arc<Mutex<HashSet<String>>> = Arc::new(Mutex::new(HashSet::new()));
+        let mut observer_probe_done = false;
         let mut agents: HashMap<String, String> = HashMap::new();
         let mut maps: HashMap<String, String> = HashMap::new();
         let mut static_data_loaded = false;
@@ -1931,6 +2060,9 @@ pub fn start_live_poller(
                 let phase_changed = old_phase != Some(phase);
                 if phase_changed {
                     crate::journal::info("LiveAPI", &format!("Phase: {:?} -> {:?} (spectating={})", old_phase, phase, is_spectating));
+                    if phase == GamePhase::InGame {
+                        observer_probe_done = false;
+                    }
                 }
                 prev_phase = Some(phase);
 
@@ -1981,20 +2113,28 @@ pub fn start_live_poller(
                                 }
                             }
                             if let Some(ref mid) = last_state.match_id {
-                                crate::journal::info("LiveAPI", &format!("Match ended (old_phase={:?}), saving {}", old_phase, mid));
-                                if save_spawned_for.as_ref() != Some(mid) {
-                                    save_spawned_for = Some(mid.clone());
-                                    spawn_auto_save_match(
-                                        &app_handle,
-                                        &client,
-                                        &shard,
-                                        &entitlements.access_token,
-                                        &entitlements.token,
-                                        &client_version,
-                                        &entitlements.subject,
-                                        last_state,
-                                    );
-                                }
+                                crate::journal::info(
+                                    "LiveAPI",
+                                    &format!(
+                                        "Match ended (old_phase={:?}), saving {} spectating={} roster={} party={}",
+                                        old_phase,
+                                        mid,
+                                        last_state.is_spectating,
+                                        last_state.roster_puuids().len(),
+                                        last_state.party.as_ref().map(|p| p.members.len()).unwrap_or(0),
+                                    ),
+                                );
+                                spawn_auto_save_match(
+                                    &app_handle,
+                                    &client,
+                                    &shard,
+                                    &entitlements.access_token,
+                                    &entitlements.token,
+                                    &client_version,
+                                    &entitlements.subject,
+                                    last_state,
+                                    &saves_in_flight,
+                                );
                             } else {
                                 crate::journal::info("LiveAPI", "Match ended but no match_id in last state or ShooterGame.log");
                             }
@@ -2075,6 +2215,7 @@ pub fn start_live_poller(
                     }
                     GamePhase::InGame => {
                         let mut auth_refresh_needed = false;
+                        let mut used_auth_fallback = false;
                         let result = if is_spectating {
                             match fetch_coregame_state(
                                 &client, &glz_base, &entitlements.subject,
@@ -2098,6 +2239,7 @@ pub fn start_live_poller(
                                     crate::journal::info("LiveAPI", &format!("Spectator: GLZ failed ({}), using presence fallback", e));
                                     if is_auth_failure(&e) {
                                         auth_refresh_needed = true;
+                                        used_auth_fallback = true;
                                     }
                                     build_spectator_state(&pres.private, &maps, GamePhase::InGame)
                                 }
@@ -2122,6 +2264,9 @@ pub fn start_live_poller(
 
                         match result {
                             Ok(mut game_state) => {
+                                game_state.party = pres.party.clone().or_else(|| {
+                                    last_ingame_state.as_ref().and_then(|s| s.party.clone())
+                                });
                                 let hint = read_shooter_log_match_hint();
                                 fill_match_id_if_missing(&mut game_state, &last_ingame_state, &hint);
 
@@ -2139,6 +2284,9 @@ pub fn start_live_poller(
                                             game_state.ally_team = prev.ally_team.clone();
                                             game_state.enemy_team = prev.enemy_team.clone();
                                         }
+                                        if game_state.party.is_none() {
+                                            game_state.party = prev.party.clone();
+                                        }
                                     }
                                 }
 
@@ -2154,38 +2302,52 @@ pub fn start_live_poller(
                                 }
                                 let _ = app_handle.emit("live-game-state", &game_state);
 
-                                let stats_screen = incoming_empty && had_roster;
+                                // Empty roster is the stats screen only when GLZ actually
+                                // dropped the players — not when our token expired.
+                                let stats_screen = incoming_empty && had_roster && !used_auth_fallback;
                                 let ready_from_log = hint.stats_ready_id.filter(|ready_id| {
                                     game_state.match_id.as_ref() == Some(ready_id)
                                 });
+                                if incoming_empty || ready_from_log.is_some() {
+                                    crate::journal::info(
+                                        "LiveAPI",
+                                        &format!(
+                                            "Save-check match={:?} incoming_empty={} had_roster={} auth_fallback={} log_ready={} stats_screen={} score={:?}:{:?}",
+                                            game_state.match_id,
+                                            incoming_empty,
+                                            had_roster,
+                                            used_auth_fallback,
+                                            ready_from_log.is_some(),
+                                            stats_screen,
+                                            game_state.spectate_score_ally,
+                                            game_state.spectate_score_enemy,
+                                        ),
+                                    );
+                                }
                                 if (stats_screen || ready_from_log.is_some())
                                     && game_state.match_id.is_some()
                                 {
                                     let mid = game_state.match_id.clone().unwrap();
-                                    if save_spawned_for.as_ref() != Some(&mid)
-                                        && !already_saved_match(&app_handle, &mid)
-                                    {
-                                        crate::journal::info(
-                                            "LiveAPI",
-                                            &format!(
-                                                "Match {} ending (stats_screen={}, log_ready={}) — saving now",
-                                                mid,
-                                                stats_screen,
-                                                ready_from_log.is_some()
-                                            ),
-                                        );
-                                        save_spawned_for = Some(mid);
-                                        spawn_auto_save_match(
-                                            &app_handle,
-                                            &client,
-                                            &shard,
-                                            &entitlements.access_token,
-                                            &entitlements.token,
-                                            &client_version,
-                                            &entitlements.subject,
-                                            game_state,
-                                        );
-                                    }
+                                    crate::journal::info(
+                                        "LiveAPI",
+                                        &format!(
+                                            "Match {} ending (stats_screen={}, log_ready={}) — saving now",
+                                            mid,
+                                            stats_screen,
+                                            ready_from_log.is_some()
+                                        ),
+                                    );
+                                    spawn_auto_save_match(
+                                        &app_handle,
+                                        &client,
+                                        &shard,
+                                        &entitlements.access_token,
+                                        &entitlements.token,
+                                        &client_version,
+                                        &entitlements.subject,
+                                        game_state,
+                                        &saves_in_flight,
+                                    );
                                 }
 
                                 if auth_refresh_needed {
@@ -2210,9 +2372,7 @@ pub fn start_live_poller(
                             last_details_probe = std::time::Instant::now();
                             if let Some(ls) = last_ingame_state.clone() {
                                 if let Some(mid) = ls.match_id.clone() {
-                                    if save_spawned_for.as_ref() != Some(&mid)
-                                        && !already_saved_match(&app_handle, &mid)
-                                    {
+                                    if !already_saved_match(&app_handle, &mid) {
                                         match api::fetch_match_details_raw(
                                             &client, &shard, &mid,
                                             &entitlements.access_token, &entitlements.token,
@@ -2220,7 +2380,6 @@ pub fn start_live_poller(
                                         ).await {
                                             Ok(raw_json) => {
                                                 crate::journal::info("LiveAPI", &format!("In-game probe succeeded — match {} details available, saving", mid));
-                                                save_spawned_for = Some(mid.clone());
                                                 let raw_json = enrich_match_json_names(
                                                     &client, &shard,
                                                     &entitlements.access_token, &entitlements.token,
@@ -2230,9 +2389,72 @@ pub fn start_live_poller(
                                                     crate::journal::info("LiveAPI", &format!("Failed to save probed match: {}", e));
                                                 }
                                             }
-                                            Err(_) => {} // expected — match still in progress
+                                            Err(e) => {
+                                                crate::journal::info(
+                                                    "LiveAPI",
+                                                    &format!(
+                                                        "In-game probe errorCode={} for {} (expected while match in progress)",
+                                                        api::riot_error_code(&e),
+                                                        mid
+                                                    ),
+                                                );
+                                            }
                                         }
                                     }
+                                }
+                            }
+                        }
+
+                        // One-shot observer probe: log whether PD is NONSELF and whether
+                        // SUMMARY already has a file, without holding the save lock.
+                        if spectating && !observer_probe_done {
+                            if let Some(ls) = last_ingame_state.clone() {
+                                if ls.match_id.is_some() && !ls.save_candidate_puuids().is_empty() {
+                                    observer_probe_done = true;
+                                    let mid = ls.match_id.clone().unwrap();
+                                    let roster = ls.save_candidate_puuids();
+                                    let client_p = client.clone();
+                                    let shard_p = shard.clone();
+                                    let at = entitlements.access_token.clone();
+                                    let et = entitlements.token.clone();
+                                    let cv = client_version.clone();
+                                    let viewer = entitlements.subject.clone();
+                                    crate::journal::info(
+                                        "LiveAPI",
+                                        &format!(
+                                            "Observer capability probe for {} roster={}",
+                                            mid,
+                                            roster.len()
+                                        ),
+                                    );
+                                    tauri::async_runtime::spawn(async move {
+                                        match api::fetch_match_json_any_source(
+                                            &client_p, &shard_p, &mid, &at, &et, &cv, &viewer, &roster,
+                                        )
+                                        .await
+                                        {
+                                            Ok(json) => {
+                                                crate::journal::info(
+                                                    "LiveAPI",
+                                                    &format!(
+                                                        "Observer probe GOT {} bytes for {} (unexpected while in progress — file exists)",
+                                                        json.len(),
+                                                        mid
+                                                    ),
+                                                );
+                                            }
+                                            Err(e) => {
+                                                crate::journal::info(
+                                                    "LiveAPI",
+                                                    &format!(
+                                                        "Observer probe result errorCode={}: {}",
+                                                        api::riot_error_code(&e),
+                                                        e
+                                                    ),
+                                                );
+                                            }
+                                        }
+                                    });
                                 }
                             }
                         }

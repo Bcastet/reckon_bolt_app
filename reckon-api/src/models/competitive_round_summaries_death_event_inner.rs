@@ -15,6 +15,8 @@ use serde::{Deserialize, Serialize};
 pub struct CompetitiveRoundSummariesDeathEventInner {
     #[serde(rename = "killer_agent", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub killer_agent: Option<Option<String>>,
+    #[serde(rename = "killer_location")]
+    pub killer_location: Box<models::CompetitiveRoundSummariesDeathEventInnerKillerLocation>,
     #[serde(rename = "killer_weapon", deserialize_with = "Option::deserialize")]
     pub killer_weapon: Option<String>,
     #[serde(rename = "killer_ability", deserialize_with = "Option::deserialize")]
@@ -31,6 +33,8 @@ pub struct CompetitiveRoundSummariesDeathEventInner {
     pub victim_agent: String,
     #[serde(rename = "victim_weapon")]
     pub victim_weapon: String,
+    #[serde(rename = "victim_location")]
+    pub victim_location: Box<models::CompetitiveRoundSummariesDeathEventInnerKillerLocation>,
     #[serde(rename = "victim_player")]
     pub victim_player: String,
     #[serde(rename = "assistants")]
@@ -44,9 +48,10 @@ pub struct CompetitiveRoundSummariesDeathEventInner {
 }
 
 impl CompetitiveRoundSummariesDeathEventInner {
-    pub fn new(killer_weapon: Option<String>, killer_ability: Option<String>, is_headshot: bool, was_traded: bool, is_first_blood: bool, is_first_true_blood: bool, victim_agent: String, victim_weapon: String, victim_player: String, assistants: Vec<models::CompetitiveRoundSummariesDeathEventInnerAssistantsInner>, time_in_round: f64, situation_before_kill: String, situation_after_kill: String) -> CompetitiveRoundSummariesDeathEventInner {
+    pub fn new(killer_location: models::CompetitiveRoundSummariesDeathEventInnerKillerLocation, killer_weapon: Option<String>, killer_ability: Option<String>, is_headshot: bool, was_traded: bool, is_first_blood: bool, is_first_true_blood: bool, victim_agent: String, victim_weapon: String, victim_location: models::CompetitiveRoundSummariesDeathEventInnerKillerLocation, victim_player: String, assistants: Vec<models::CompetitiveRoundSummariesDeathEventInnerAssistantsInner>, time_in_round: f64, situation_before_kill: String, situation_after_kill: String) -> CompetitiveRoundSummariesDeathEventInner {
         CompetitiveRoundSummariesDeathEventInner {
             killer_agent: None,
+            killer_location: Box::new(killer_location),
             killer_weapon,
             killer_ability,
             is_headshot,
@@ -55,6 +60,7 @@ impl CompetitiveRoundSummariesDeathEventInner {
             is_first_true_blood,
             victim_agent,
             victim_weapon,
+            victim_location: Box::new(victim_location),
             victim_player,
             assistants,
             time_in_round,

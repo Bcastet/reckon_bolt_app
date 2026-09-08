@@ -21,8 +21,12 @@ pub struct PatchedSoloQAccounts {
     pub account_name: Option<String>,
     #[serde(rename = "rank_tier", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub rank_tier: Option<Option<i32>>,
+    #[serde(rename = "ranked_rating", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
+    pub ranked_rating: Option<Option<i32>>,
     #[serde(rename = "server", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub server: Option<Option<String>>,
+    #[serde(rename = "last_updated", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
+    pub last_updated: Option<Option<String>>,
     #[serde(rename = "player", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub player: Option<Option<String>>,
 }
@@ -34,7 +38,9 @@ impl PatchedSoloQAccounts {
             puuid: None,
             account_name: None,
             rank_tier: None,
+            ranked_rating: None,
             server: None,
+            last_updated: None,
             player: None,
         }
     }

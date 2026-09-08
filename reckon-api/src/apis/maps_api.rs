@@ -326,7 +326,7 @@ pub async fn maps_list(configuration: &configuration::Configuration, additional_
     }
 }
 
-pub async fn maps_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, id: Option<&str>, uuid: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<MapsVariableDistributionError>> {
+pub async fn maps_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, id: Option<&str>, uuid: Option<&str>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<MapsVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -381,8 +381,8 @@ pub async fn maps_variable_distribution(configuration: &configuration::Configura
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;

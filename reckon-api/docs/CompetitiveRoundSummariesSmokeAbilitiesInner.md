@@ -4,7 +4,7 @@
 
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
-**cast_position** | [**models::CompetitiveRoundSummariesSmokeAbilitiesInnerCastPosition**](CompetitiveRoundSummariesSmokeAbilitiesInnerCastPosition.md) |  | 
+**cast_position** | [**models::CompetitiveRoundSummariesDeathEventInnerKillerLocation**](CompetitiveRoundSummariesDeathEventInnerKillerLocation.md) |  | 
 **duration** | **f64** |  | 
 **landing_point** | [**models::CompetitiveRoundSummariesSmokeAbilitiesInnerLandingPoint**](CompetitiveRoundSummariesSmokeAbilitiesInnerLandingPoint.md) |  | 
 **is_inferred** | **bool** |  | 

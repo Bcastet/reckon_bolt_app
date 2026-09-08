@@ -13,18 +13,18 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
 pub struct AddAccount {
-    /// Account puuid
-    #[serde(rename = "puuid")]
-    pub puuid: String,
-    /// Account name, in the form of riotId#riotTagline
+    /// Account puuid. Ignored when account_name is provided.
+    #[serde(rename = "puuid", skip_serializing_if = "Option::is_none")]
+    pub puuid: Option<String>,
+    /// Account name, in the form of riotId#riotTagline. When set, puuid is fetched from the Riot Account API.
     #[serde(rename = "account_name", skip_serializing_if = "Option::is_none")]
     pub account_name: Option<String>,
 }
 
 impl AddAccount {
-    pub fn new(puuid: String) -> AddAccount {
+    pub fn new() -> AddAccount {
         AddAccount {
-            puuid,
+            puuid: None,
             account_name: None,
         }
     }

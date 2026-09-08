@@ -10,13 +10,13 @@ Name | Type | Description | Notes
 **kills** | **i32** |  | 
 **deaths** | **i32** |  | 
 **assists** | **i32** |  | 
-**agent** | **String** |  | 
 **kpr** | Option<**f64**> |  | [optional]
 **dpr** | Option<**f64**> |  | [optional]
 **impact** | Option<**f64**> |  | [optional]
 **adr** | Option<**f64**> |  | [optional]
 **kast** | Option<**f64**> |  | [optional]
 **rating_hltv** | Option<**f64**> |  | [optional]
+**rating_vlr** | Option<**f64**> |  | [optional]
 **combat_score** | Option<**f64**> |  | [optional]
 **win** | **bool** |  | 
 **participant_id** | Option<**i32**> |  | [optional]
@@ -31,6 +31,7 @@ Name | Type | Description | Notes
 **rounds_lost** | Option<**i32**> |  | [optional]
 **game_id** | **String** |  | 
 **ig_name** | **String** |  | 
+**agent** | **String** |  | 
 **player** | **String** |  | 
 **team1** | **String** |  | 
 **team2** | **String** |  | 

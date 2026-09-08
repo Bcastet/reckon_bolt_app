@@ -8,7 +8,9 @@ Name | Type | Description | Notes
 **puuid** | Option<**String**> |  | [optional]
 **account_name** | Option<**String**> |  | [optional]
 **rank_tier** | Option<**i32**> |  | [optional]
+**ranked_rating** | Option<**i32**> |  | [optional]
 **server** | Option<**String**> |  | [optional]
+**last_updated** | Option<**String**> |  | [optional]
 **player** | Option<**String**> |  | [optional]
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

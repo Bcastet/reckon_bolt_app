@@ -1,0 +1,264 @@
+# \SoloQTeamRoundSummariesApi
+
+All URIs are relative to *http://localhost*
+
+Method | HTTP request | Description
+------------- | ------------- | -------------
+[**solo_q_team_round_summaries_aggregate**](SoloQTeamRoundSummariesApi.md#solo_q_team_round_summaries_aggregate) | **GET** /SoloQTeamRoundSummaries/operations/aggregate | 
+[**solo_q_team_round_summaries_field_values**](SoloQTeamRoundSummariesApi.md#solo_q_team_round_summaries_field_values) | **GET** /SoloQTeamRoundSummaries/operations/field-values | 
+[**solo_q_team_round_summaries_get**](SoloQTeamRoundSummariesApi.md#solo_q_team_round_summaries_get) | **GET** /SoloQTeamRoundSummaries/item/{id} | 
+[**solo_q_team_round_summaries_list**](SoloQTeamRoundSummariesApi.md#solo_q_team_round_summaries_list) | **GET** /SoloQTeamRoundSummaries/list | 
+[**solo_q_team_round_summaries_variable_distribution**](SoloQTeamRoundSummariesApi.md#solo_q_team_round_summaries_variable_distribution) | **GET** /SoloQTeamRoundSummaries/operations/variable-distribution | 
+
+
+
+## solo_q_team_round_summaries_aggregate
+
+> Vec<models::SoloQTeamRoundSummariesAggregate> solo_q_team_round_summaries_aggregate(groupby, ordering, additional_filters, aggregates, assists, attack_pattern_full, attack_pattern_short, bomb_site, combat_score, damages, date, deaths, defense_pattern_full, defense_pattern_short, first_blood, first_death, first_true_blood, first_true_death, game, having, id, index_on, kast, kills, map, metrics, round_eco_type, round_eco_type_no_bonus, round_end, round_index, side)
+
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**groupby** | [**Vec<String>**](String.md) | Fields to be grouped | [required] |
+**ordering** | [**Vec<String>**](String.md) | Order by | [required] |
+**additional_filters** | Option<[**serde_json::Value**](SerdeJson__Value.md)> | Other filters using lookups |  |
+**aggregates** | Option<[**Vec<String>**](String.md)> | Expressions to compute |  |
+**assists** | Option<**i32**> |  |  |
+**attack_pattern_full** | Option<**String**> |  |  |
+**attack_pattern_short** | Option<**String**> |  |  |
+**bomb_site** | Option<**String**> |  |  |
+**combat_score** | Option<**i32**> |  |  |
+**damages** | Option<**i32**> |  |  |
+**date** | Option<**String**> |  |  |
+**deaths** | Option<**i32**> |  |  |
+**defense_pattern_full** | Option<**String**> |  |  |
+**defense_pattern_short** | Option<**String**> |  |  |
+**first_blood** | Option<**bool**> |  |  |
+**first_death** | Option<**bool**> |  |  |
+**first_true_blood** | Option<**bool**> |  |  |
+**first_true_death** | Option<**bool**> |  |  |
+**game** | Option<**String**> |  |  |
+**having** | Option<[**serde_json::Value**](SerdeJson__Value.md)> | Other filters using lookups |  |
+**id** | Option<**String**> |  |  |
+**index_on** | Option<**String**> | Index results on a column |  |
+**kast** | Option<**i32**> |  |  |
+**kills** | Option<**i32**> |  |  |
+**map** | Option<**String**> |  |  |
+**metrics** | Option<[**Vec<String>**](String.md)> | Metrics to compute |  |
+**round_eco_type** | Option<**String**> |  |  |
+**round_eco_type_no_bonus** | Option<**String**> |  |  |
+**round_end** | Option<**String**> |  |  |
+**round_index** | Option<**i32**> |  |  |
+**side** | Option<**String**> |  |  |
+
+### Return type
+
+[**Vec<models::SoloQTeamRoundSummariesAggregate>**](SoloQTeamRoundSummariesAggregate.md)
+
+### Authorization
+
+[tokenAuth](../README.md#tokenAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## solo_q_team_round_summaries_field_values
+
+> Vec<String> solo_q_team_round_summaries_field_values(field, ordering, additional_filters, assists, attack_pattern_full, attack_pattern_short, bomb_site, combat_score, damages, date, deaths, defense_pattern_full, defense_pattern_short, first_blood, first_death, first_true_blood, first_true_death, game, id, kast, kills, map, round_eco_type, round_eco_type_no_bonus, round_end, round_index, side)
+
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**field** | **String** | Field to retrieve the unique values from | [required] |
+**ordering** | [**Vec<String>**](String.md) | Order by | [required] |
+**additional_filters** | Option<[**serde_json::Value**](SerdeJson__Value.md)> | Other filters using lookups |  |
+**assists** | Option<**i32**> |  |  |
+**attack_pattern_full** | Option<**String**> |  |  |
+**attack_pattern_short** | Option<**String**> |  |  |
+**bomb_site** | Option<**String**> |  |  |
+**combat_score** | Option<**i32**> |  |  |
+**damages** | Option<**i32**> |  |  |
+**date** | Option<**String**> |  |  |
+**deaths** | Option<**i32**> |  |  |
+**defense_pattern_full** | Option<**String**> |  |  |
+**defense_pattern_short** | Option<**String**> |  |  |
+**first_blood** | Option<**bool**> |  |  |
+**first_death** | Option<**bool**> |  |  |
+**first_true_blood** | Option<**bool**> |  |  |
+**first_true_death** | Option<**bool**> |  |  |
+**game** | Option<**String**> |  |  |
+**id** | Option<**String**> |  |  |
+**kast** | Option<**i32**> |  |  |
+**kills** | Option<**i32**> |  |  |
+**map** | Option<**String**> |  |  |
+**round_eco_type** | Option<**String**> |  |  |
+**round_eco_type_no_bonus** | Option<**String**> |  |  |
+**round_end** | Option<**String**> |  |  |
+**round_index** | Option<**i32**> |  |  |
+**side** | Option<**String**> |  |  |
+
+### Return type
+
+**Vec<String>**
+
+### Authorization
+
+[tokenAuth](../README.md#tokenAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## solo_q_team_round_summaries_get
+
+> models::SoloQTeamRoundSummaries solo_q_team_round_summaries_get(id)
+
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**id** | **String** |  | [required] |
+
+### Return type
+
+[**models::SoloQTeamRoundSummaries**](SoloQTeamRoundSummaries.md)
+
+### Authorization
+
+[tokenAuth](../README.md#tokenAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## solo_q_team_round_summaries_list
+
+> Vec<models::SoloQTeamRoundSummaries> solo_q_team_round_summaries_list(additional_filters, annotations, assists, attack_pattern_full, attack_pattern_short, bomb_site, combat_score, damages, date, deaths, defense_pattern_full, defense_pattern_short, first_blood, first_death, first_true_blood, first_true_death, game, id, kast, kills, map, only_values, ordering, round_eco_type, round_eco_type_no_bonus, round_end, round_index, side)
+
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**additional_filters** | Option<[**serde_json::Value**](SerdeJson__Value.md)> | Other filters using lookups |  |
+**annotations** | Option<[**Vec<String>**](String.md)> | Additional fiedls (joins,...) |  |
+**assists** | Option<**i32**> |  |  |
+**attack_pattern_full** | Option<**String**> |  |  |
+**attack_pattern_short** | Option<**String**> |  |  |
+**bomb_site** | Option<**String**> |  |  |
+**combat_score** | Option<**i32**> |  |  |
+**damages** | Option<**i32**> |  |  |
+**date** | Option<**String**> |  |  |
+**deaths** | Option<**i32**> |  |  |
+**defense_pattern_full** | Option<**String**> |  |  |
+**defense_pattern_short** | Option<**String**> |  |  |
+**first_blood** | Option<**bool**> |  |  |
+**first_death** | Option<**bool**> |  |  |
+**first_true_blood** | Option<**bool**> |  |  |
+**first_true_death** | Option<**bool**> |  |  |
+**game** | Option<**String**> |  |  |
+**id** | Option<**String**> |  |  |
+**kast** | Option<**i32**> |  |  |
+**kills** | Option<**i32**> |  |  |
+**map** | Option<**String**> |  |  |
+**only_values** | Option<[**Vec<String>**](String.md)> | Only get the specified fields |  |
+**ordering** | Option<[**Vec<String>**](String.md)> | Order by |  |
+**round_eco_type** | Option<**String**> |  |  |
+**round_eco_type_no_bonus** | Option<**String**> |  |  |
+**round_end** | Option<**String**> |  |  |
+**round_index** | Option<**i32**> |  |  |
+**side** | Option<**String**> |  |  |
+
+### Return type
+
+[**Vec<models::SoloQTeamRoundSummaries>**](SoloQTeamRoundSummaries.md)
+
+### Authorization
+
+[tokenAuth](../README.md#tokenAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+
+## solo_q_team_round_summaries_variable_distribution
+
+> Vec<models::AgentVariableDistribution200ResponseInner> solo_q_team_round_summaries_variable_distribution(bucket_size, max, metric, min, additional_filters, assists, attack_pattern_full, attack_pattern_short, bomb_site, combat_score, damages, date, deaths, defense_pattern_full, defense_pattern_short, first_blood, first_death, first_true_blood, first_true_death, game, id, kast, kills, map, round_eco_type, round_eco_type_no_bonus, round_end, round_index, side)
+
+
+### Parameters
+
+
+Name | Type | Description  | Required | Notes
+------------- | ------------- | ------------- | ------------- | -------------
+**bucket_size** | **i32** | Bucket size | [required] |
+**max** | **i32** | Max threshold | [required] |
+**metric** | **String** | Metric to get distribution from | [required] |
+**min** | **i32** | Min threshold | [required] |
+**additional_filters** | Option<[**serde_json::Value**](SerdeJson__Value.md)> | Other filters using lookups |  |
+**assists** | Option<**i32**> |  |  |
+**attack_pattern_full** | Option<**String**> |  |  |
+**attack_pattern_short** | Option<**String**> |  |  |
+**bomb_site** | Option<**String**> |  |  |
+**combat_score** | Option<**i32**> |  |  |
+**damages** | Option<**i32**> |  |  |
+**date** | Option<**String**> |  |  |
+**deaths** | Option<**i32**> |  |  |
+**defense_pattern_full** | Option<**String**> |  |  |
+**defense_pattern_short** | Option<**String**> |  |  |
+**first_blood** | Option<**bool**> |  |  |
+**first_death** | Option<**bool**> |  |  |
+**first_true_blood** | Option<**bool**> |  |  |
+**first_true_death** | Option<**bool**> |  |  |
+**game** | Option<**String**> |  |  |
+**id** | Option<**String**> |  |  |
+**kast** | Option<**i32**> |  |  |
+**kills** | Option<**i32**> |  |  |
+**map** | Option<**String**> |  |  |
+**round_eco_type** | Option<**String**> |  |  |
+**round_eco_type_no_bonus** | Option<**String**> |  |  |
+**round_end** | Option<**String**> |  |  |
+**round_index** | Option<**i32**> |  |  |
+**side** | Option<**String**> |  |  |
+
+### Return type
+
+[**Vec<models::AgentVariableDistribution200ResponseInner>**](Agent_variable_distribution_200_response_inner.md)
+
+### Authorization
+
+[tokenAuth](../README.md#tokenAuth)
+
+### HTTP request headers
+
+- **Content-Type**: Not defined
+- **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+

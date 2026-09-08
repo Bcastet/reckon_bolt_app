@@ -167,7 +167,7 @@ Name | Type | Description  | Required | Notes
 
 ## competitive_draft_slots_variable_distribution
 
-> Vec<models::ClientOrganizationVariableDistribution200ResponseInner> competitive_draft_slots_variable_distribution(bucket_size, max, metric, min, additional_filters, draft_action_id, league, map, phase, series, split, team1, team2, teams, r#type)
+> Vec<models::AgentVariableDistribution200ResponseInner> competitive_draft_slots_variable_distribution(bucket_size, max, metric, min, additional_filters, draft_action_id, league, map, phase, series, split, team1, team2, teams, r#type)
 
 
 ### Parameters
@@ -193,7 +193,7 @@ Name | Type | Description  | Required | Notes
 
 ### Return type
 
-[**Vec<models::ClientOrganizationVariableDistribution200ResponseInner>**](ClientOrganization_variable_distribution_200_response_inner.md)
+[**Vec<models::AgentVariableDistribution200ResponseInner>**](Agent_variable_distribution_200_response_inner.md)
 
 ### Authorization
 

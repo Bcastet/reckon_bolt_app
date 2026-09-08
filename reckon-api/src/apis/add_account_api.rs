@@ -23,7 +23,7 @@ pub enum AddPlayerAccountError {
 }
 
 
-pub async fn add_player_account(configuration: &configuration::Configuration, id: &str, add_account: models::AddAccount) -> Result<Vec<String>, Error<AddPlayerAccountError>> {
+pub async fn add_player_account(configuration: &configuration::Configuration, id: &str, add_account: Option<models::AddAccount>) -> Result<Vec<String>, Error<AddPlayerAccountError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_path_id = id;
     let p_body_add_account = add_account;

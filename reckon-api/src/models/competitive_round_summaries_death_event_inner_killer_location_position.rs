@@ -12,7 +12,7 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Default, Debug, PartialEq, Serialize, Deserialize)]
-pub struct CompetitiveRoundSummariesSmokeAbilitiesInnerCastPositionPosition {
+pub struct CompetitiveRoundSummariesDeathEventInnerKillerLocationPosition {
     #[serde(rename = "x", deserialize_with = "Option::deserialize")]
     pub x: Option<f64>,
     #[serde(rename = "y", deserialize_with = "Option::deserialize")]
@@ -21,9 +21,9 @@ pub struct CompetitiveRoundSummariesSmokeAbilitiesInnerCastPositionPosition {
     pub z: Option<f64>,
 }
 
-impl CompetitiveRoundSummariesSmokeAbilitiesInnerCastPositionPosition {
-    pub fn new(x: Option<f64>, y: Option<f64>, z: Option<f64>) -> CompetitiveRoundSummariesSmokeAbilitiesInnerCastPositionPosition {
-        CompetitiveRoundSummariesSmokeAbilitiesInnerCastPositionPosition {
+impl CompetitiveRoundSummariesDeathEventInnerKillerLocationPosition {
+    pub fn new(x: Option<f64>, y: Option<f64>, z: Option<f64>) -> CompetitiveRoundSummariesDeathEventInnerKillerLocationPosition {
+        CompetitiveRoundSummariesDeathEventInnerKillerLocationPosition {
             x,
             y,
             z,

@@ -25,8 +25,6 @@ pub struct CompetitiveGameSummaries {
     pub deaths: i32,
     #[serde(rename = "assists")]
     pub assists: i32,
-    #[serde(rename = "agent")]
-    pub agent: String,
     #[serde(rename = "kpr", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub kpr: Option<Option<f64>>,
     #[serde(rename = "dpr", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
@@ -39,6 +37,8 @@ pub struct CompetitiveGameSummaries {
     pub kast: Option<Option<f64>>,
     #[serde(rename = "rating_hltv", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub rating_hltv: Option<Option<f64>>,
+    #[serde(rename = "rating_vlr", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
+    pub rating_vlr: Option<Option<f64>>,
     #[serde(rename = "combat_score", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub combat_score: Option<Option<f64>>,
     #[serde(rename = "win")]
@@ -69,6 +69,8 @@ pub struct CompetitiveGameSummaries {
     pub ig_name: String,
     #[serde(rename = "map")]
     pub map: String,
+    #[serde(rename = "agent")]
+    pub agent: String,
     #[serde(rename = "player")]
     pub player: String,
     #[serde(rename = "league")]
@@ -80,7 +82,7 @@ pub struct CompetitiveGameSummaries {
 }
 
 impl CompetitiveGameSummaries {
-    pub fn new(id: String, date: String, patch: String, kills: i32, deaths: i32, assists: i32, agent: String, win: bool, game_id: String, ig_name: String, map: String, player: String, league: String, team1: String, team2: String) -> CompetitiveGameSummaries {
+    pub fn new(id: String, date: String, patch: String, kills: i32, deaths: i32, assists: i32, win: bool, game_id: String, ig_name: String, map: String, agent: String, player: String, league: String, team1: String, team2: String) -> CompetitiveGameSummaries {
         CompetitiveGameSummaries {
             id,
             date,
@@ -88,13 +90,13 @@ impl CompetitiveGameSummaries {
             kills,
             deaths,
             assists,
-            agent,
             kpr: None,
             dpr: None,
             impact: None,
             adr: None,
             kast: None,
             rating_hltv: None,
+            rating_vlr: None,
             combat_score: None,
             win,
             participant_id: None,
@@ -110,6 +112,7 @@ impl CompetitiveGameSummaries {
             game_id,
             ig_name,
             map,
+            agent,
             player,
             league,
             team1,

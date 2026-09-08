@@ -212,7 +212,7 @@ Name | Type | Description  | Required | Notes
 
 ## scrim_round_summaries_variable_distribution
 
-> Vec<models::ClientOrganizationVariableDistribution200ResponseInner> scrim_round_summaries_variable_distribution(bucket_size, max, metric, min, additional_filters, agent, attack_pattern_full, attack_pattern_short, bomb_site, callout_15s, date, defense_pattern_full, defense_pattern_short, first_attack_site, freeze_time_end_timestamp, game, map, patch, plant_time, player, round_eco_type, round_eco_type_no_bonus, round_id, round_index, shield, side, start_time_seconds, summary, team1, team2)
+> Vec<models::AgentVariableDistribution200ResponseInner> scrim_round_summaries_variable_distribution(bucket_size, max, metric, min, additional_filters, agent, attack_pattern_full, attack_pattern_short, bomb_site, callout_15s, date, defense_pattern_full, defense_pattern_short, first_attack_site, freeze_time_end_timestamp, game, map, patch, plant_time, player, round_eco_type, round_eco_type_no_bonus, round_id, round_index, shield, side, start_time_seconds, summary, team1, team2)
 
 
 ### Parameters
@@ -253,7 +253,7 @@ Name | Type | Description  | Required | Notes
 
 ### Return type
 
-[**Vec<models::ClientOrganizationVariableDistribution200ResponseInner>**](ClientOrganization_variable_distribution_200_response_inner.md)
+[**Vec<models::AgentVariableDistribution200ResponseInner>**](Agent_variable_distribution_200_response_inner.md)
 
 ### Authorization
 

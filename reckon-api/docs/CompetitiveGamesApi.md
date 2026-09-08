@@ -176,7 +176,7 @@ Name | Type | Description  | Required | Notes
 
 ## competitive_games_variable_distribution
 
-> Vec<models::ClientOrganizationVariableDistribution200ResponseInner> competitive_games_variable_distribution(bucket_size, max, metric, min, additional_filters, game_id, id, league, map, map_selection, phase, series_id, smokes_yolonet_version, split, team1, team2, utils_yolonet_version, winner)
+> Vec<models::AgentVariableDistribution200ResponseInner> competitive_games_variable_distribution(bucket_size, max, metric, min, additional_filters, game_id, id, league, map, map_selection, phase, series_id, smokes_yolonet_version, split, team1, team2, utils_yolonet_version, winner)
 
 
 ### Parameters
@@ -205,7 +205,7 @@ Name | Type | Description  | Required | Notes
 
 ### Return type
 
-[**Vec<models::ClientOrganizationVariableDistribution200ResponseInner>**](ClientOrganization_variable_distribution_200_response_inner.md)
+[**Vec<models::AgentVariableDistribution200ResponseInner>**](Agent_variable_distribution_200_response_inner.md)
 
 ### Authorization
 

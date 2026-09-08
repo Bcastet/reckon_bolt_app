@@ -16,6 +16,9 @@ pub struct UploadScrimGameError {
     /// Description of what went wrong
     #[serde(rename = "error")]
     pub error: String,
+    /// Present when live-client PUUIDs could not be translated via Account-v1
+    #[serde(rename = "unresolved_accounts", skip_serializing_if = "Option::is_none")]
+    pub unresolved_accounts: Option<Vec<models::UnresolvedAccount>>,
     /// Present when SoloQAccounts are missing player_id links
     #[serde(rename = "unlinked_accounts", skip_serializing_if = "Option::is_none")]
     pub unlinked_accounts: Option<Vec<models::UnlinkedAccount>>,
@@ -25,6 +28,7 @@ impl UploadScrimGameError {
     pub fn new(error: String) -> UploadScrimGameError {
         UploadScrimGameError {
             error,
+            unresolved_accounts: None,
             unlinked_accounts: None,
         }
     }

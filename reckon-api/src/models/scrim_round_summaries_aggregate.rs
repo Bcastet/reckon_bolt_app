@@ -17,6 +17,10 @@ pub struct ScrimRoundSummariesAggregate {
     pub round_id: String,
     #[serde(rename = "death_event")]
     pub death_event: Vec<models::CompetitiveRoundSummariesDeathEventInner>,
+    #[serde(rename = "death_event_agnostic")]
+    pub death_event_agnostic: Vec<models::CompetitiveRoundSummariesDeathEventAgnosticInner>,
+    #[serde(rename = "kills_agnostic")]
+    pub kills_agnostic: Vec<models::CompetitiveRoundSummariesDeathEventAgnosticInner>,
     #[serde(rename = "smoke_abilities")]
     pub smoke_abilities: Vec<models::CompetitiveRoundSummariesSmokeAbilitiesInner>,
     #[serde(rename = "utility_abilities")]
@@ -28,9 +32,7 @@ pub struct ScrimRoundSummariesAggregate {
     #[serde(rename = "kill_events")]
     pub kill_events: Vec<models::CompetitiveRoundSummariesDeathEventInner>,
     #[serde(rename = "positions")]
-    pub positions: Vec<models::CompetitiveRoundSummariesSmokeAbilitiesInnerCastPosition>,
-    #[serde(rename = "death_event_agnostic", skip_serializing_if = "Option::is_none")]
-    pub death_event_agnostic: Option<String>,
+    pub positions: Vec<models::CompetitiveRoundSummariesDeathEventInnerKillerLocation>,
     #[serde(rename = "kills")]
     pub kills: i32,
     #[serde(rename = "deaths")]
@@ -39,8 +41,6 @@ pub struct ScrimRoundSummariesAggregate {
     pub assists: i32,
     #[serde(rename = "was_traded", default, with = "::serde_with::rust::double_option", skip_serializing_if = "Option::is_none")]
     pub was_traded: Option<Option<bool>>,
-    #[serde(rename = "agent")]
-    pub agent: String,
     #[serde(rename = "patch")]
     pub patch: String,
     #[serde(rename = "side")]
@@ -121,6 +121,8 @@ pub struct ScrimRoundSummariesAggregate {
     pub kast: bool,
     #[serde(rename = "date")]
     pub date: String,
+    #[serde(rename = "agent")]
+    pub agent: String,
     #[serde(rename = "summary")]
     pub summary: String,
     #[serde(rename = "player")]
@@ -136,22 +138,22 @@ pub struct ScrimRoundSummariesAggregate {
 }
 
 impl ScrimRoundSummariesAggregate {
-    pub fn new(round_id: String, death_event: Vec<models::CompetitiveRoundSummariesDeathEventInner>, smoke_abilities: Vec<models::CompetitiveRoundSummariesSmokeAbilitiesInner>, utility_abilities: Vec<models::CompetitiveRoundSummariesUtilityAbilitiesInner>, other_abilities: Vec<models::CompetitiveRoundSummariesOtherAbilitiesInner>, player_snapshots: Vec<models::CompetitiveRoundSummariesPlayerSnapshotsInner>, kill_events: Vec<models::CompetitiveRoundSummariesDeathEventInner>, positions: Vec<models::CompetitiveRoundSummariesSmokeAbilitiesInnerCastPosition>, kills: i32, deaths: i32, assists: i32, agent: String, patch: String, side: String, round_eco_type: String, round_eco_type_no_bonus: String, round_strat_type: String, round_index: i32, main_weapon: String, damages: i32, damage_instances: i32, combat_score: f64, win: bool, first_death: bool, first_blood: bool, first_true_death: bool, first_true_blood: bool, investment: i32, kast: bool, date: String, summary: String, player: String, team1: String, team2: String, game: String, map: String) -> ScrimRoundSummariesAggregate {
+    pub fn new(round_id: String, death_event: Vec<models::CompetitiveRoundSummariesDeathEventInner>, death_event_agnostic: Vec<models::CompetitiveRoundSummariesDeathEventAgnosticInner>, kills_agnostic: Vec<models::CompetitiveRoundSummariesDeathEventAgnosticInner>, smoke_abilities: Vec<models::CompetitiveRoundSummariesSmokeAbilitiesInner>, utility_abilities: Vec<models::CompetitiveRoundSummariesUtilityAbilitiesInner>, other_abilities: Vec<models::CompetitiveRoundSummariesOtherAbilitiesInner>, player_snapshots: Vec<models::CompetitiveRoundSummariesPlayerSnapshotsInner>, kill_events: Vec<models::CompetitiveRoundSummariesDeathEventInner>, positions: Vec<models::CompetitiveRoundSummariesDeathEventInnerKillerLocation>, kills: i32, deaths: i32, assists: i32, patch: String, side: String, round_eco_type: String, round_eco_type_no_bonus: String, round_strat_type: String, round_index: i32, main_weapon: String, damages: i32, damage_instances: i32, combat_score: f64, win: bool, first_death: bool, first_blood: bool, first_true_death: bool, first_true_blood: bool, investment: i32, kast: bool, date: String, agent: String, summary: String, player: String, team1: String, team2: String, game: String, map: String) -> ScrimRoundSummariesAggregate {
         ScrimRoundSummariesAggregate {
             round_id,
             death_event,
+            death_event_agnostic,
+            kills_agnostic,
             smoke_abilities,
             utility_abilities,
             other_abilities,
             player_snapshots,
             kill_events,
             positions,
-            death_event_agnostic: None,
             kills,
             deaths,
             assists,
             was_traded: None,
-            agent,
             patch,
             side,
             round_eco_type,
@@ -192,6 +194,7 @@ impl ScrimRoundSummariesAggregate {
             callout_15s: None,
             kast,
             date,
+            agent,
             summary,
             player,
             team1,

@@ -5,6 +5,7 @@
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **killer_agent** | Option<**String**> |  | [optional]
+**killer_location** | [**models::CompetitiveRoundSummariesDeathEventInnerKillerLocation**](CompetitiveRoundSummariesDeathEventInnerKillerLocation.md) |  | 
 **killer_weapon** | Option<**String**> |  | 
 **killer_ability** | Option<**String**> |  | 
 **is_headshot** | **bool** |  | 
@@ -13,6 +14,7 @@ Name | Type | Description | Notes
 **is_first_true_blood** | **bool** |  | 
 **victim_agent** | **String** |  | 
 **victim_weapon** | **String** |  | 
+**victim_location** | [**models::CompetitiveRoundSummariesDeathEventInnerKillerLocation**](CompetitiveRoundSummariesDeathEventInnerKillerLocation.md) |  | 
 **victim_player** | **String** |  | 
 **assistants** | [**Vec<models::CompetitiveRoundSummariesDeathEventInnerAssistantsInner>**](CompetitiveRoundSummariesDeathEventInnerAssistantsInner.md) |  | 
 **time_in_round** | **f64** |  | 

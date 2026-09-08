@@ -72,7 +72,7 @@ pub enum PlayerVariableDistributionError {
 }
 
 
-pub async fn add_player_account(configuration: &configuration::Configuration, id: &str, add_account: models::AddAccount) -> Result<Vec<String>, Error<AddPlayerAccountError>> {
+pub async fn add_player_account(configuration: &configuration::Configuration, id: &str, add_account: Option<models::AddAccount>) -> Result<Vec<String>, Error<AddPlayerAccountError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_path_id = id;
     let p_body_add_account = add_account;
@@ -118,7 +118,7 @@ pub async fn add_player_account(configuration: &configuration::Configuration, id
     }
 }
 
-pub async fn player_aggregate(configuration: &configuration::Configuration, groupby: Vec<String>, ordering: Vec<String>, additional_filters: Option<serde_json::Value>, aggregates: Option<Vec<String>>, birthdate: Option<String>, contract_expires: Option<String>, current_team: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, having: Option<serde_json::Value>, id: Option<&str>, index_on: Option<&str>, is_retired: Option<bool>, last_team: Option<&str>, metrics: Option<Vec<String>>, nationality: Option<&str>, previous_names: Option<&str>, role: Option<&str>, soloq_tracked: Option<bool>) -> Result<Vec<models::PlayerAggregate>, Error<PlayerAggregateError>> {
+pub async fn player_aggregate(configuration: &configuration::Configuration, groupby: Vec<String>, ordering: Vec<String>, additional_filters: Option<serde_json::Value>, aggregates: Option<Vec<String>>, birthdate: Option<String>, contract_expires: Option<String>, current_team: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, having: Option<serde_json::Value>, id: Option<&str>, index_on: Option<&str>, is_retired: Option<bool>, last_team: Option<&str>, metrics: Option<Vec<String>>, nationality: Option<&str>, previous_names: Option<&str>, role: Option<&str>, soloq_tracked: Option<bool>, vlr_id: Option<i32>) -> Result<Vec<models::PlayerAggregate>, Error<PlayerAggregateError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_groupby = groupby;
     let p_query_ordering = ordering;
@@ -139,6 +139,7 @@ pub async fn player_aggregate(configuration: &configuration::Configuration, grou
     let p_query_previous_names = previous_names;
     let p_query_role = role;
     let p_query_soloq_tracked = soloq_tracked;
+    let p_query_vlr_id = vlr_id;
 
     let uri_str = format!("{}/Player/operations/aggregate", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -209,6 +210,9 @@ pub async fn player_aggregate(configuration: &configuration::Configuration, grou
     }
     if let Some(ref param_value) = p_query_soloq_tracked {
         req_builder = req_builder.query(&[("soloq_tracked", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_vlr_id {
+        req_builder = req_builder.query(&[("vlr_id", &param_value.to_string())]);
     }
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
@@ -293,7 +297,7 @@ pub async fn player_create(configuration: &configuration::Configuration, id: &st
     }
 }
 
-pub async fn player_field_values(configuration: &configuration::Configuration, field: &str, ordering: Vec<String>, additional_filters: Option<serde_json::Value>, birthdate: Option<String>, contract_expires: Option<String>, current_team: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, is_retired: Option<bool>, last_team: Option<&str>, nationality: Option<&str>, previous_names: Option<&str>, role: Option<&str>, soloq_tracked: Option<bool>) -> Result<Vec<String>, Error<PlayerFieldValuesError>> {
+pub async fn player_field_values(configuration: &configuration::Configuration, field: &str, ordering: Vec<String>, additional_filters: Option<serde_json::Value>, birthdate: Option<String>, contract_expires: Option<String>, current_team: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, is_retired: Option<bool>, last_team: Option<&str>, nationality: Option<&str>, previous_names: Option<&str>, role: Option<&str>, soloq_tracked: Option<bool>, vlr_id: Option<i32>) -> Result<Vec<String>, Error<PlayerFieldValuesError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_field = field;
     let p_query_ordering = ordering;
@@ -310,6 +314,7 @@ pub async fn player_field_values(configuration: &configuration::Configuration, f
     let p_query_previous_names = previous_names;
     let p_query_role = role;
     let p_query_soloq_tracked = soloq_tracked;
+    let p_query_vlr_id = vlr_id;
 
     let uri_str = format!("{}/Player/operations/field-values", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -359,6 +364,9 @@ pub async fn player_field_values(configuration: &configuration::Configuration, f
     }
     if let Some(ref param_value) = p_query_soloq_tracked {
         req_builder = req_builder.query(&[("soloq_tracked", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_vlr_id {
+        req_builder = req_builder.query(&[("vlr_id", &param_value.to_string())]);
     }
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
@@ -441,7 +449,7 @@ pub async fn player_get(configuration: &configuration::Configuration, id: &str) 
     }
 }
 
-pub async fn player_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, birthdate: Option<String>, contract_expires: Option<String>, current_team: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, is_retired: Option<bool>, last_team: Option<&str>, nationality: Option<&str>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, previous_names: Option<&str>, role: Option<&str>, soloq_tracked: Option<bool>) -> Result<Vec<models::Player>, Error<PlayerListError>> {
+pub async fn player_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, birthdate: Option<String>, contract_expires: Option<String>, current_team: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, is_retired: Option<bool>, last_team: Option<&str>, nationality: Option<&str>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, previous_names: Option<&str>, role: Option<&str>, soloq_tracked: Option<bool>, vlr_id: Option<i32>) -> Result<Vec<models::Player>, Error<PlayerListError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_additional_filters = additional_filters;
     let p_query_annotations = annotations;
@@ -459,6 +467,7 @@ pub async fn player_list(configuration: &configuration::Configuration, additiona
     let p_query_previous_names = previous_names;
     let p_query_role = role;
     let p_query_soloq_tracked = soloq_tracked;
+    let p_query_vlr_id = vlr_id;
 
     let uri_str = format!("{}/Player/list", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -521,6 +530,9 @@ pub async fn player_list(configuration: &configuration::Configuration, additiona
     }
     if let Some(ref param_value) = p_query_soloq_tracked {
         req_builder = req_builder.query(&[("soloq_tracked", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_vlr_id {
+        req_builder = req_builder.query(&[("vlr_id", &param_value.to_string())]);
     }
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
@@ -605,7 +617,7 @@ pub async fn player_patch(configuration: &configuration::Configuration, id: &str
     }
 }
 
-pub async fn player_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, birthdate: Option<String>, contract_expires: Option<String>, current_team: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, is_retired: Option<bool>, last_team: Option<&str>, nationality: Option<&str>, previous_names: Option<&str>, role: Option<&str>, soloq_tracked: Option<bool>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<PlayerVariableDistributionError>> {
+pub async fn player_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, birthdate: Option<String>, contract_expires: Option<String>, current_team: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, is_retired: Option<bool>, last_team: Option<&str>, nationality: Option<&str>, previous_names: Option<&str>, role: Option<&str>, soloq_tracked: Option<bool>, vlr_id: Option<i32>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<PlayerVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -624,6 +636,7 @@ pub async fn player_variable_distribution(configuration: &configuration::Configu
     let p_query_previous_names = previous_names;
     let p_query_role = role;
     let p_query_soloq_tracked = soloq_tracked;
+    let p_query_vlr_id = vlr_id;
 
     let uri_str = format!("{}/Player/operations/variable-distribution", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -673,6 +686,9 @@ pub async fn player_variable_distribution(configuration: &configuration::Configu
     if let Some(ref param_value) = p_query_soloq_tracked {
         req_builder = req_builder.query(&[("soloq_tracked", &param_value.to_string())]);
     }
+    if let Some(ref param_value) = p_query_vlr_id {
+        req_builder = req_builder.query(&[("vlr_id", &param_value.to_string())]);
+    }
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }
@@ -700,8 +716,8 @@ pub async fn player_variable_distribution(configuration: &configuration::Configu
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;

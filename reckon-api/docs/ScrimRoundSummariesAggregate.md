@@ -6,18 +6,18 @@ Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **round_id** | **String** |  | 
 **death_event** | [**Vec<models::CompetitiveRoundSummariesDeathEventInner>**](CompetitiveRoundSummariesDeathEventInner.md) |  | 
+**death_event_agnostic** | [**Vec<models::CompetitiveRoundSummariesDeathEventAgnosticInner>**](CompetitiveRoundSummariesDeathEventAgnosticInner.md) |  | 
+**kills_agnostic** | [**Vec<models::CompetitiveRoundSummariesDeathEventAgnosticInner>**](CompetitiveRoundSummariesDeathEventAgnosticInner.md) |  | 
 **smoke_abilities** | [**Vec<models::CompetitiveRoundSummariesSmokeAbilitiesInner>**](CompetitiveRoundSummariesSmokeAbilitiesInner.md) |  | 
 **utility_abilities** | [**Vec<models::CompetitiveRoundSummariesUtilityAbilitiesInner>**](CompetitiveRoundSummariesUtilityAbilitiesInner.md) |  | 
 **other_abilities** | [**Vec<models::CompetitiveRoundSummariesOtherAbilitiesInner>**](CompetitiveRoundSummariesOtherAbilitiesInner.md) |  | 
 **player_snapshots** | [**Vec<models::CompetitiveRoundSummariesPlayerSnapshotsInner>**](CompetitiveRoundSummariesPlayerSnapshotsInner.md) |  | 
 **kill_events** | [**Vec<models::CompetitiveRoundSummariesDeathEventInner>**](CompetitiveRoundSummariesDeathEventInner.md) |  | 
-**positions** | [**Vec<models::CompetitiveRoundSummariesSmokeAbilitiesInnerCastPosition>**](CompetitiveRoundSummariesSmokeAbilitiesInnerCastPosition.md) |  | 
-**death_event_agnostic** | Option<**String**> |  | [optional]
+**positions** | [**Vec<models::CompetitiveRoundSummariesDeathEventInnerKillerLocation>**](CompetitiveRoundSummariesDeathEventInnerKillerLocation.md) |  | 
 **kills** | **i32** |  | 
 **deaths** | **i32** |  | 
 **assists** | **i32** |  | 
 **was_traded** | Option<**bool**> |  | [optional]
-**agent** | **String** |  | 
 **patch** | **String** |  | 
 **side** | **String** |  | 
 **round_eco_type** | **String** |  | 
@@ -58,6 +58,7 @@ Name | Type | Description | Notes
 **callout_15s** | Option<**String**> |  | [optional]
 **kast** | **bool** |  | 
 **date** | **String** |  | 
+**agent** | **String** |  | 
 **summary** | **String** |  | 
 **player** | **String** |  | 
 **team1** | **String** |  | 

@@ -58,7 +58,7 @@ pub enum TeamVariableDistributionError {
 }
 
 
-pub async fn team_aggregate(configuration: &configuration::Configuration, groupby: Vec<String>, ordering: Vec<String>, additional_filters: Option<serde_json::Value>, aggregates: Option<Vec<String>>, coaching_staff: Option<&str>, current_league: Option<&str>, current_main_players: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, having: Option<serde_json::Value>, id: Option<&str>, index_on: Option<&str>, metrics: Option<Vec<String>>, name: Option<&str>, next_opponent: Option<&str>, players_list: Option<&str>, renamed_to: Option<&str>) -> Result<Vec<models::TeamAggregate>, Error<TeamAggregateError>> {
+pub async fn team_aggregate(configuration: &configuration::Configuration, groupby: Vec<String>, ordering: Vec<String>, additional_filters: Option<serde_json::Value>, aggregates: Option<Vec<String>>, coaching_staff: Option<&str>, current_league: Option<&str>, current_main_players: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, having: Option<serde_json::Value>, id: Option<&str>, index_on: Option<&str>, metrics: Option<Vec<String>>, name: Option<&str>, next_opponent: Option<&str>, players_list: Option<&str>, renamed_to: Option<&str>, vlr_id: Option<i32>) -> Result<Vec<models::TeamAggregate>, Error<TeamAggregateError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_groupby = groupby;
     let p_query_ordering = ordering;
@@ -77,6 +77,7 @@ pub async fn team_aggregate(configuration: &configuration::Configuration, groupb
     let p_query_next_opponent = next_opponent;
     let p_query_players_list = players_list;
     let p_query_renamed_to = renamed_to;
+    let p_query_vlr_id = vlr_id;
 
     let uri_str = format!("{}/Team/operations/aggregate", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -142,6 +143,9 @@ pub async fn team_aggregate(configuration: &configuration::Configuration, groupb
     if let Some(ref param_value) = p_query_renamed_to {
         req_builder = req_builder.query(&[("renamed_to", &param_value.to_string())]);
     }
+    if let Some(ref param_value) = p_query_vlr_id {
+        req_builder = req_builder.query(&[("vlr_id", &param_value.to_string())]);
+    }
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }
@@ -179,7 +183,7 @@ pub async fn team_aggregate(configuration: &configuration::Configuration, groupb
     }
 }
 
-pub async fn team_field_values(configuration: &configuration::Configuration, field: &str, ordering: Vec<String>, additional_filters: Option<serde_json::Value>, coaching_staff: Option<&str>, current_league: Option<&str>, current_main_players: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, name: Option<&str>, next_opponent: Option<&str>, players_list: Option<&str>, renamed_to: Option<&str>) -> Result<Vec<String>, Error<TeamFieldValuesError>> {
+pub async fn team_field_values(configuration: &configuration::Configuration, field: &str, ordering: Vec<String>, additional_filters: Option<serde_json::Value>, coaching_staff: Option<&str>, current_league: Option<&str>, current_main_players: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, name: Option<&str>, next_opponent: Option<&str>, players_list: Option<&str>, renamed_to: Option<&str>, vlr_id: Option<i32>) -> Result<Vec<String>, Error<TeamFieldValuesError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_field = field;
     let p_query_ordering = ordering;
@@ -194,6 +198,7 @@ pub async fn team_field_values(configuration: &configuration::Configuration, fie
     let p_query_next_opponent = next_opponent;
     let p_query_players_list = players_list;
     let p_query_renamed_to = renamed_to;
+    let p_query_vlr_id = vlr_id;
 
     let uri_str = format!("{}/Team/operations/field-values", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -237,6 +242,9 @@ pub async fn team_field_values(configuration: &configuration::Configuration, fie
     }
     if let Some(ref param_value) = p_query_renamed_to {
         req_builder = req_builder.query(&[("renamed_to", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_vlr_id {
+        req_builder = req_builder.query(&[("vlr_id", &param_value.to_string())]);
     }
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
@@ -319,7 +327,7 @@ pub async fn team_get(configuration: &configuration::Configuration, id: &str) ->
     }
 }
 
-pub async fn team_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, coaching_staff: Option<&str>, current_league: Option<&str>, current_main_players: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, name: Option<&str>, next_opponent: Option<&str>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, players_list: Option<&str>, renamed_to: Option<&str>) -> Result<Vec<models::Team>, Error<TeamListError>> {
+pub async fn team_list(configuration: &configuration::Configuration, additional_filters: Option<serde_json::Value>, annotations: Option<Vec<String>>, coaching_staff: Option<&str>, current_league: Option<&str>, current_main_players: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, name: Option<&str>, next_opponent: Option<&str>, only_values: Option<Vec<String>>, ordering: Option<Vec<String>>, players_list: Option<&str>, renamed_to: Option<&str>, vlr_id: Option<i32>) -> Result<Vec<models::Team>, Error<TeamListError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_additional_filters = additional_filters;
     let p_query_annotations = annotations;
@@ -335,6 +343,7 @@ pub async fn team_list(configuration: &configuration::Configuration, additional_
     let p_query_ordering = ordering;
     let p_query_players_list = players_list;
     let p_query_renamed_to = renamed_to;
+    let p_query_vlr_id = vlr_id;
 
     let uri_str = format!("{}/Team/list", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -391,6 +400,9 @@ pub async fn team_list(configuration: &configuration::Configuration, additional_
     }
     if let Some(ref param_value) = p_query_renamed_to {
         req_builder = req_builder.query(&[("renamed_to", &param_value.to_string())]);
+    }
+    if let Some(ref param_value) = p_query_vlr_id {
+        req_builder = req_builder.query(&[("vlr_id", &param_value.to_string())]);
     }
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
@@ -475,7 +487,7 @@ pub async fn team_patch(configuration: &configuration::Configuration, id: &str, 
     }
 }
 
-pub async fn team_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, coaching_staff: Option<&str>, current_league: Option<&str>, current_main_players: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, name: Option<&str>, next_opponent: Option<&str>, players_list: Option<&str>, renamed_to: Option<&str>) -> Result<Vec<models::ClientOrganizationVariableDistribution200ResponseInner>, Error<TeamVariableDistributionError>> {
+pub async fn team_variable_distribution(configuration: &configuration::Configuration, bucket_size: i32, max: i32, metric: &str, min: i32, additional_filters: Option<serde_json::Value>, coaching_staff: Option<&str>, current_league: Option<&str>, current_main_players: Option<&str>, domestic_league: Option<&str>, grid_id: Option<i32>, id: Option<&str>, name: Option<&str>, next_opponent: Option<&str>, players_list: Option<&str>, renamed_to: Option<&str>, vlr_id: Option<i32>) -> Result<Vec<models::AgentVariableDistribution200ResponseInner>, Error<TeamVariableDistributionError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_query_bucket_size = bucket_size;
     let p_query_max = max;
@@ -492,6 +504,7 @@ pub async fn team_variable_distribution(configuration: &configuration::Configura
     let p_query_next_opponent = next_opponent;
     let p_query_players_list = players_list;
     let p_query_renamed_to = renamed_to;
+    let p_query_vlr_id = vlr_id;
 
     let uri_str = format!("{}/Team/operations/variable-distribution", configuration.base_path);
     let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
@@ -535,6 +548,9 @@ pub async fn team_variable_distribution(configuration: &configuration::Configura
     if let Some(ref param_value) = p_query_renamed_to {
         req_builder = req_builder.query(&[("renamed_to", &param_value.to_string())]);
     }
+    if let Some(ref param_value) = p_query_vlr_id {
+        req_builder = req_builder.query(&[("vlr_id", &param_value.to_string())]);
+    }
     if let Some(ref user_agent) = configuration.user_agent {
         req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
     }
@@ -562,8 +578,8 @@ pub async fn team_variable_distribution(configuration: &configuration::Configura
         let content = resp.text().await?;
         match content_type {
             ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
-            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`"))),
-            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::ClientOrganizationVariableDistribution200ResponseInner&gt;`")))),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `Vec&lt;models::AgentVariableDistribution200ResponseInner&gt;`")))),
         }
     } else {
         let content = resp.text().await?;

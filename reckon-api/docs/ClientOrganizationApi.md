@@ -167,7 +167,7 @@ Name | Type | Description  | Required | Notes
 
 ## client_organization_variable_distribution
 
-> Vec<models::ClientOrganizationVariableDistribution200ResponseInner> client_organization_variable_distribution(bucket_size, max, metric, min, additional_filters)
+> Vec<models::AgentVariableDistribution200ResponseInner> client_organization_variable_distribution(bucket_size, max, metric, min, additional_filters)
 
 
 ### Parameters
@@ -183,7 +183,7 @@ Name | Type | Description  | Required | Notes
 
 ### Return type
 
-[**Vec<models::ClientOrganizationVariableDistribution200ResponseInner>**](ClientOrganization_variable_distribution_200_response_inner.md)
+[**Vec<models::AgentVariableDistribution200ResponseInner>**](Agent_variable_distribution_200_response_inner.md)
 
 ### Authorization
 

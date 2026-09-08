@@ -275,6 +275,7 @@ async fn reckon_lookup_players_by_names(
         None,
         None,
         None,
+        None,
     )
     .await
     {
@@ -305,6 +306,7 @@ async fn reckon_lookup_players_by_names(
             None,
             None,
             Some(name.as_str()),
+            None,
             None,
             None,
             None,
@@ -566,13 +568,14 @@ async fn reckon_link_account(
 
     let config = reckon_api::apis::configuration::Configuration::prod().with_token(&token);
 
-    let mut body = reckon_api::models::AddAccount::new(puuid.clone());
+    let mut body = reckon_api::models::AddAccount::new();
+    body.puuid = Some(puuid.clone());
     body.account_name = account_name.clone();
 
     match reckon_api::apis::add_account_api::add_player_account(
         &config,
         &player_id,
-        body,
+        Some(body),
     )
     .await
     {
@@ -659,6 +662,7 @@ async fn reckon_get_soloq_accounts(
     let mut accounts = solo_q_accounts_api::solo_q_accounts_list(
         &config,
         Some(additional_filters),
+        None,
         None,
         None,
         None,

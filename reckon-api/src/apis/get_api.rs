@@ -15,6 +15,13 @@ use crate::{apis::ResponseContent, models};
 use super::{Error, configuration, ContentType};
 
 
+/// struct for typed errors of method [`agent_get`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum AgentGetError {
+    UnknownValue(serde_json::Value),
+}
+
 /// struct for typed errors of method [`client_organization_get`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
@@ -57,10 +64,24 @@ pub enum CompetitiveTeamRoundSummariesGetError {
     UnknownValue(serde_json::Value),
 }
 
+/// struct for typed errors of method [`competitive_tiers_get`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum CompetitiveTiersGetError {
+    UnknownValue(serde_json::Value),
+}
+
 /// struct for typed errors of method [`game_metrics_get`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum GameMetricsGetError {
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`gear_get`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum GearGetError {
     UnknownValue(serde_json::Value),
 }
 
@@ -120,10 +141,45 @@ pub enum ScrimTeamRoundSummariesGetError {
     UnknownValue(serde_json::Value),
 }
 
+/// struct for typed errors of method [`seasons_get`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SeasonsGetError {
+    UnknownValue(serde_json::Value),
+}
+
 /// struct for typed errors of method [`solo_q_accounts_get`]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum SoloQAccountsGetError {
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`solo_q_game_summaries_get`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SoloQGameSummariesGetError {
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`solo_q_games_get`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SoloQGamesGetError {
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`solo_q_round_summaries_get`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SoloQRoundSummariesGetError {
+    UnknownValue(serde_json::Value),
+}
+
+/// struct for typed errors of method [`solo_q_team_round_summaries_get`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum SoloQTeamRoundSummariesGetError {
     UnknownValue(serde_json::Value),
 }
 
@@ -141,6 +197,57 @@ pub enum UserGetError {
     UnknownValue(serde_json::Value),
 }
 
+/// struct for typed errors of method [`weapons_get`]
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum WeaponsGetError {
+    UnknownValue(serde_json::Value),
+}
+
+
+pub async fn agent_get(configuration: &configuration::Configuration, id: &str) -> Result<models::Agent, Error<AgentGetError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_path_id = id;
+
+    let uri_str = format!("{}/Agent/item/{id}", configuration.base_path, id=crate::apis::urlencode(p_path_id));
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::Agent`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::Agent`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<AgentGetError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
 
 pub async fn client_organization_get(configuration: &configuration::Configuration, id: &str) -> Result<models::ClientOrganization, Error<ClientOrganizationGetError>> {
     // add a prefix to parameters to efficiently prevent name collisions
@@ -406,6 +513,50 @@ pub async fn competitive_team_round_summaries_get(configuration: &configuration:
     }
 }
 
+pub async fn competitive_tiers_get(configuration: &configuration::Configuration, id: &str) -> Result<models::CompetitiveTiers, Error<CompetitiveTiersGetError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_path_id = id;
+
+    let uri_str = format!("{}/CompetitiveTiers/item/{id}", configuration.base_path, id=crate::apis::urlencode(p_path_id));
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::CompetitiveTiers`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::CompetitiveTiers`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<CompetitiveTiersGetError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
 pub async fn game_metrics_get(configuration: &configuration::Configuration, id: &str) -> Result<models::GameMetrics, Error<GameMetricsGetError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_path_id = id;
@@ -446,6 +597,50 @@ pub async fn game_metrics_get(configuration: &configuration::Configuration, id: 
     } else {
         let content = resp.text().await?;
         let entity: Option<GameMetricsGetError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn gear_get(configuration: &configuration::Configuration, id: &str) -> Result<models::Gear, Error<GearGetError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_path_id = id;
+
+    let uri_str = format!("{}/Gear/item/{id}", configuration.base_path, id=crate::apis::urlencode(p_path_id));
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::Gear`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::Gear`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<GearGetError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
@@ -809,6 +1004,50 @@ pub async fn scrim_team_round_summaries_get(configuration: &configuration::Confi
     }
 }
 
+pub async fn seasons_get(configuration: &configuration::Configuration, id: &str) -> Result<models::Seasons, Error<SeasonsGetError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_path_id = id;
+
+    let uri_str = format!("{}/Seasons/item/{id}", configuration.base_path, id=crate::apis::urlencode(p_path_id));
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::Seasons`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::Seasons`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<SeasonsGetError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
 pub async fn solo_q_accounts_get(configuration: &configuration::Configuration, id: &str) -> Result<models::SoloQAccounts, Error<SoloQAccountsGetError>> {
     // add a prefix to parameters to efficiently prevent name collisions
     let p_path_id = id;
@@ -849,6 +1088,182 @@ pub async fn solo_q_accounts_get(configuration: &configuration::Configuration, i
     } else {
         let content = resp.text().await?;
         let entity: Option<SoloQAccountsGetError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn solo_q_game_summaries_get(configuration: &configuration::Configuration, id: &str) -> Result<models::SoloQGameSummaries, Error<SoloQGameSummariesGetError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_path_id = id;
+
+    let uri_str = format!("{}/SoloQGameSummaries/item/{id}", configuration.base_path, id=crate::apis::urlencode(p_path_id));
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::SoloQGameSummaries`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::SoloQGameSummaries`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<SoloQGameSummariesGetError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn solo_q_games_get(configuration: &configuration::Configuration, id: &str) -> Result<models::SoloQGames, Error<SoloQGamesGetError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_path_id = id;
+
+    let uri_str = format!("{}/SoloQGames/item/{id}", configuration.base_path, id=crate::apis::urlencode(p_path_id));
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::SoloQGames`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::SoloQGames`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<SoloQGamesGetError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn solo_q_round_summaries_get(configuration: &configuration::Configuration, id: &str) -> Result<models::SoloQRoundSummaries, Error<SoloQRoundSummariesGetError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_path_id = id;
+
+    let uri_str = format!("{}/SoloQRoundSummaries/item/{id}", configuration.base_path, id=crate::apis::urlencode(p_path_id));
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::SoloQRoundSummaries`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::SoloQRoundSummaries`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<SoloQRoundSummariesGetError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn solo_q_team_round_summaries_get(configuration: &configuration::Configuration, id: &str) -> Result<models::SoloQTeamRoundSummaries, Error<SoloQTeamRoundSummariesGetError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_path_id = id;
+
+    let uri_str = format!("{}/SoloQTeamRoundSummaries/item/{id}", configuration.base_path, id=crate::apis::urlencode(p_path_id));
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::SoloQTeamRoundSummaries`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::SoloQTeamRoundSummaries`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<SoloQTeamRoundSummariesGetError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }
@@ -937,6 +1352,50 @@ pub async fn user_get(configuration: &configuration::Configuration, id: &str) ->
     } else {
         let content = resp.text().await?;
         let entity: Option<UserGetError> = serde_json::from_str(&content).ok();
+        Err(Error::ResponseError(ResponseContent { status, content, entity }))
+    }
+}
+
+pub async fn weapons_get(configuration: &configuration::Configuration, id: &str) -> Result<models::Weapons, Error<WeaponsGetError>> {
+    // add a prefix to parameters to efficiently prevent name collisions
+    let p_path_id = id;
+
+    let uri_str = format!("{}/Weapons/item/{id}", configuration.base_path, id=crate::apis::urlencode(p_path_id));
+    let mut req_builder = configuration.client.request(reqwest::Method::GET, &uri_str);
+
+    if let Some(ref user_agent) = configuration.user_agent {
+        req_builder = req_builder.header(reqwest::header::USER_AGENT, user_agent.clone());
+    }
+    if let Some(ref apikey) = configuration.api_key {
+        let key = apikey.key.clone();
+        let value = match apikey.prefix {
+            Some(ref prefix) => format!("{} {}", prefix, key),
+            None => key,
+        };
+        req_builder = req_builder.header("Authorization", value);
+    };
+
+    let req = req_builder.build()?;
+    let resp = configuration.client.execute(req).await?;
+
+    let status = resp.status();
+    let content_type = resp
+        .headers()
+        .get("content-type")
+        .and_then(|v| v.to_str().ok())
+        .unwrap_or("application/octet-stream");
+    let content_type = super::ContentType::from(content_type);
+
+    if !status.is_client_error() && !status.is_server_error() {
+        let content = resp.text().await?;
+        match content_type {
+            ContentType::Json => serde_json::from_str(&content).map_err(Error::from),
+            ContentType::Text => return Err(Error::from(serde_json::Error::custom("Received `text/plain` content type response that cannot be converted to `models::Weapons`"))),
+            ContentType::Unsupported(unknown_type) => return Err(Error::from(serde_json::Error::custom(format!("Received `{unknown_type}` content type response that cannot be converted to `models::Weapons`")))),
+        }
+    } else {
+        let content = resp.text().await?;
+        let entity: Option<WeaponsGetError> = serde_json::from_str(&content).ok();
         Err(Error::ResponseError(ResponseContent { status, content, entity }))
     }
 }

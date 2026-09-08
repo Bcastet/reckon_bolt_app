@@ -27,13 +27,21 @@ All URIs are relative to *http://localhost*
 Class | Method | HTTP request | Description
 ------------ | ------------- | ------------- | -------------
 *AddAccountApi* | [**add_player_account**](docs/AddAccountApi.md#add_player_account) | **POST** /Player/item/{id}/add_account | 
+*AgentApi* | [**agent_aggregate**](docs/AgentApi.md#agent_aggregate) | **GET** /Agent/operations/aggregate | 
+*AgentApi* | [**agent_field_values**](docs/AgentApi.md#agent_field_values) | **GET** /Agent/operations/field-values | 
+*AgentApi* | [**agent_get**](docs/AgentApi.md#agent_get) | **GET** /Agent/item/{id} | 
+*AgentApi* | [**agent_list**](docs/AgentApi.md#agent_list) | **GET** /Agent/list | 
+*AgentApi* | [**agent_variable_distribution**](docs/AgentApi.md#agent_variable_distribution) | **GET** /Agent/operations/variable-distribution | 
+*AggregateApi* | [**agent_aggregate**](docs/AggregateApi.md#agent_aggregate) | **GET** /Agent/operations/aggregate | 
 *AggregateApi* | [**client_organization_aggregate**](docs/AggregateApi.md#client_organization_aggregate) | **GET** /ClientOrganization/operations/aggregate | 
 *AggregateApi* | [**competitive_draft_slots_aggregate**](docs/AggregateApi.md#competitive_draft_slots_aggregate) | **GET** /CompetitiveDraftSlots/operations/aggregate | 
 *AggregateApi* | [**competitive_game_summaries_aggregate**](docs/AggregateApi.md#competitive_game_summaries_aggregate) | **GET** /CompetitiveGameSummaries/operations/aggregate | 
 *AggregateApi* | [**competitive_games_aggregate**](docs/AggregateApi.md#competitive_games_aggregate) | **GET** /CompetitiveGames/operations/aggregate | 
 *AggregateApi* | [**competitive_round_summaries_aggregate**](docs/AggregateApi.md#competitive_round_summaries_aggregate) | **GET** /CompetitiveRoundSummaries/operations/aggregate | 
 *AggregateApi* | [**competitive_team_round_summaries_aggregate**](docs/AggregateApi.md#competitive_team_round_summaries_aggregate) | **GET** /CompetitiveTeamRoundSummaries/operations/aggregate | 
+*AggregateApi* | [**competitive_tiers_aggregate**](docs/AggregateApi.md#competitive_tiers_aggregate) | **GET** /CompetitiveTiers/operations/aggregate | 
 *AggregateApi* | [**game_metrics_aggregate**](docs/AggregateApi.md#game_metrics_aggregate) | **GET** /GameMetrics/operations/aggregate | 
+*AggregateApi* | [**gear_aggregate**](docs/AggregateApi.md#gear_aggregate) | **GET** /Gear/operations/aggregate | 
 *AggregateApi* | [**league_aggregate**](docs/AggregateApi.md#league_aggregate) | **GET** /League/operations/aggregate | 
 *AggregateApi* | [**maps_aggregate**](docs/AggregateApi.md#maps_aggregate) | **GET** /Maps/operations/aggregate | 
 *AggregateApi* | [**player_aggregate**](docs/AggregateApi.md#player_aggregate) | **GET** /Player/operations/aggregate | 
@@ -41,9 +49,15 @@ Class | Method | HTTP request | Description
 *AggregateApi* | [**scrim_games_aggregate**](docs/AggregateApi.md#scrim_games_aggregate) | **GET** /ScrimGames/operations/aggregate | 
 *AggregateApi* | [**scrim_round_summaries_aggregate**](docs/AggregateApi.md#scrim_round_summaries_aggregate) | **GET** /ScrimRoundSummaries/operations/aggregate | 
 *AggregateApi* | [**scrim_team_round_summaries_aggregate**](docs/AggregateApi.md#scrim_team_round_summaries_aggregate) | **GET** /ScrimTeamRoundSummaries/operations/aggregate | 
+*AggregateApi* | [**seasons_aggregate**](docs/AggregateApi.md#seasons_aggregate) | **GET** /Seasons/operations/aggregate | 
 *AggregateApi* | [**solo_q_accounts_aggregate**](docs/AggregateApi.md#solo_q_accounts_aggregate) | **GET** /SoloQAccounts/operations/aggregate | 
+*AggregateApi* | [**solo_q_game_summaries_aggregate**](docs/AggregateApi.md#solo_q_game_summaries_aggregate) | **GET** /SoloQGameSummaries/operations/aggregate | 
+*AggregateApi* | [**solo_q_games_aggregate**](docs/AggregateApi.md#solo_q_games_aggregate) | **GET** /SoloQGames/operations/aggregate | 
+*AggregateApi* | [**solo_q_round_summaries_aggregate**](docs/AggregateApi.md#solo_q_round_summaries_aggregate) | **GET** /SoloQRoundSummaries/operations/aggregate | 
+*AggregateApi* | [**solo_q_team_round_summaries_aggregate**](docs/AggregateApi.md#solo_q_team_round_summaries_aggregate) | **GET** /SoloQTeamRoundSummaries/operations/aggregate | 
 *AggregateApi* | [**team_aggregate**](docs/AggregateApi.md#team_aggregate) | **GET** /Team/operations/aggregate | 
 *AggregateApi* | [**user_aggregate**](docs/AggregateApi.md#user_aggregate) | **GET** /User/operations/aggregate | 
+*AggregateApi* | [**weapons_aggregate**](docs/AggregateApi.md#weapons_aggregate) | **GET** /Weapons/operations/aggregate | 
 *AppApi* | [**app_download_retrieve**](docs/AppApi.md#app_download_retrieve) | **GET** /App/download/{version} | 
 *AppApi* | [**app_releases_retrieve**](docs/AppApi.md#app_releases_retrieve) | **GET** /App/releases | 
 *ChangePasswordApi* | [**change_password_create**](docs/ChangePasswordApi.md#change_password_create) | **POST** /ChangePassword | 
@@ -78,18 +92,26 @@ Class | Method | HTTP request | Description
 *CompetitiveTeamRoundSummariesApi* | [**competitive_team_round_summaries_get**](docs/CompetitiveTeamRoundSummariesApi.md#competitive_team_round_summaries_get) | **GET** /CompetitiveTeamRoundSummaries/item/{id} | 
 *CompetitiveTeamRoundSummariesApi* | [**competitive_team_round_summaries_list**](docs/CompetitiveTeamRoundSummariesApi.md#competitive_team_round_summaries_list) | **GET** /CompetitiveTeamRoundSummaries/list | 
 *CompetitiveTeamRoundSummariesApi* | [**competitive_team_round_summaries_variable_distribution**](docs/CompetitiveTeamRoundSummariesApi.md#competitive_team_round_summaries_variable_distribution) | **GET** /CompetitiveTeamRoundSummaries/operations/variable-distribution | 
+*CompetitiveTiersApi* | [**competitive_tiers_aggregate**](docs/CompetitiveTiersApi.md#competitive_tiers_aggregate) | **GET** /CompetitiveTiers/operations/aggregate | 
+*CompetitiveTiersApi* | [**competitive_tiers_field_values**](docs/CompetitiveTiersApi.md#competitive_tiers_field_values) | **GET** /CompetitiveTiers/operations/field-values | 
+*CompetitiveTiersApi* | [**competitive_tiers_get**](docs/CompetitiveTiersApi.md#competitive_tiers_get) | **GET** /CompetitiveTiers/item/{id} | 
+*CompetitiveTiersApi* | [**competitive_tiers_list**](docs/CompetitiveTiersApi.md#competitive_tiers_list) | **GET** /CompetitiveTiers/list | 
+*CompetitiveTiersApi* | [**competitive_tiers_variable_distribution**](docs/CompetitiveTiersApi.md#competitive_tiers_variable_distribution) | **GET** /CompetitiveTiers/operations/variable-distribution | 
 *CreateApi* | [**player_create**](docs/CreateApi.md#player_create) | **POST** /Player/item/{id} | 
 *CreateApi* | [**solo_q_accounts_create**](docs/CreateApi.md#solo_q_accounts_create) | **POST** /SoloQAccounts/item/{id} | 
 *CreateApi* | [**user_create**](docs/CreateApi.md#user_create) | **POST** /User/item/{id} | 
 *DeleteApi* | [**user_delete**](docs/DeleteApi.md#user_delete) | **DELETE** /User/item/{id} | 
 *DownloadApi* | [**app_download_retrieve**](docs/DownloadApi.md#app_download_retrieve) | **GET** /App/download/{version} | 
+*FieldValuesApi* | [**agent_field_values**](docs/FieldValuesApi.md#agent_field_values) | **GET** /Agent/operations/field-values | 
 *FieldValuesApi* | [**client_organization_field_values**](docs/FieldValuesApi.md#client_organization_field_values) | **GET** /ClientOrganization/operations/field-values | 
 *FieldValuesApi* | [**competitive_draft_slots_field_values**](docs/FieldValuesApi.md#competitive_draft_slots_field_values) | **GET** /CompetitiveDraftSlots/operations/field-values | 
 *FieldValuesApi* | [**competitive_game_summaries_field_values**](docs/FieldValuesApi.md#competitive_game_summaries_field_values) | **GET** /CompetitiveGameSummaries/operations/field-values | 
 *FieldValuesApi* | [**competitive_games_field_values**](docs/FieldValuesApi.md#competitive_games_field_values) | **GET** /CompetitiveGames/operations/field-values | 
 *FieldValuesApi* | [**competitive_round_summaries_field_values**](docs/FieldValuesApi.md#competitive_round_summaries_field_values) | **GET** /CompetitiveRoundSummaries/operations/field-values | 
 *FieldValuesApi* | [**competitive_team_round_summaries_field_values**](docs/FieldValuesApi.md#competitive_team_round_summaries_field_values) | **GET** /CompetitiveTeamRoundSummaries/operations/field-values | 
+*FieldValuesApi* | [**competitive_tiers_field_values**](docs/FieldValuesApi.md#competitive_tiers_field_values) | **GET** /CompetitiveTiers/operations/field-values | 
 *FieldValuesApi* | [**game_metrics_field_values**](docs/FieldValuesApi.md#game_metrics_field_values) | **GET** /GameMetrics/operations/field-values | 
+*FieldValuesApi* | [**gear_field_values**](docs/FieldValuesApi.md#gear_field_values) | **GET** /Gear/operations/field-values | 
 *FieldValuesApi* | [**league_field_values**](docs/FieldValuesApi.md#league_field_values) | **GET** /League/operations/field-values | 
 *FieldValuesApi* | [**maps_field_values**](docs/FieldValuesApi.md#maps_field_values) | **GET** /Maps/operations/field-values | 
 *FieldValuesApi* | [**player_field_values**](docs/FieldValuesApi.md#player_field_values) | **GET** /Player/operations/field-values | 
@@ -97,21 +119,35 @@ Class | Method | HTTP request | Description
 *FieldValuesApi* | [**scrim_games_field_values**](docs/FieldValuesApi.md#scrim_games_field_values) | **GET** /ScrimGames/operations/field-values | 
 *FieldValuesApi* | [**scrim_round_summaries_field_values**](docs/FieldValuesApi.md#scrim_round_summaries_field_values) | **GET** /ScrimRoundSummaries/operations/field-values | 
 *FieldValuesApi* | [**scrim_team_round_summaries_field_values**](docs/FieldValuesApi.md#scrim_team_round_summaries_field_values) | **GET** /ScrimTeamRoundSummaries/operations/field-values | 
+*FieldValuesApi* | [**seasons_field_values**](docs/FieldValuesApi.md#seasons_field_values) | **GET** /Seasons/operations/field-values | 
 *FieldValuesApi* | [**solo_q_accounts_field_values**](docs/FieldValuesApi.md#solo_q_accounts_field_values) | **GET** /SoloQAccounts/operations/field-values | 
+*FieldValuesApi* | [**solo_q_game_summaries_field_values**](docs/FieldValuesApi.md#solo_q_game_summaries_field_values) | **GET** /SoloQGameSummaries/operations/field-values | 
+*FieldValuesApi* | [**solo_q_games_field_values**](docs/FieldValuesApi.md#solo_q_games_field_values) | **GET** /SoloQGames/operations/field-values | 
+*FieldValuesApi* | [**solo_q_round_summaries_field_values**](docs/FieldValuesApi.md#solo_q_round_summaries_field_values) | **GET** /SoloQRoundSummaries/operations/field-values | 
+*FieldValuesApi* | [**solo_q_team_round_summaries_field_values**](docs/FieldValuesApi.md#solo_q_team_round_summaries_field_values) | **GET** /SoloQTeamRoundSummaries/operations/field-values | 
 *FieldValuesApi* | [**team_field_values**](docs/FieldValuesApi.md#team_field_values) | **GET** /Team/operations/field-values | 
 *FieldValuesApi* | [**user_field_values**](docs/FieldValuesApi.md#user_field_values) | **GET** /User/operations/field-values | 
+*FieldValuesApi* | [**weapons_field_values**](docs/FieldValuesApi.md#weapons_field_values) | **GET** /Weapons/operations/field-values | 
 *GameMetricsApi* | [**game_metrics_aggregate**](docs/GameMetricsApi.md#game_metrics_aggregate) | **GET** /GameMetrics/operations/aggregate | 
 *GameMetricsApi* | [**game_metrics_field_values**](docs/GameMetricsApi.md#game_metrics_field_values) | **GET** /GameMetrics/operations/field-values | 
 *GameMetricsApi* | [**game_metrics_get**](docs/GameMetricsApi.md#game_metrics_get) | **GET** /GameMetrics/item/{id} | 
 *GameMetricsApi* | [**game_metrics_list**](docs/GameMetricsApi.md#game_metrics_list) | **GET** /GameMetrics/list | 
 *GameMetricsApi* | [**game_metrics_variable_distribution**](docs/GameMetricsApi.md#game_metrics_variable_distribution) | **GET** /GameMetrics/operations/variable-distribution | 
+*GearApi* | [**gear_aggregate**](docs/GearApi.md#gear_aggregate) | **GET** /Gear/operations/aggregate | 
+*GearApi* | [**gear_field_values**](docs/GearApi.md#gear_field_values) | **GET** /Gear/operations/field-values | 
+*GearApi* | [**gear_get**](docs/GearApi.md#gear_get) | **GET** /Gear/item/{id} | 
+*GearApi* | [**gear_list**](docs/GearApi.md#gear_list) | **GET** /Gear/list | 
+*GearApi* | [**gear_variable_distribution**](docs/GearApi.md#gear_variable_distribution) | **GET** /Gear/operations/variable-distribution | 
+*GetApi* | [**agent_get**](docs/GetApi.md#agent_get) | **GET** /Agent/item/{id} | 
 *GetApi* | [**client_organization_get**](docs/GetApi.md#client_organization_get) | **GET** /ClientOrganization/item/{id} | 
 *GetApi* | [**competitive_draft_slots_get**](docs/GetApi.md#competitive_draft_slots_get) | **GET** /CompetitiveDraftSlots/item/{id} | 
 *GetApi* | [**competitive_game_summaries_get**](docs/GetApi.md#competitive_game_summaries_get) | **GET** /CompetitiveGameSummaries/item/{id} | 
 *GetApi* | [**competitive_games_get**](docs/GetApi.md#competitive_games_get) | **GET** /CompetitiveGames/item/{id} | 
 *GetApi* | [**competitive_round_summaries_get**](docs/GetApi.md#competitive_round_summaries_get) | **GET** /CompetitiveRoundSummaries/item/{id} | 
 *GetApi* | [**competitive_team_round_summaries_get**](docs/GetApi.md#competitive_team_round_summaries_get) | **GET** /CompetitiveTeamRoundSummaries/item/{id} | 
+*GetApi* | [**competitive_tiers_get**](docs/GetApi.md#competitive_tiers_get) | **GET** /CompetitiveTiers/item/{id} | 
 *GetApi* | [**game_metrics_get**](docs/GetApi.md#game_metrics_get) | **GET** /GameMetrics/item/{id} | 
+*GetApi* | [**gear_get**](docs/GetApi.md#gear_get) | **GET** /Gear/item/{id} | 
 *GetApi* | [**league_get**](docs/GetApi.md#league_get) | **GET** /League/item/{id} | 
 *GetApi* | [**login_create**](docs/GetApi.md#login_create) | **POST** /Login | 
 *GetApi* | [**maps_get**](docs/GetApi.md#maps_get) | **GET** /Maps/item/{id} | 
@@ -120,21 +156,30 @@ Class | Method | HTTP request | Description
 *GetApi* | [**scrim_games_get**](docs/GetApi.md#scrim_games_get) | **GET** /ScrimGames/item/{id} | 
 *GetApi* | [**scrim_round_summaries_get**](docs/GetApi.md#scrim_round_summaries_get) | **GET** /ScrimRoundSummaries/item/{id} | 
 *GetApi* | [**scrim_team_round_summaries_get**](docs/GetApi.md#scrim_team_round_summaries_get) | **GET** /ScrimTeamRoundSummaries/item/{id} | 
+*GetApi* | [**seasons_get**](docs/GetApi.md#seasons_get) | **GET** /Seasons/item/{id} | 
 *GetApi* | [**solo_q_accounts_get**](docs/GetApi.md#solo_q_accounts_get) | **GET** /SoloQAccounts/item/{id} | 
+*GetApi* | [**solo_q_game_summaries_get**](docs/GetApi.md#solo_q_game_summaries_get) | **GET** /SoloQGameSummaries/item/{id} | 
+*GetApi* | [**solo_q_games_get**](docs/GetApi.md#solo_q_games_get) | **GET** /SoloQGames/item/{id} | 
+*GetApi* | [**solo_q_round_summaries_get**](docs/GetApi.md#solo_q_round_summaries_get) | **GET** /SoloQRoundSummaries/item/{id} | 
+*GetApi* | [**solo_q_team_round_summaries_get**](docs/GetApi.md#solo_q_team_round_summaries_get) | **GET** /SoloQTeamRoundSummaries/item/{id} | 
 *GetApi* | [**team_get**](docs/GetApi.md#team_get) | **GET** /Team/item/{id} | 
 *GetApi* | [**user_get**](docs/GetApi.md#user_get) | **GET** /User/item/{id} | 
+*GetApi* | [**weapons_get**](docs/GetApi.md#weapons_get) | **GET** /Weapons/item/{id} | 
 *LeagueApi* | [**league_aggregate**](docs/LeagueApi.md#league_aggregate) | **GET** /League/operations/aggregate | 
 *LeagueApi* | [**league_field_values**](docs/LeagueApi.md#league_field_values) | **GET** /League/operations/field-values | 
 *LeagueApi* | [**league_get**](docs/LeagueApi.md#league_get) | **GET** /League/item/{id} | 
 *LeagueApi* | [**league_list**](docs/LeagueApi.md#league_list) | **GET** /League/list | 
 *LeagueApi* | [**league_variable_distribution**](docs/LeagueApi.md#league_variable_distribution) | **GET** /League/operations/variable-distribution | 
+*ListApi* | [**agent_list**](docs/ListApi.md#agent_list) | **GET** /Agent/list | 
 *ListApi* | [**client_organization_list**](docs/ListApi.md#client_organization_list) | **GET** /ClientOrganization/list | 
 *ListApi* | [**competitive_draft_slots_list**](docs/ListApi.md#competitive_draft_slots_list) | **GET** /CompetitiveDraftSlots/list | 
 *ListApi* | [**competitive_game_summaries_list**](docs/ListApi.md#competitive_game_summaries_list) | **GET** /CompetitiveGameSummaries/list | 
 *ListApi* | [**competitive_games_list**](docs/ListApi.md#competitive_games_list) | **GET** /CompetitiveGames/list | 
 *ListApi* | [**competitive_round_summaries_list**](docs/ListApi.md#competitive_round_summaries_list) | **GET** /CompetitiveRoundSummaries/list | 
 *ListApi* | [**competitive_team_round_summaries_list**](docs/ListApi.md#competitive_team_round_summaries_list) | **GET** /CompetitiveTeamRoundSummaries/list | 
+*ListApi* | [**competitive_tiers_list**](docs/ListApi.md#competitive_tiers_list) | **GET** /CompetitiveTiers/list | 
 *ListApi* | [**game_metrics_list**](docs/ListApi.md#game_metrics_list) | **GET** /GameMetrics/list | 
+*ListApi* | [**gear_list**](docs/ListApi.md#gear_list) | **GET** /Gear/list | 
 *ListApi* | [**league_list**](docs/ListApi.md#league_list) | **GET** /League/list | 
 *ListApi* | [**maps_list**](docs/ListApi.md#maps_list) | **GET** /Maps/list | 
 *ListApi* | [**player_list**](docs/ListApi.md#player_list) | **GET** /Player/list | 
@@ -142,9 +187,15 @@ Class | Method | HTTP request | Description
 *ListApi* | [**scrim_games_list**](docs/ListApi.md#scrim_games_list) | **GET** /ScrimGames/list | 
 *ListApi* | [**scrim_round_summaries_list**](docs/ListApi.md#scrim_round_summaries_list) | **GET** /ScrimRoundSummaries/list | 
 *ListApi* | [**scrim_team_round_summaries_list**](docs/ListApi.md#scrim_team_round_summaries_list) | **GET** /ScrimTeamRoundSummaries/list | 
+*ListApi* | [**seasons_list**](docs/ListApi.md#seasons_list) | **GET** /Seasons/list | 
 *ListApi* | [**solo_q_accounts_list**](docs/ListApi.md#solo_q_accounts_list) | **GET** /SoloQAccounts/list | 
+*ListApi* | [**solo_q_game_summaries_list**](docs/ListApi.md#solo_q_game_summaries_list) | **GET** /SoloQGameSummaries/list | 
+*ListApi* | [**solo_q_games_list**](docs/ListApi.md#solo_q_games_list) | **GET** /SoloQGames/list | 
+*ListApi* | [**solo_q_round_summaries_list**](docs/ListApi.md#solo_q_round_summaries_list) | **GET** /SoloQRoundSummaries/list | 
+*ListApi* | [**solo_q_team_round_summaries_list**](docs/ListApi.md#solo_q_team_round_summaries_list) | **GET** /SoloQTeamRoundSummaries/list | 
 *ListApi* | [**team_list**](docs/ListApi.md#team_list) | **GET** /Team/list | 
 *ListApi* | [**user_list**](docs/ListApi.md#user_list) | **GET** /User/list | 
+*ListApi* | [**weapons_list**](docs/ListApi.md#weapons_list) | **GET** /Weapons/list | 
 *LoginApi* | [**login_create**](docs/LoginApi.md#login_create) | **POST** /Login | 
 *MapsApi* | [**maps_aggregate**](docs/MapsApi.md#maps_aggregate) | **GET** /Maps/operations/aggregate | 
 *MapsApi* | [**maps_field_values**](docs/MapsApi.md#maps_field_values) | **GET** /Maps/operations/field-values | 
@@ -190,6 +241,11 @@ Class | Method | HTTP request | Description
 *ScrimTeamRoundSummariesApi* | [**scrim_team_round_summaries_list**](docs/ScrimTeamRoundSummariesApi.md#scrim_team_round_summaries_list) | **GET** /ScrimTeamRoundSummaries/list | 
 *ScrimTeamRoundSummariesApi* | [**scrim_team_round_summaries_variable_distribution**](docs/ScrimTeamRoundSummariesApi.md#scrim_team_round_summaries_variable_distribution) | **GET** /ScrimTeamRoundSummaries/operations/variable-distribution | 
 *ScrimsDataApi* | [**upload_scrim_game**](docs/ScrimsDataApi.md#upload_scrim_game) | **POST** /ScrimsData/item/{id}/upload | Manually upload a scrim game
+*SeasonsApi* | [**seasons_aggregate**](docs/SeasonsApi.md#seasons_aggregate) | **GET** /Seasons/operations/aggregate | 
+*SeasonsApi* | [**seasons_field_values**](docs/SeasonsApi.md#seasons_field_values) | **GET** /Seasons/operations/field-values | 
+*SeasonsApi* | [**seasons_get**](docs/SeasonsApi.md#seasons_get) | **GET** /Seasons/item/{id} | 
+*SeasonsApi* | [**seasons_list**](docs/SeasonsApi.md#seasons_list) | **GET** /Seasons/list | 
+*SeasonsApi* | [**seasons_variable_distribution**](docs/SeasonsApi.md#seasons_variable_distribution) | **GET** /Seasons/operations/variable-distribution | 
 *SoloQAccountsApi* | [**solo_q_accounts_aggregate**](docs/SoloQAccountsApi.md#solo_q_accounts_aggregate) | **GET** /SoloQAccounts/operations/aggregate | 
 *SoloQAccountsApi* | [**solo_q_accounts_create**](docs/SoloQAccountsApi.md#solo_q_accounts_create) | **POST** /SoloQAccounts/item/{id} | 
 *SoloQAccountsApi* | [**solo_q_accounts_field_values**](docs/SoloQAccountsApi.md#solo_q_accounts_field_values) | **GET** /SoloQAccounts/operations/field-values | 
@@ -197,6 +253,26 @@ Class | Method | HTTP request | Description
 *SoloQAccountsApi* | [**solo_q_accounts_list**](docs/SoloQAccountsApi.md#solo_q_accounts_list) | **GET** /SoloQAccounts/list | 
 *SoloQAccountsApi* | [**solo_q_accounts_patch**](docs/SoloQAccountsApi.md#solo_q_accounts_patch) | **PATCH** /SoloQAccounts/item/{id} | 
 *SoloQAccountsApi* | [**solo_q_accounts_variable_distribution**](docs/SoloQAccountsApi.md#solo_q_accounts_variable_distribution) | **GET** /SoloQAccounts/operations/variable-distribution | 
+*SoloQGameSummariesApi* | [**solo_q_game_summaries_aggregate**](docs/SoloQGameSummariesApi.md#solo_q_game_summaries_aggregate) | **GET** /SoloQGameSummaries/operations/aggregate | 
+*SoloQGameSummariesApi* | [**solo_q_game_summaries_field_values**](docs/SoloQGameSummariesApi.md#solo_q_game_summaries_field_values) | **GET** /SoloQGameSummaries/operations/field-values | 
+*SoloQGameSummariesApi* | [**solo_q_game_summaries_get**](docs/SoloQGameSummariesApi.md#solo_q_game_summaries_get) | **GET** /SoloQGameSummaries/item/{id} | 
+*SoloQGameSummariesApi* | [**solo_q_game_summaries_list**](docs/SoloQGameSummariesApi.md#solo_q_game_summaries_list) | **GET** /SoloQGameSummaries/list | 
+*SoloQGameSummariesApi* | [**solo_q_game_summaries_variable_distribution**](docs/SoloQGameSummariesApi.md#solo_q_game_summaries_variable_distribution) | **GET** /SoloQGameSummaries/operations/variable-distribution | 
+*SoloQGamesApi* | [**solo_q_games_aggregate**](docs/SoloQGamesApi.md#solo_q_games_aggregate) | **GET** /SoloQGames/operations/aggregate | 
+*SoloQGamesApi* | [**solo_q_games_field_values**](docs/SoloQGamesApi.md#solo_q_games_field_values) | **GET** /SoloQGames/operations/field-values | 
+*SoloQGamesApi* | [**solo_q_games_get**](docs/SoloQGamesApi.md#solo_q_games_get) | **GET** /SoloQGames/item/{id} | 
+*SoloQGamesApi* | [**solo_q_games_list**](docs/SoloQGamesApi.md#solo_q_games_list) | **GET** /SoloQGames/list | 
+*SoloQGamesApi* | [**solo_q_games_variable_distribution**](docs/SoloQGamesApi.md#solo_q_games_variable_distribution) | **GET** /SoloQGames/operations/variable-distribution | 
+*SoloQRoundSummariesApi* | [**solo_q_round_summaries_aggregate**](docs/SoloQRoundSummariesApi.md#solo_q_round_summaries_aggregate) | **GET** /SoloQRoundSummaries/operations/aggregate | 
+*SoloQRoundSummariesApi* | [**solo_q_round_summaries_field_values**](docs/SoloQRoundSummariesApi.md#solo_q_round_summaries_field_values) | **GET** /SoloQRoundSummaries/operations/field-values | 
+*SoloQRoundSummariesApi* | [**solo_q_round_summaries_get**](docs/SoloQRoundSummariesApi.md#solo_q_round_summaries_get) | **GET** /SoloQRoundSummaries/item/{id} | 
+*SoloQRoundSummariesApi* | [**solo_q_round_summaries_list**](docs/SoloQRoundSummariesApi.md#solo_q_round_summaries_list) | **GET** /SoloQRoundSummaries/list | 
+*SoloQRoundSummariesApi* | [**solo_q_round_summaries_variable_distribution**](docs/SoloQRoundSummariesApi.md#solo_q_round_summaries_variable_distribution) | **GET** /SoloQRoundSummaries/operations/variable-distribution | 
+*SoloQTeamRoundSummariesApi* | [**solo_q_team_round_summaries_aggregate**](docs/SoloQTeamRoundSummariesApi.md#solo_q_team_round_summaries_aggregate) | **GET** /SoloQTeamRoundSummaries/operations/aggregate | 
+*SoloQTeamRoundSummariesApi* | [**solo_q_team_round_summaries_field_values**](docs/SoloQTeamRoundSummariesApi.md#solo_q_team_round_summaries_field_values) | **GET** /SoloQTeamRoundSummaries/operations/field-values | 
+*SoloQTeamRoundSummariesApi* | [**solo_q_team_round_summaries_get**](docs/SoloQTeamRoundSummariesApi.md#solo_q_team_round_summaries_get) | **GET** /SoloQTeamRoundSummaries/item/{id} | 
+*SoloQTeamRoundSummariesApi* | [**solo_q_team_round_summaries_list**](docs/SoloQTeamRoundSummariesApi.md#solo_q_team_round_summaries_list) | **GET** /SoloQTeamRoundSummaries/list | 
+*SoloQTeamRoundSummariesApi* | [**solo_q_team_round_summaries_variable_distribution**](docs/SoloQTeamRoundSummariesApi.md#solo_q_team_round_summaries_variable_distribution) | **GET** /SoloQTeamRoundSummaries/operations/variable-distribution | 
 *TeamApi* | [**team_aggregate**](docs/TeamApi.md#team_aggregate) | **GET** /Team/operations/aggregate | 
 *TeamApi* | [**team_field_values**](docs/TeamApi.md#team_field_values) | **GET** /Team/operations/field-values | 
 *TeamApi* | [**team_get**](docs/TeamApi.md#team_get) | **GET** /Team/item/{id} | 
@@ -212,13 +288,16 @@ Class | Method | HTTP request | Description
 *UserApi* | [**user_list**](docs/UserApi.md#user_list) | **GET** /User/list | 
 *UserApi* | [**user_patch**](docs/UserApi.md#user_patch) | **PATCH** /User/item/{id} | 
 *UserApi* | [**user_variable_distribution**](docs/UserApi.md#user_variable_distribution) | **GET** /User/operations/variable-distribution | 
+*VariableDistributionApi* | [**agent_variable_distribution**](docs/VariableDistributionApi.md#agent_variable_distribution) | **GET** /Agent/operations/variable-distribution | 
 *VariableDistributionApi* | [**client_organization_variable_distribution**](docs/VariableDistributionApi.md#client_organization_variable_distribution) | **GET** /ClientOrganization/operations/variable-distribution | 
 *VariableDistributionApi* | [**competitive_draft_slots_variable_distribution**](docs/VariableDistributionApi.md#competitive_draft_slots_variable_distribution) | **GET** /CompetitiveDraftSlots/operations/variable-distribution | 
 *VariableDistributionApi* | [**competitive_game_summaries_variable_distribution**](docs/VariableDistributionApi.md#competitive_game_summaries_variable_distribution) | **GET** /CompetitiveGameSummaries/operations/variable-distribution | 
 *VariableDistributionApi* | [**competitive_games_variable_distribution**](docs/VariableDistributionApi.md#competitive_games_variable_distribution) | **GET** /CompetitiveGames/operations/variable-distribution | 
 *VariableDistributionApi* | [**competitive_round_summaries_variable_distribution**](docs/VariableDistributionApi.md#competitive_round_summaries_variable_distribution) | **GET** /CompetitiveRoundSummaries/operations/variable-distribution | 
 *VariableDistributionApi* | [**competitive_team_round_summaries_variable_distribution**](docs/VariableDistributionApi.md#competitive_team_round_summaries_variable_distribution) | **GET** /CompetitiveTeamRoundSummaries/operations/variable-distribution | 
+*VariableDistributionApi* | [**competitive_tiers_variable_distribution**](docs/VariableDistributionApi.md#competitive_tiers_variable_distribution) | **GET** /CompetitiveTiers/operations/variable-distribution | 
 *VariableDistributionApi* | [**game_metrics_variable_distribution**](docs/VariableDistributionApi.md#game_metrics_variable_distribution) | **GET** /GameMetrics/operations/variable-distribution | 
+*VariableDistributionApi* | [**gear_variable_distribution**](docs/VariableDistributionApi.md#gear_variable_distribution) | **GET** /Gear/operations/variable-distribution | 
 *VariableDistributionApi* | [**league_variable_distribution**](docs/VariableDistributionApi.md#league_variable_distribution) | **GET** /League/operations/variable-distribution | 
 *VariableDistributionApi* | [**maps_variable_distribution**](docs/VariableDistributionApi.md#maps_variable_distribution) | **GET** /Maps/operations/variable-distribution | 
 *VariableDistributionApi* | [**player_variable_distribution**](docs/VariableDistributionApi.md#player_variable_distribution) | **GET** /Player/operations/variable-distribution | 
@@ -226,19 +305,32 @@ Class | Method | HTTP request | Description
 *VariableDistributionApi* | [**scrim_games_variable_distribution**](docs/VariableDistributionApi.md#scrim_games_variable_distribution) | **GET** /ScrimGames/operations/variable-distribution | 
 *VariableDistributionApi* | [**scrim_round_summaries_variable_distribution**](docs/VariableDistributionApi.md#scrim_round_summaries_variable_distribution) | **GET** /ScrimRoundSummaries/operations/variable-distribution | 
 *VariableDistributionApi* | [**scrim_team_round_summaries_variable_distribution**](docs/VariableDistributionApi.md#scrim_team_round_summaries_variable_distribution) | **GET** /ScrimTeamRoundSummaries/operations/variable-distribution | 
+*VariableDistributionApi* | [**seasons_variable_distribution**](docs/VariableDistributionApi.md#seasons_variable_distribution) | **GET** /Seasons/operations/variable-distribution | 
 *VariableDistributionApi* | [**solo_q_accounts_variable_distribution**](docs/VariableDistributionApi.md#solo_q_accounts_variable_distribution) | **GET** /SoloQAccounts/operations/variable-distribution | 
+*VariableDistributionApi* | [**solo_q_game_summaries_variable_distribution**](docs/VariableDistributionApi.md#solo_q_game_summaries_variable_distribution) | **GET** /SoloQGameSummaries/operations/variable-distribution | 
+*VariableDistributionApi* | [**solo_q_games_variable_distribution**](docs/VariableDistributionApi.md#solo_q_games_variable_distribution) | **GET** /SoloQGames/operations/variable-distribution | 
+*VariableDistributionApi* | [**solo_q_round_summaries_variable_distribution**](docs/VariableDistributionApi.md#solo_q_round_summaries_variable_distribution) | **GET** /SoloQRoundSummaries/operations/variable-distribution | 
+*VariableDistributionApi* | [**solo_q_team_round_summaries_variable_distribution**](docs/VariableDistributionApi.md#solo_q_team_round_summaries_variable_distribution) | **GET** /SoloQTeamRoundSummaries/operations/variable-distribution | 
 *VariableDistributionApi* | [**team_variable_distribution**](docs/VariableDistributionApi.md#team_variable_distribution) | **GET** /Team/operations/variable-distribution | 
 *VariableDistributionApi* | [**user_variable_distribution**](docs/VariableDistributionApi.md#user_variable_distribution) | **GET** /User/operations/variable-distribution | 
+*VariableDistributionApi* | [**weapons_variable_distribution**](docs/VariableDistributionApi.md#weapons_variable_distribution) | **GET** /Weapons/operations/variable-distribution | 
+*WeaponsApi* | [**weapons_aggregate**](docs/WeaponsApi.md#weapons_aggregate) | **GET** /Weapons/operations/aggregate | 
+*WeaponsApi* | [**weapons_field_values**](docs/WeaponsApi.md#weapons_field_values) | **GET** /Weapons/operations/field-values | 
+*WeaponsApi* | [**weapons_get**](docs/WeaponsApi.md#weapons_get) | **GET** /Weapons/item/{id} | 
+*WeaponsApi* | [**weapons_list**](docs/WeaponsApi.md#weapons_list) | **GET** /Weapons/list | 
+*WeaponsApi* | [**weapons_variable_distribution**](docs/WeaponsApi.md#weapons_variable_distribution) | **GET** /Weapons/operations/variable-distribution | 
 
 
 ## Documentation For Models
 
  - [AddAccount](docs/AddAccount.md)
+ - [Agent](docs/Agent.md)
+ - [AgentAggregate](docs/AgentAggregate.md)
+ - [AgentVariableDistribution200ResponseInner](docs/AgentVariableDistribution200ResponseInner.md)
  - [AuthToken](docs/AuthToken.md)
  - [ChangePassword](docs/ChangePassword.md)
  - [ClientOrganization](docs/ClientOrganization.md)
  - [ClientOrganizationAggregate](docs/ClientOrganizationAggregate.md)
- - [ClientOrganizationVariableDistribution200ResponseInner](docs/ClientOrganizationVariableDistribution200ResponseInner.md)
  - [CompetitiveDraftSlots](docs/CompetitiveDraftSlots.md)
  - [CompetitiveDraftSlotsAggregate](docs/CompetitiveDraftSlotsAggregate.md)
  - [CompetitiveGameSummaries](docs/CompetitiveGameSummaries.md)
@@ -247,8 +339,14 @@ Class | Method | HTTP request | Description
  - [CompetitiveGamesAggregate](docs/CompetitiveGamesAggregate.md)
  - [CompetitiveRoundSummaries](docs/CompetitiveRoundSummaries.md)
  - [CompetitiveRoundSummariesAggregate](docs/CompetitiveRoundSummariesAggregate.md)
+ - [CompetitiveRoundSummariesDeathEventAgnosticInner](docs/CompetitiveRoundSummariesDeathEventAgnosticInner.md)
+ - [CompetitiveRoundSummariesDeathEventAgnosticInnerKillerLocation](docs/CompetitiveRoundSummariesDeathEventAgnosticInnerKillerLocation.md)
+ - [CompetitiveRoundSummariesDeathEventAgnosticInnerKillerLocationPosition](docs/CompetitiveRoundSummariesDeathEventAgnosticInnerKillerLocationPosition.md)
+ - [CompetitiveRoundSummariesDeathEventAgnosticInnerVictimLocation](docs/CompetitiveRoundSummariesDeathEventAgnosticInnerVictimLocation.md)
  - [CompetitiveRoundSummariesDeathEventInner](docs/CompetitiveRoundSummariesDeathEventInner.md)
  - [CompetitiveRoundSummariesDeathEventInnerAssistantsInner](docs/CompetitiveRoundSummariesDeathEventInnerAssistantsInner.md)
+ - [CompetitiveRoundSummariesDeathEventInnerKillerLocation](docs/CompetitiveRoundSummariesDeathEventInnerKillerLocation.md)
+ - [CompetitiveRoundSummariesDeathEventInnerKillerLocationPosition](docs/CompetitiveRoundSummariesDeathEventInnerKillerLocationPosition.md)
  - [CompetitiveRoundSummariesOtherAbilitiesInner](docs/CompetitiveRoundSummariesOtherAbilitiesInner.md)
  - [CompetitiveRoundSummariesPlayerSnapshotsInner](docs/CompetitiveRoundSummariesPlayerSnapshotsInner.md)
  - [CompetitiveRoundSummariesPlayerSnapshotsInnerAbilitiesValue](docs/CompetitiveRoundSummariesPlayerSnapshotsInnerAbilitiesValue.md)
@@ -258,15 +356,16 @@ Class | Method | HTTP request | Description
  - [CompetitiveRoundSummariesPlayerSnapshotsInnerInventoryValue](docs/CompetitiveRoundSummariesPlayerSnapshotsInnerInventoryValue.md)
  - [CompetitiveRoundSummariesPlayerSnapshotsInnerScores](docs/CompetitiveRoundSummariesPlayerSnapshotsInnerScores.md)
  - [CompetitiveRoundSummariesSmokeAbilitiesInner](docs/CompetitiveRoundSummariesSmokeAbilitiesInner.md)
- - [CompetitiveRoundSummariesSmokeAbilitiesInnerCastPosition](docs/CompetitiveRoundSummariesSmokeAbilitiesInnerCastPosition.md)
- - [CompetitiveRoundSummariesSmokeAbilitiesInnerCastPositionPosition](docs/CompetitiveRoundSummariesSmokeAbilitiesInnerCastPositionPosition.md)
  - [CompetitiveRoundSummariesSmokeAbilitiesInnerLandingPoint](docs/CompetitiveRoundSummariesSmokeAbilitiesInnerLandingPoint.md)
  - [CompetitiveRoundSummariesUtilityAbilitiesInner](docs/CompetitiveRoundSummariesUtilityAbilitiesInner.md)
- - [CompetitiveRoundSummariesUtilityAbilitiesInnerLandingPoint](docs/CompetitiveRoundSummariesUtilityAbilitiesInnerLandingPoint.md)
  - [CompetitiveTeamRoundSummaries](docs/CompetitiveTeamRoundSummaries.md)
  - [CompetitiveTeamRoundSummariesAggregate](docs/CompetitiveTeamRoundSummariesAggregate.md)
+ - [CompetitiveTiers](docs/CompetitiveTiers.md)
+ - [CompetitiveTiersAggregate](docs/CompetitiveTiersAggregate.md)
  - [GameMetrics](docs/GameMetrics.md)
  - [GameMetricsAggregate](docs/GameMetricsAggregate.md)
+ - [Gear](docs/Gear.md)
+ - [GearAggregate](docs/GearAggregate.md)
  - [League](docs/League.md)
  - [LeagueAggregate](docs/LeagueAggregate.md)
  - [LinkRiotAccountRequest](docs/LinkRiotAccountRequest.md)
@@ -282,6 +381,7 @@ Class | Method | HTTP request | Description
  - [PatchedUser](docs/PatchedUser.md)
  - [Player](docs/Player.md)
  - [PlayerAggregate](docs/PlayerAggregate.md)
+ - [RankTierEnum](docs/RankTierEnum.md)
  - [ScrimGameSummaries](docs/ScrimGameSummaries.md)
  - [ScrimGameSummariesAggregate](docs/ScrimGameSummariesAggregate.md)
  - [ScrimGames](docs/ScrimGames.md)
@@ -290,15 +390,29 @@ Class | Method | HTTP request | Description
  - [ScrimRoundSummariesAggregate](docs/ScrimRoundSummariesAggregate.md)
  - [ScrimTeamRoundSummaries](docs/ScrimTeamRoundSummaries.md)
  - [ScrimTeamRoundSummariesAggregate](docs/ScrimTeamRoundSummariesAggregate.md)
+ - [Seasons](docs/Seasons.md)
+ - [SeasonsAggregate](docs/SeasonsAggregate.md)
  - [SoloQAccounts](docs/SoloQAccounts.md)
  - [SoloQAccountsAggregate](docs/SoloQAccountsAggregate.md)
+ - [SoloQGameSummaries](docs/SoloQGameSummaries.md)
+ - [SoloQGameSummariesAggregate](docs/SoloQGameSummariesAggregate.md)
+ - [SoloQGames](docs/SoloQGames.md)
+ - [SoloQGamesAggregate](docs/SoloQGamesAggregate.md)
+ - [SoloQRoundSummaries](docs/SoloQRoundSummaries.md)
+ - [SoloQRoundSummariesAggregate](docs/SoloQRoundSummariesAggregate.md)
+ - [SoloQTeamRoundSummaries](docs/SoloQTeamRoundSummaries.md)
+ - [SoloQTeamRoundSummariesAggregate](docs/SoloQTeamRoundSummariesAggregate.md)
  - [Team](docs/Team.md)
  - [TeamAggregate](docs/TeamAggregate.md)
+ - [TeamEnum](docs/TeamEnum.md)
  - [UnlinkedAccount](docs/UnlinkedAccount.md)
+ - [UnresolvedAccount](docs/UnresolvedAccount.md)
  - [UploadScrimGameError](docs/UploadScrimGameError.md)
  - [UploadScrimGameRequest](docs/UploadScrimGameRequest.md)
  - [UploadScrimGameSuccess](docs/UploadScrimGameSuccess.md)
  - [User](docs/User.md)
+ - [Weapons](docs/Weapons.md)
+ - [WeaponsAggregate](docs/WeaponsAggregate.md)
 
 
 To get access to the crate's generated documentation, use:

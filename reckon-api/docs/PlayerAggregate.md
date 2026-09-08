@@ -21,6 +21,8 @@ Name | Type | Description | Notes
 **discord** | Option<**String**> |  | [optional]
 **stream** | Option<**String**> |  | [optional]
 **soloq_tracked** | Option<**bool**> |  | [optional]
+**vlr_id** | Option<**i64**> |  | [optional]
+**other_teams** | Option<**String**> |  | [optional]
 **current_team** | Option<**String**> |  | [optional]
 **domestic_league** | Option<**String**> |  | [optional]
 **last_team** | Option<**String**> |  | [optional]

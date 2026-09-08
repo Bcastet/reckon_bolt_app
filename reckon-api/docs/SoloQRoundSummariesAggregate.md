@@ -1,0 +1,65 @@
+# SoloQRoundSummariesAggregate
+
+## Properties
+
+Name | Type | Description | Notes
+------------ | ------------- | ------------- | -------------
+**round_id** | **String** |  | 
+**death_event_agnostic** | [**Vec<models::CompetitiveRoundSummariesDeathEventAgnosticInner>**](CompetitiveRoundSummariesDeathEventAgnosticInner.md) |  | 
+**kills_agnostic** | [**Vec<models::CompetitiveRoundSummariesDeathEventAgnosticInner>**](CompetitiveRoundSummariesDeathEventAgnosticInner.md) |  | 
+**kills** | **i32** |  | 
+**deaths** | **i32** |  | 
+**assists** | **i32** |  | 
+**was_traded** | Option<**bool**> |  | [optional]
+**patch** | **String** |  | 
+**side** | **String** |  | 
+**round_eco_type** | **String** |  | 
+**round_eco_type_no_bonus** | **String** |  | 
+**round_strat_type** | **String** |  | 
+**round_index** | **i32** |  | 
+**main_weapon** | **String** |  | 
+**second_weapon** | Option<**String**> |  | [optional]
+**loadout_value** | Option<**i32**> |  | [optional]
+**ability1_charges** | Option<**i32**> |  | [optional]
+**ability2_charges** | Option<**i32**> |  | [optional]
+**ability3_charges** | Option<**i32**> |  | [optional]
+**grenade_charges** | Option<**i32**> |  | [optional]
+**ultimate_charges** | Option<**i32**> |  | [optional]
+**shield** | Option<**String**> |  | [optional]
+**damages** | **i32** |  | 
+**damage_instances** | **i32** |  | 
+**took_spike** | Option<**bool**> |  | [optional]
+**planted_spike** | Option<**bool**> |  | [optional]
+**combat_score** | **f64** |  | 
+**win** | **bool** |  | 
+**round_end** | Option<**String**> |  | [optional]
+**first_death** | **bool** |  | 
+**first_blood** | **bool** |  | 
+**first_true_death** | **bool** |  | 
+**first_true_blood** | **bool** |  | 
+**investment** | **i32** |  | 
+**bomb_site** | Option<**String**> |  | [optional]
+**first_attack_site** | Option<**String**> |  | [optional]
+**attack_pattern_full** | Option<**String**> |  | [optional]
+**defense_pattern_full** | Option<**String**> |  | [optional]
+**attack_pattern_short** | Option<**String**> |  | [optional]
+**defense_pattern_short** | Option<**String**> |  | [optional]
+**plant_location** | Option<**String**> |  | [optional]
+**plant_time** | Option<**i32**> |  | [optional]
+**start_time_seconds** | Option<**i32**> |  | [optional]
+**freeze_time_end_timestamp** | Option<**i32**> |  | [optional]
+**callout_15s** | Option<**String**> |  | [optional]
+**kast** | **bool** |  | 
+**date** | **String** |  | 
+**game_id** | **String** |  | 
+**puuid** | **String** |  | 
+**rank_tier** | [**models::RankTierEnum**](RankTierEnum.md) |  | 
+**team** | [**models::TeamEnum**](TeamEnum.md) |  | 
+**agent** | **String** |  | 
+**competitive_player** | Option<**String**> |  | [optional]
+**account** | Option<**i32**> |  | [optional]
+**map** | **String** |  | 
+
+[[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
+
+
